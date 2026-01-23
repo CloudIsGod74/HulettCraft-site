@@ -1,0 +1,110 @@
+---
+import BaseLayout from "../layouts/BaseLayout.astro";
+---
+<BaseLayout>
+
+  <!-- Hero -->
+  <section class="hero">
+    <h1>Hytale (Beta)</h1>
+    <p>
+      Our next-generation sandbox world — experimental, evolving,
+      and open to early community exploration.
+    </p>
+  </section>
+
+  <!-- About -->
+  <section class="hero" style="padding-top: 1rem;">
+    <p
+      style="
+        max-width: 760px;
+        margin: 0 auto;
+        color: var(--muted);
+        line-height: 1.6;
+      "
+    >
+      The HulettCraft Hytale server is an active beta environment focused on
+      exploration, experimentation, and early content testing. Expect changes,
+      resets, and new features as the game evolves.
+    </p>
+  </section>
+
+  <!-- Join Info -->
+  <section class="server-grid">
+
+    <div class="card">
+      <h3>Join the Server</h3>
+      <p style="color: var(--muted);">
+        Connect using the address below. This server is currently in beta.
+      </p>
+
+      <div class="ip">hytale.hulettcraft.com:5520</div>
+
+      <div class="card-actions">
+        <a href="/status" class="status-link">
+          View server status →
+        </a>
+      </div>
+    </div>
+
+    <div class="card">
+      <h3>Beta Notice</h3>
+      <p style="color: var(--muted);">
+        Progress may reset. Features may change. Feedback is welcome and encouraged.
+      </p>
+    </div>
+
+  </section>
+
+  <!-- Web Map -->
+  <section style="padding: 3rem 2rem; max-width: 1200px; margin: 0 auto;">
+    <h2 style="text-align: center; margin-bottom: 1.5rem;">
+      World Map
+    </h2>
+
+    <div
+      style="
+        position: relative;
+        width: 100%;
+        padding-top: 56.25%;
+        border-radius: 16px;
+        overflow: hidden;
+        border: 1px solid var(--border);
+        background: #020617;
+      "
+    >
+      <!-- 🔽 REPLACE THE URL BELOW WITH YOUR WEB MAP LINK -->
+      <iframe
+        src="https://hpmap.hulettcraft.com"
+        loading="lazy"
+        referrerpolicy="no-referrer"
+        style="
+          position: absolute;
+          inset: 0;
+          width: 100%;
+          height: 100%;
+          border: none;
+        "
+      ></iframe>
+    </div>
+
+    <p
+      style="
+        margin-top: 1rem;
+        text-align: center;
+        color: var(--muted);
+        font-size: 0.9rem;
+      "
+    >
+      If the map does not load, you can
+      <a
+        href="https://hpmap.hulettcraft.com"
+        target="_blank"
+        rel="noopener"
+        style="color: var(--text);"
+      >
+        open it in a new tab
+      </a>.
+    </p>
+  </section>
+
+</BaseLayout>
