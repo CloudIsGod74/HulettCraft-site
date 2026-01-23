@@ -1,5 +1,10 @@
 ---
 import BaseLayout from "../layouts/BaseLayout.astro";
+import { HULETTCRAFT } from "../config/hulettcraft.ts";
+
+const seasons = Object.keys(HULETTCRAFT.seasons)
+  .map(Number)
+  .sort((a, b) => b - a);
 ---
 <BaseLayout>
 
