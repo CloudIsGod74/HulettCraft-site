@@ -85,6 +85,39 @@ nav a:hover {
   color: var(--text);
 }
 
+.status-dot {
+  display: inline-block;
+  width: 0.6rem;
+  height: 0.6rem;
+  border-radius: 50%;
+  margin-right: 0.4rem;
+}
+
+.status-dot.online {
+  background: var(--green);
+}
+
+.status-dot.offline {
+  background: #ef4444;
+}
+
+.status-dot.beta {
+  background: var(--violet);
+}
+
+.copyable {
+  cursor: pointer;
+  transition: color 0.15s ease;
+}
+
+.copyable:hover {
+  color: var(--text);
+}
+
+.copyable.copied {
+  color: var(--green);
+}
+
 .node {
   font-size: 0.8rem;
   color: var(--muted);

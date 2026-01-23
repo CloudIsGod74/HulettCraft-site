@@ -12,19 +12,29 @@ import BaseLayout from "../layouts/BaseLayout.astro";
     </p>
   </section>
 
-  <!-- Worlds -->
   <section class="server-grid">
 
     <!-- Vanilla SMP -->
     <div class="card">
-      <h3>Vanilla SMP</h3>
+      <h3>
+        <span class="status-dot online"></span>
+        Vanilla SMP
+      </h3>
+
       <p style="color: var(--muted);">
         Our primary world. Long-running, lightly governed, and built around
         trust, cooperation, and player-driven projects.
       </p>
 
       <div class="node">Node: HulettCraft</div>
-      <div class="ip">play.hulettcraft.com</div>
+
+      <div
+        class="ip copyable"
+        data-copy="play.hulettcraft.com"
+        title="Click to copy"
+      >
+        play.hulettcraft.com
+      </div>
 
       <div class="card-actions">
         <a href="/status" class="status-link">
@@ -35,14 +45,25 @@ import BaseLayout from "../layouts/BaseLayout.astro";
 
     <!-- Creative -->
     <div class="card">
-      <h3>Creative Server</h3>
+      <h3>
+        <span class="status-dot online"></span>
+        Creative Server
+      </h3>
+
       <p style="color: var(--muted);">
         A shared creative environment for large-scale builds, testing ideas,
         and collaborative construction.
       </p>
 
       <div class="node">Node: CloudCraft</div>
-      <div class="ip">creative.hulettcraft.com</div>
+
+      <div
+        class="ip copyable"
+        data-copy="creative.hulettcraft.com"
+        title="Click to copy"
+      >
+        creative.hulettcraft.com
+      </div>
 
       <div class="card-actions">
         <a href="/status" class="status-link">
@@ -53,14 +74,25 @@ import BaseLayout from "../layouts/BaseLayout.astro";
 
     <!-- Seasonal / Modded -->
     <div class="card">
-      <h3>Seasonal / Modded</h3>
+      <h3>
+        <span class="status-dot offline"></span>
+        Seasonal / Modded
+      </h3>
+
       <p style="color: var(--muted);">
         Rotating worlds with custom rules, mods, or limited-time themes.
         These worlds change as new ideas are explored.
       </p>
 
       <div class="node">Node: CloudCraft</div>
-      <div class="ip">modded.hulettcraft.com</div>
+
+      <div
+        class="ip copyable"
+        data-copy="modded.hulettcraft.com"
+        title="Click to copy"
+      >
+        modded.hulettcraft.com
+      </div>
 
       <div class="card-actions">
         <a href="/status" class="status-link">
@@ -71,14 +103,25 @@ import BaseLayout from "../layouts/BaseLayout.astro";
 
     <!-- Hytale -->
     <div class="card">
-      <h3>Hytale (Beta)</h3>
+      <h3>
+        <span class="status-dot beta"></span>
+        Hytale (Beta)
+      </h3>
+
       <p style="color: var(--muted);">
         Our next-generation sandbox world, currently in active beta.
         Experimental features, evolving content, and early exploration.
       </p>
 
       <div class="node">Node: CloudCraft</div>
-      <div class="ip">hytale.hulettcraft.com</div>
+
+      <div
+        class="ip copyable"
+        data-copy="hytale.hulettcraft.com"
+        title="Click to copy"
+      >
+        hytale.hulettcraft.com
+      </div>
 
       <div class="card-actions">
         <a href="/hytale" class="status-link">
@@ -89,20 +132,23 @@ import BaseLayout from "../layouts/BaseLayout.astro";
 
   </section>
 
-  <!-- Footer CTA -->
-  <section
-    style="
-      padding: 3rem 2rem;
-      text-align: center;
-      color: var(--muted);
-    "
-  >
-    <p>
-      Looking for screenshots or past builds?
-      <a href="/gallery" style="color: var(--text);">
-        Browse the gallery →
-      </a>
-    </p>
-  </section>
+  <script type="module">
+    document.querySelectorAll(".copyable").forEach(el => {
+      el.addEventListener("click", async () => {
+        const value = el.dataset.copy;
+        try {
+          await navigator.clipboard.writeText(value);
+          el.classList.add("copied");
+          el.textContent = "Copied!";
+          setTimeout(() => {
+            el.textContent = value;
+            el.classList.remove("copied");
+          }, 1200);
+        } catch {
+          alert("Copy failed");
+        }
+      });
+    });
+  </script>
 
 </BaseLayout>

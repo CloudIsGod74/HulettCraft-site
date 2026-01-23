@@ -2,19 +2,17 @@
 import BaseLayout from "../layouts/BaseLayout.astro";
 ---
 <BaseLayout>
+  <!-- Hero -->
   <section class="hero">
     <h1>Network Status</h1>
     <p>Live operational status for all HulettCraft services</p>
   </section>
 
+  <!-- Servers -->
   <section class="server-grid">
 
     <!-- Vanilla SMP -->
-    <div
-      class="card"
-      data-host="108.214.93.42"
-      data-port="25565"
-    >
+    <div class="card" data-host="108.214.93.42" data-port="25565">
       <h3>Vanilla SMP</h3>
       <div class="node">Node: HulettCraft</div>
       <div class="ip">play.hulettcraft.com</div>
@@ -22,11 +20,7 @@ import BaseLayout from "../layouts/BaseLayout.astro";
     </div>
 
     <!-- Creative -->
-    <div
-      class="card"
-      data-host="107.221.146.250"
-      data-port="25566"
-    >
+    <div class="card" data-host="107.221.146.250" data-port="25566">
       <h3>Creative Server</h3>
       <div class="node">Node: CloudCraft</div>
       <div class="ip">creative.hulettcraft.com</div>
@@ -46,13 +40,19 @@ import BaseLayout from "../layouts/BaseLayout.astro";
       <h3>Hytale (Beta)</h3>
       <div class="node">Node: CloudCraft</div>
       <div class="ip">hytale.hulettcraft.com</div>
-      <div class="status">Status limited (Beta)</div>
+      <div class="status" id="hytale-status">Checking…</div>
+      <small style="color: var(--muted);">
+        Status reflects world map availability
+      </small>
     </div>
 
   </section>
 
   <script type="module">
-    async function checkServer(card) {
+    // -------------------------
+    // Minecraft status checks
+    // -------------------------
+    async function checkMinecraft(card) {
       const host = card.dataset.host;
       const port = card.dataset.port;
       if (!host || !port) return;
@@ -72,11 +72,34 @@ import BaseLayout from "../layouts/BaseLayout.astro";
         } else {
           statusEl.innerHTML = "🔴 Offline";
         }
-      } catch {
+      } catch (err) {
         statusEl.innerHTML = "⚠️ Status unavailable";
       }
     }
 
-    document.querySelectorAll(".card").forEach(checkServer);
+    document
+      .querySelectorAll(".card[data-host]")
+      .forEach(checkMinecraft);
+
+    // -------------------------
+    // Hytale status via map
+    // -------------------------
+    async function checkHytaleMap() {
+      const statusEl = document.getElementById("hytale-status");
+
+      try {
+        await fetch("https://hpmap.hulettcraft.com", {
+          mode: "no-cors",
+          cache: "no-store"
+        });
+
+        // If fetch does not throw, the map is reachable
+        statusEl.innerHTML = "🟢 Online — world map active";
+      } catch (err) {
+        statusEl.innerHTML = "🔴 Offline";
+      }
+    }
+
+    checkHytaleMap();
   </script>
 </BaseLayout>
