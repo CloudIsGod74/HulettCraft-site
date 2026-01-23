@@ -1,6 +1,7 @@
 ---
 import BaseLayout from "../layouts/BaseLayout.astro";
 ---
+
 <BaseLayout>
 
   <!-- Hero -->
@@ -15,13 +16,13 @@ import BaseLayout from "../layouts/BaseLayout.astro";
   <section class="server-grid">
 
     <!-- Vanilla SMP -->
-    <div class="card">
+    <div class="card" data-world="vanilla">
       <h3>
-        <span class="status-dot online"></span>
+        <span class="status-dot checking"></span>
         Vanilla SMP
       </h3>
 
-      <p style="color: var(--muted);">
+      <p class="muted">
         Our primary world. Long-running, lightly governed, and built around
         trust, cooperation, and player-driven projects.
       </p>
@@ -44,13 +45,13 @@ import BaseLayout from "../layouts/BaseLayout.astro";
     </div>
 
     <!-- Creative -->
-    <div class="card">
+    <div class="card" data-world="creative">
       <h3>
-        <span class="status-dot online"></span>
+        <span class="status-dot checking"></span>
         Creative Server
       </h3>
 
-      <p style="color: var(--muted);">
+      <p class="muted">
         A shared creative environment for large-scale builds, testing ideas,
         and collaborative construction.
       </p>
@@ -73,13 +74,13 @@ import BaseLayout from "../layouts/BaseLayout.astro";
     </div>
 
     <!-- Seasonal / Modded -->
-    <div class="card">
+    <div class="card" data-world="modded">
       <h3>
-        <span class="status-dot offline"></span>
+        <span class="status-dot checking"></span>
         Seasonal / Modded
       </h3>
 
-      <p style="color: var(--muted);">
+      <p class="muted">
         Rotating worlds with custom rules, mods, or limited-time themes.
         These worlds change as new ideas are explored.
       </p>
@@ -102,13 +103,13 @@ import BaseLayout from "../layouts/BaseLayout.astro";
     </div>
 
     <!-- Hytale -->
-    <div class="card">
+    <div class="card" data-world="hytale">
       <h3>
-        <span class="status-dot beta"></span>
+        <span class="status-dot checking"></span>
         Hytale (Beta)
       </h3>
 
-      <p style="color: var(--muted);">
+      <p class="muted">
         Our next-generation sandbox world, currently in active beta.
         Experimental features, evolving content, and early exploration.
       </p>
@@ -132,6 +133,7 @@ import BaseLayout from "../layouts/BaseLayout.astro";
 
   </section>
 
+  <!-- Copy-to-clipboard -->
   <script type="module">
     document.querySelectorAll(".copyable").forEach(el => {
       el.addEventListener("click", async () => {
@@ -149,6 +151,43 @@ import BaseLayout from "../layouts/BaseLayout.astro";
         }
       });
     });
+  </script>
+
+  <!-- Load status from Status page source of truth -->
+  <script type="module">
+    async function loadStatuses() {
+      try {
+        const res = await fetch("/api/status.json");
+        const statuses = await res.json();
+
+        document.querySelectorAll("[data-world]").forEach(card => {
+          const world = card.dataset.world;
+          const dot = card.querySelector(".status-dot");
+
+          dot.className = "status-dot";
+
+          switch (statuses[world]) {
+            case "online":
+              dot.classList.add("online");
+              break;
+            case "offline":
+              dot.classList.add("offline");
+              break;
+            case "online-beta":
+              dot.classList.add("online", "beta");
+              break;
+            default:
+              dot.classList.add("unknown");
+          }
+        });
+      } catch {
+        document
+          .querySelectorAll(".status-dot")
+          .forEach(dot => dot.classList.add("unknown"));
+      }
+    }
+
+    loadStatuses();
   </script>
 
 </BaseLayout>

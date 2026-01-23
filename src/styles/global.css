@@ -87,10 +87,10 @@ nav a:hover {
 
 .status-dot {
   display: inline-block;
-  width: 0.6rem;
-  height: 0.6rem;
+  width: 10px;
+  height: 10px;
   border-radius: 50%;
-  margin-right: 0.4rem;
+  margin-right: 0.5rem;
 }
 
 .status-dot.online {
@@ -103,6 +103,18 @@ nav a:hover {
 
 .status-dot.beta {
   background: var(--violet);
+}
+
+.status-dot.checking {
+  background: #a855f7; /* purple */
+}
+
+.status-dot.green {
+  background: #22c55e;
+}
+
+.status-dot.red {
+  background: #ef4444;
 }
 
 .copyable {
