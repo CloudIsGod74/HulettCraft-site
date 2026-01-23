@@ -1,0 +1,108 @@
+---
+import BaseLayout from "../layouts/BaseLayout.astro";
+---
+<BaseLayout>
+
+  <!-- Hero -->
+  <section class="hero">
+    <h1>Worlds of HulettCraft</h1>
+    <p>
+      Each world offers a different experience — from long-term survival
+      to creative collaboration and experimental seasons.
+    </p>
+  </section>
+
+  <!-- Worlds -->
+  <section class="server-grid">
+
+    <!-- Vanilla SMP -->
+    <div class="card">
+      <h3>Vanilla SMP</h3>
+      <p style="color: var(--muted);">
+        Our primary world. Long-running, lightly governed, and built around
+        trust, cooperation, and player-driven projects.
+      </p>
+
+      <div class="node">Node: HulettCraft</div>
+      <div class="ip">play.hulettcraft.com</div>
+
+      <div class="card-actions">
+        <a href="/status" class="status-link">
+          View live status →
+        </a>
+      </div>
+    </div>
+
+    <!-- Creative -->
+    <div class="card">
+      <h3>Creative Server</h3>
+      <p style="color: var(--muted);">
+        A shared creative environment for large-scale builds, testing ideas,
+        and collaborative construction.
+      </p>
+
+      <div class="node">Node: CloudCraft</div>
+      <div class="ip">creative.hulettcraft.com</div>
+
+      <div class="card-actions">
+        <a href="/status" class="status-link">
+          View live status →
+        </a>
+      </div>
+    </div>
+
+    <!-- Seasonal / Modded -->
+    <div class="card">
+      <h3>Seasonal / Modded</h3>
+      <p style="color: var(--muted);">
+        Rotating worlds with custom rules, mods, or limited-time themes.
+        These worlds change as new ideas are explored.
+      </p>
+
+      <div class="node">Node: CloudCraft</div>
+      <div class="ip">modded.hulettcraft.com</div>
+
+      <div class="card-actions">
+        <a href="/status" class="status-link">
+          View live status →
+        </a>
+      </div>
+    </div>
+
+    <!-- Hytale -->
+    <div class="card">
+      <h3>Hytale (Beta)</h3>
+      <p style="color: var(--muted);">
+        Our next-generation sandbox world, currently in active beta.
+        Experimental features, evolving content, and early exploration.
+      </p>
+
+      <div class="node">Node: CloudCraft</div>
+      <div class="ip">hytale.hulettcraft.com</div>
+
+      <div class="card-actions">
+        <a href="/hytale" class="status-link">
+          Learn more →
+        </a>
+      </div>
+    </div>
+
+  </section>
+
+  <!-- Footer CTA -->
+  <section
+    style="
+      padding: 3rem 2rem;
+      text-align: center;
+      color: var(--muted);
+    "
+  >
+    <p>
+      Looking for screenshots or past builds?
+      <a href="/gallery" style="color: var(--text);">
+        Browse the gallery →
+      </a>
+    </p>
+  </section>
+
+</BaseLayout>
