@@ -2,40 +2,77 @@
 import BaseLayout from "../layouts/BaseLayout.astro";
 ---
 <BaseLayout>
+  <!-- Hero -->
   <section class="hero">
-    <h1>HulettCraft</h1>
-    <p>Vanilla SMP • Creative • Seasonal • Hytale (Beta)</p>
+    <h1>Welcome to HulettCraft</h1>
+    <p>
+      A long-running survival community built around creativity,
+      collaboration, and shared worlds.
+    </p>
   </section>
 
+  <!-- About -->
+  <section class="hero" style="padding-top: 1rem;">
+    <p style="max-width: 720px; margin: 0 auto; color: var(--muted);">
+      HulettCraft is a multi-server network focused on vanilla survival,
+      creative collaboration, and evolving seasonal experiences — with
+      an active Hytale beta world for the future.
+    </p>
+  </section>
+
+  <!-- Servers -->
   <section class="server-grid">
 
     <div class="card">
       <h3>Vanilla SMP</h3>
-      <div class="node">Node: HulettCraft</div>
-      <div class="ip">play.hulettcraft.com:25565</div>
-      <div>Status: Online</div>
+      <p style="color: var(--muted);">
+        Our main world — long-term, lightly governed, and community-driven.
+      </p>
+      <div class="ip">play.hulettcraft.com</div>
+      <a href="/status" style="color: var(--green); text-decoration: none;">
+        View server status →
+      </a>
     </div>
 
     <div class="card">
       <h3>Creative Server</h3>
-      <div class="node">Node: CloudCraft</div>
-      <div class="ip">play.hulettcraft.com:25566</div>
-      <div>Status: Online</div>
+      <p style="color: var(--muted);">
+        A shared creative space for collaborative builds and large projects.
+      </p>
+      <div class="ip">creative.hulettcraft.com</div>
+      <a href="/status" style="color: var(--cyan); text-decoration: none;">
+        View server status →
+      </a>
     </div>
 
     <div class="card">
-      <h3>Seasonal Server</h3>
-      <div class="node">Node: CloudCraft</div>
-      <div class="ip">play.hulettcraft.com:25567</div>
-      <div>Status: Online</div>
+      <h3>Seasonal Worlds</h3>
+      <p style="color: var(--muted);">
+        Rotating experiences — modded, experimental, or short-form survival.
+      </p>
+      <div class="ip">modded.hulettcraft.com</div>
+      <a href="/status" style="color: var(--text); text-decoration: none;">
+        View server status →
+      </a>
     </div>
 
     <div class="card">
       <h3>Hytale (Beta)</h3>
-      <div class="node">Node: CloudCraft</div>
-      <div class="ip">hytale.hulettcraft.com:12345</div>
-      <div>Status: Online</div>
+      <p style="color: var(--muted);">
+        Our next-generation sandbox world, currently in active beta.
+      </p>
+      <div class="ip">hytale.hulettcraft.com</div>
+      <a href="/status" style="color: var(--violet); text-decoration: none;">
+        Beta status →
+      </a>
     </div>
 
   </section>
+
+  <!-- Footer -->
+  <footer style="padding: 3rem 2rem; text-align: center; color: var(--muted);">
+    <strong>HulettCraft Network</strong><br />
+    Vanilla SMP • Creative • Seasonal • Hytale<br />
+    © 2026
+  </footer>
 </BaseLayout>
