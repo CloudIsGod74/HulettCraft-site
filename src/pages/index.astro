@@ -16,100 +16,106 @@ import BaseLayout from "../layouts/BaseLayout.astro";
   <section class="hero" style="padding-top: 1rem;">
     <p
       style="
-        max-width: 720px;
+        max-width: 760px;
         margin: 0 auto;
         color: var(--muted);
-        line-height: 1.6;
+        line-height: 1.7;
       "
     >
-      HulettCraft is a multi-server network focused on vanilla survival,
-      creative collaboration, and evolving seasonal experiences — with
-      an active Hytale beta world for the future.
+      HulettCraft is a multi-server community focused on vanilla survival,
+      creative collaboration, and evolving seasonal experiences. We value
+      long-term worlds, respectful play, and player-driven projects —
+      with an eye toward the future through our active Hytale beta.
     </p>
   </section>
 
-  <!-- Servers -->
+  <!-- Pillars -->
   <section class="server-grid">
 
-    <!-- Vanilla SMP -->
     <div class="card">
-      <h3>Vanilla SMP</h3>
+      <h3>Long-Term Worlds</h3>
       <p style="color: var(--muted);">
-        Our main world — long-term, lightly governed, and community-driven.
+        Our worlds are designed to last. Builds, infrastructure, and history
+        matter here — nothing is treated as disposable.
       </p>
-
-      <div class="ip">play.hulettcraft.com</div>
-
-      <div class="card-actions">
-        <a href="/status" class="status-link">
-          View server status →
-        </a>
-      </div>
     </div>
 
-    <!-- Creative -->
     <div class="card">
-      <h3>Creative Server</h3>
+      <h3>Community First</h3>
       <p style="color: var(--muted);">
-        A shared creative space for collaborative builds and large projects.
+        Light governance, shared responsibility, and collaboration define
+        how we play together.
       </p>
-
-      <div class="ip">creative.hulettcraft.com</div>
-
-      <div class="card-actions">
-        <a href="/status" class="status-link">
-          View server status →
-        </a>
-      </div>
     </div>
 
-    <!-- Seasonal -->
     <div class="card">
-      <h3>Seasonal Worlds</h3>
+      <h3>Creative Freedom</h3>
       <p style="color: var(--muted);">
-        Rotating experiences — modded, experimental, or short-form survival.
+        From survival megabases to creative experiments and seasonal ideas,
+        HulettCraft supports many playstyles.
       </p>
-
-      <div class="ip">modded.hulettcraft.com</div>
-
-      <div class="card-actions">
-        <a href="/status" class="status-link">
-          View server status →
-        </a>
-      </div>
-    </div>
-
-    <!-- Hytale -->
-    <div class="card">
-      <h3>Hytale (Beta)</h3>
-      <p style="color: var(--muted);">
-        Our next-generation sandbox world, currently in active beta. Let's try it out!
-      </p>
-
-      <div class="ip">hytale.hulettcraft.com</div>
-
-      <div class="card-actions">
-        <a href="/status" class="status-link">
-          View server status →
-        </a>
-      </div>
     </div>
 
   </section>
 
-  <!-- Footer -->
-  <footer
+  <!-- Screenshots -->
+  <section
+    style="
+      padding: 3rem 2rem;
+      max-width: 1200px;
+      margin: 0 auto;
+    "
+  >
+    <h2 style="text-align: center; margin-bottom: 2rem;">
+      A Look Inside the Worlds
+    </h2>
+
+    <div
+      style="
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+        gap: 1.5rem;
+      "
+    >
+      <!-- Replace filenames if needed -->
+      <img
+        src="/images/home/HCS4.jpg"
+        alt="HulettCraft world screenshot"
+        style="width: 100%; border-radius: 16px;"
+      />
+      <img
+        src="/images/home/HulettcraftS7.jpg"
+        alt="HulettCraft build screenshot"
+        style="width: 100%; border-radius: 16px;"
+      />
+      <img
+        src="/images/home/S6 Shops.jpg"
+        alt="HulettCraft landscape screenshot"
+        style="width: 100%; border-radius: 16px;"
+      />
+    </div>
+  </section>
+
+  <!-- CTA -->
+  <section
     style="
       padding: 3rem 2rem;
       text-align: center;
       color: var(--muted);
-      border-top: 1px solid var(--border);
-      margin-top: 3rem;
     "
   >
-    <strong>HulettCraft Network</strong><br />
-    Vanilla SMP • Creative • Seasonal • Hytale<br />
-    © 2026
-  </footer>
+    <p style="font-size: 1.1rem;">
+      Ready to explore?
+    </p>
+
+    <p>
+      <a href="/worlds" style="color: var(--text); margin-right: 1rem;">
+        Explore our worlds →
+      </a>
+      <a href="/status" style="color: var(--text);">
+        View live server status →
+      </a>
+    </p>
+  </section>
 
 </BaseLayout>
