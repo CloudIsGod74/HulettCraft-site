@@ -1,0 +1,51 @@
+---
+import BaseLayout from "../layouts/BaseLayout.astro";
+
+const servers = [
+  {
+    name: "Vanilla SMP",
+    node: "HulettCraft",
+    address: "play.hulettcraft.com",
+    port: "25565",
+    status: "Online"
+  },
+  {
+    name: "Creative Server",
+    node: "CloudCraft",
+    address: "play.hulettcraft.com",
+    port: "25566",
+    status: "Online"
+  },
+  {
+    name: "Seasonal Server",
+    node: "CloudCraft",
+    address: "play.hulettcraft.com",
+    port: "25567",
+    status: "Online"
+  },
+  {
+    name: "Hytale (Beta)",
+    node: "CloudCraft",
+    address: "hytale.hulettcraft.com",
+    port: "12345",
+    status: "Online"
+  }
+];
+---
+<BaseLayout>
+  <section class="hero">
+    <h1>Network Status</h1>
+    <p>Live operational status for all HulettCraft services</p>
+  </section>
+
+  <section class="server-grid">
+    {servers.map(server => (
+      <div class="card">
+        <h3>{server.name}</h3>
+        <div class="node">Node: {server.node}</div>
+        <div class="ip">{server.address}:{server.port}</div>
+        <div>Status: <strong>{server.status}</strong></div>
+      </div>
+    ))}
+  </section>
+</BaseLayout>
