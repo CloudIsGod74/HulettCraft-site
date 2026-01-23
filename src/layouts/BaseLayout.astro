@@ -8,19 +8,34 @@ import "../styles/global.css";
     <title>HulettCraft</title>
     <meta name="viewport" content="width=device-width, initial-scale=1" />
   </head>
+
   <body>
-    <header>
-      <strong>HulettCraft</strong>
-      <nav>
-        <a href="/">Home</a>
-        <a href="/hytale">Hytale</a>
-        <a href="/worlds">Worlds</a>
-        <a href="/gallery">Gallery</a>
-        <a href="/community">Community</a>
-        <a href="/status">Status</a>
-      </nav>
+    <header class="site-header">
+      <div class="header-inner">
+        <strong class="site-title">
+          <a href="/"></a>
+        </strong>
+
+        <nav class="site-nav">
+          <a href="/">Home</a>
+          <a href="/hytale">Hytale</a>
+          <a href="/worlds">Worlds</a>
+          <a href="/gallery">Gallery</a>
+          <a href="/community">Community</a>
+          <a href="/status">Status</a>
+        </nav>
+      </div>
     </header>
 
-    <slot />
+    <main class="site-main">
+      <slot />
+    </main>
+
+    <footer class="site-footer">
+      <div class="footer-inner">
+        <span>© {new Date().getFullYear()} HulettCraft</span>
+        <span class="muted">A long-running survival community</span>
+      </div>
+    </footer>
   </body>
 </html>
