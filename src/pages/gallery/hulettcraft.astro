@@ -1,115 +1,58 @@
 ---
 import BaseLayout from "../../layouts/BaseLayout.astro";
-import { HULETTCRAFT } from "../../config/hulettcraft.ts";
+import { HULETTCRAFT } from "../../config/hulettcraft";
+
+// Sort seasons newest → oldest
+const seasons = Object.keys(HULETTCRAFT.seasons)
+  .map(Number)
+  .sort((a, b) => b - a);
+
+const current = HULETTCRAFT.currentSeason;
 ---
+
 <BaseLayout>
 
+  <!-- Hero -->
   <section class="hero">
-    <h1>HulettCraft</h1>
+    <h1>Gallery</h1>
     <p>
-      The long-running survival history of HulettCraft,
-      organized by season.
+      A visual history of HulettCraft — worlds built, explored,
+      and remembered across seasons.
     </p>
   </section>
 
-  <section class="server-grid">
+  <section class="gallery-seasons">
 
-    <div class="card">
-      <h3>Season 1</h3>
-      <p style="color: var(--muted);">
-        The beginning — early survival, first community builds,
-        and the foundations of HulettCraft.
-      </p>
-      <div class="card-actions">
-        <a href="/gallery/hulettcraft/season-1" class="status-link">
-          View season →
-        </a>
-      </div>
-    </div>
+    {seasons.map(seasonNum => {
+      const season = HULETTCRAFT.seasons[seasonNum];
+      const isCurrent = seasonNum === current;
 
-    <div class="card">
-      <h3>Season 2</h3>
-      <p style="color: var(--muted);">
-        Expansion, megabases, and growing infrastructure.
-      </p>
-      <div class="card-actions">
-        <a href="/gallery/hulettcraft/season-2" class="status-link">
-          View season →
-        </a>
-      </div>
-    </div>
+      return (
+        <section class="season-block">
+          <header class="season-header">
+            <h2>
+              {season.title}
+              {isCurrent && <span class="season-badge current">Current</span>}
+            </h2>
+            <p class="season-tagline">{season.tagline}</p>
+          </header>
 
-    <div class="card">
-      <h3>Season 3</h3>
-      <p style="color: var(--muted);">
-        Later-era survival with refined rules and large-scale projects.
-      </p>
-      <div class="card-actions">
-        <a href="/gallery/hulettcraft/season-3" class="status-link">
-          View season →
-        </a>
-      </div>
-    </div>
-
-    <div class="card">
-      <h3>Season 4</h3>
-      <p style="color: var(--muted);">
-        Later-era survival with refined rules and large-scale projects.
-      </p>
-      <div class="card-actions">
-        <a href="/gallery/hulettcraft/season-4" class="status-link">
-          View season →
-        </a>
-      </div>
-    </div>
-
-    <div class="card">
-      <h3>Season 5</h3>
-      <p style="color: var(--muted);">
-        Later-era survival with refined rules and large-scale projects.
-      </p>
-      <div class="card-actions">
-        <a href="/gallery/hulettcraft/season-5" class="status-link">
-          View season →
-        </a>
-      </div>
-    </div>
-
-    <div class="card">
-      <h3>Season 6</h3>
-      <p style="color: var(--muted);">
-        Later-era survival with refined rules and large-scale projects.
-      </p>
-      <div class="card-actions">
-        <a href="/gallery/hulettcraft/season-6" class="status-link">
-          View season →
-        </a>
-      </div>
-    </div>
-
-    <div class="card">
-      <h3>Season 7</h3>
-      <p style="color: var(--muted);">
-        Later-era survival with refined rules and large-scale projects.
-      </p>
-      <div class="card-actions">
-        <a href="/gallery/hulettcraft/season-7" class="status-link">
-          View season →
-        </a>
-      </div>
-    </div>
-
-    <div class="card">
-      <h3>Season 8</h3>
-      <p style="color: var(--muted);">
-        Later-era survival with refined rules and large-scale projects.
-      </p>
-      <div class="card-actions">
-        <a href="/gallery/hulettcraft/season-8" class="status-link">
-          View season →
-        </a>
-      </div>
-    </div>
+          <div class="gallery-grid">
+ 		 {season.images?.map((src, i) => (
+  		  <img
+    		  src={src}
+     		 alt={`${season.title} screenshot ${i + 1}`}
+     		 loading="lazy"
+   		 />
+ 		 ))}
+		
+ 	 {!season.images?.length && (
+   	 <p class="muted">No screenshots available yet.</p>
+  		)}
+	</div>
+        </section>
+      );
+    })}
 
   </section>
 
