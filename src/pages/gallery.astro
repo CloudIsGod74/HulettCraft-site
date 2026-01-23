@@ -1,0 +1,56 @@
+---
+import BaseLayout from "../layouts/BaseLayout.astro";
+---
+<BaseLayout>
+
+  <section class="hero">
+    <h1>Gallery</h1>
+    <p>
+      A visual history of HulettCraft — worlds built, explored,
+      and remembered.
+    </p>
+  </section>
+
+  <section class="server-grid">
+
+    <div class="card">
+      <h3>HulettCraft</h3>
+      <p style="color: var(--muted);">
+        Our long-running survival worlds, community builds,
+        and shared history.
+      </p>
+      <div class="card-actions">
+        <a href="/gallery/hulettcraft" class="status-link">
+          View gallery →
+        </a>
+      </div>
+    </div>
+
+    <div class="card">
+      <h3>Modded</h3>
+      <p style="color: var(--muted);">
+        Seasonal, experimental, and retired modded worlds
+        across different eras.
+      </p>
+      <div class="card-actions">
+        <a href="/gallery/modded" class="status-link">
+          View gallery →
+        </a>
+      </div>
+    </div>
+
+    <div class="card">
+      <h3>Hytale</h3>
+      <p style="color: var(--muted);">
+        Early exploration, builds, and moments from the Hytale beta.
+      </p>
+      <div class="card-actions">
+        <a href="/gallery/hytale" class="status-link">
+          View gallery →
+        </a>
+      </div>
+    </div>
+
+  </section>
+
+</BaseLayout>
