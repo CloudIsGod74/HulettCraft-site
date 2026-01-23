@@ -24,15 +24,29 @@
 body {
   margin: 0;
   font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+
   background:
     radial-gradient(
-      circle at top,
-      rgba(255, 255, 255, 0.04),
+      1200px 600px at 20% -10%,
+      rgba(56, 189, 248, 0.18), /* soft blue glow */
       transparent 60%
     ),
-    #0f1115;
-  color: #e5e7eb;
+    radial-gradient(
+      800px 400px at 80% 10%,
+      rgba(99, 102, 241, 0.12), /* indigo hint */
+      transparent 60%
+    ),
+    linear-gradient(
+      180deg,
+      #020617 0%,
+      #020617 30%,
+      #030712 60%,
+      #020617 100%
+    );
+
+  color: var(--text);
 }
+
 
 .site-header {
   position: sticky;
