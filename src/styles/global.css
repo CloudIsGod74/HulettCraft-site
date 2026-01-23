@@ -70,6 +70,21 @@ nav a:hover {
   margin-top: 0;
 }
 
+.card-actions {
+  margin-top: 1.25rem;
+}
+
+.status-link {
+  display: inline-block;
+  font-size: 0.9rem;
+  color: var(--muted);
+  text-decoration: none;
+}
+
+.status-link:hover {
+  color: var(--text);
+}
+
 .node {
   font-size: 0.8rem;
   color: var(--muted);

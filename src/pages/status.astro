@@ -1,36 +1,5 @@
 ---
 import BaseLayout from "../layouts/BaseLayout.astro";
-
-const servers = [
-  {
-    name: "Vanilla SMP",
-    node: "HulettCraft",
-    address: "play.hulettcraft.com",
-    port: "25565",
-    status: "Online"
-  },
-  {
-    name: "Creative Server",
-    node: "CloudCraft",
-    address: "play.hulettcraft.com",
-    port: "25566",
-    status: "Online"
-  },
-  {
-    name: "Seasonal Server",
-    node: "CloudCraft",
-    address: "play.hulettcraft.com",
-    port: "25567",
-    status: "Online"
-  },
-  {
-    name: "Hytale (Beta)",
-    node: "CloudCraft",
-    address: "hytale.hulettcraft.com",
-    port: "12345",
-    status: "Online"
-  }
-];
 ---
 <BaseLayout>
   <section class="hero">
@@ -39,13 +8,75 @@ const servers = [
   </section>
 
   <section class="server-grid">
-    {servers.map(server => (
-      <div class="card">
-        <h3>{server.name}</h3>
-        <div class="node">Node: {server.node}</div>
-        <div class="ip">{server.address}:{server.port}</div>
-        <div>Status: <strong>{server.status}</strong></div>
-      </div>
-    ))}
+
+    <!-- Vanilla SMP -->
+    <div
+      class="card"
+      data-host="108.214.93.42"
+      data-port="25565"
+    >
+      <h3>Vanilla SMP</h3>
+      <div class="node">Node: HulettCraft</div>
+      <div class="ip">play.hulettcraft.com</div>
+      <div class="status">Checking…</div>
+    </div>
+
+    <!-- Creative -->
+    <div
+      class="card"
+      data-host="107.221.146.250"
+      data-port="25566"
+    >
+      <h3>Creative Server</h3>
+      <div class="node">Node: CloudCraft</div>
+      <div class="ip">creative.hulettcraft.com:25566</div>
+      <div class="status">Checking…</div>
+    </div>
+
+    <!-- Seasonal / Modded -->
+    <div class="card">
+      <h3>Seasonal / Modded</h3>
+      <div class="node">Node: CloudCraft</div>
+      <div class="ip">modded.hulettcraft.com</div>
+      <div class="status">🔴 Offline</div>
+    </div>
+
+    <!-- Hytale -->
+    <div class="card">
+      <h3>Hytale (Beta)</h3>
+      <div class="node">Node: CloudCraft</div>
+      <div class="ip">hytale.hulettcraft.com:5520</div>
+      <div class="status">Status limited (Beta)</div>
+    </div>
+
   </section>
+
+  <script type="module">
+    async function checkServer(card) {
+      const host = card.dataset.host;
+      const port = card.dataset.port;
+      if (!host || !port) return;
+
+      const statusEl = card.querySelector(".status");
+
+      try {
+        const res = await fetch(
+          `https://api.mcstatus.io/v2/status/java/${host}:${port}`
+        );
+        const data = await res.json();
+
+        if (data.online) {
+          statusEl.innerHTML =
+            `🟢 Online — ${data.players.online}/${data.players.max} players<br>` +
+            `<small>Version: ${data.version.name_clean}</small>`;
+        } else {
+          statusEl.innerHTML = "🔴 Offline";
+        }
+      } catch {
+        statusEl.innerHTML = "⚠️ Status unavailable";
+      }
+    }
+
+    document.querySelectorAll(".card").forEach(checkServer);
+  </script>
 </BaseLayout>
