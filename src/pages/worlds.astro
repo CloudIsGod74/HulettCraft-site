@@ -137,15 +137,15 @@ import BaseLayout from "../layouts/BaseLayout.astro";
       document.querySelectorAll(".card[data-server]").forEach(card => {
         const id = card.dataset.server;
         const dot = card.querySelector(".status-dot");
-        const server = data[id];
+        const state = data[id];
 
-        if (!dot || !server) return;
+        if (!dot || !state) return;
 
         dot.classList.remove("online", "offline", "beta", "checking");
 
-        if (server.state === "online") {
+        if (state === "online") {
           dot.classList.add("online");
-        } else if (server.state === "beta") {
+        } else if (state === "beta") {
           dot.classList.add("beta");
         } else {
           dot.classList.add("offline");
@@ -158,6 +158,7 @@ import BaseLayout from "../layouts/BaseLayout.astro";
 
   syncWorldStatuses();
 </script>
+
 
 
 </BaseLayout>

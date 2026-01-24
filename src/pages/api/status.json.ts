@@ -7,6 +7,9 @@ export async function GET() {
   };
 
   return new Response(JSON.stringify(status), {
-    headers: { "Content-Type": "application/json" }
+    headers: {
+      "Content-Type": "application/json",
+      "Cache-Control": "no-store"
+    }
   });
 }
