@@ -8,84 +8,71 @@ import BaseLayout from "../layouts/BaseLayout.astro";
   <section class="hero">
     <h1>Worlds of HulettCraft</h1>
     <p>
-      Each world offers a different experience — from long-term survival
-      to creative collaboration and experimental seasons.
+        Each world has its own story.
+	Explore active worlds below, then dive deeper into their history,
+	screenshots, and seasons.
     </p>
   </section>
 
   <section class="server-grid">
 
-    <!-- Vanilla SMP -->
-    <div class="card" data-world="vanilla">
-      <h3>
-        <span class="status-dot checking"></span>
-        Vanilla SMP
-      </h3>
+    <!-- HulettCraft SMP -->
+    <div class="card card-link">
+  	<a href="/gallery/hulettcraft" class="card-overlay" aria-label="HulettCraft SMP"></a>
 
-      <p class="muted">
-        Our primary world. Long-running, lightly governed, and built around
-        trust, cooperation, and player-driven projects.
-      </p>
+    <h3>
+   	 <span class="status-dot online"></span>
+   	 HulettCraft SMP
+    </h3>
 
-      <div class="node">Node: HulettCraft</div>
+    <p style="color: var(--muted);">
+      Our primary world. Long-running, lightly governed, and built around
+      trust, cooperation, and player-driven projects.
+    </p>
 
-      <div
-        class="ip copyable"
-        data-copy="play.hulettcraft.com"
-        title="Click to copy"
-      >
-        play.hulettcraft.com
-      </div>
-
-      <div class="card-actions">
-        <a href="/status" class="status-link">
-          View live status →
-        </a>
-      </div>
+    <div
+      class="ip copyable"
+      data-copy="play.hulettcraft.com"
+      title="Click to copy"
+    >
+      play.hulettcraft.com
     </div>
+  </div>
 
     <!-- Creative -->
-    <div class="card" data-world="creative">
-      <h3>
-        <span class="status-dot checking"></span>
-        Creative Server
-      </h3>
+     <div class="card card-link">
+  	<a href="/gallery/creative" class="card-overlay" aria-label="Creative Server"></a>
 
-      <p class="muted">
-        A shared creative environment for large-scale builds, testing ideas,
-        and collaborative construction.
-      </p>
+     <h3>
+   	 <span class="status-dot online"></span>
+   	 Creative Server
+     </h3>
 
-      <div class="node">Node: CloudCraft</div>
+     <p style="color: var(--muted);">
+       A shared creative environment for large-scale builds, testing ideas, and collaborative construction.
+     </p>
 
-      <div
-        class="ip copyable"
-        data-copy="creative.hulettcraft.com"
-        title="Click to copy"
-      >
-        creative.hulettcraft.com
-      </div>
-
-      <div class="card-actions">
-        <a href="/status" class="status-link">
-          View live status →
-        </a>
-      </div>
+    <div
+      class="ip copyable"
+      data-copy="creative.hulettcraft.com"
+      title="Click to copy"
+    >
+      creative.hulettcraft.com
     </div>
+  </div>
 
     <!-- Seasonal / Modded -->
-    <div class="card" data-world="modded">
+    <div class="card card-link">
+	<a href="/gallery/modded" class="card-overlay" aria-label="Seasonal/Modded"></a>
       <h3>
         <span class="status-dot checking"></span>
         Seasonal / Modded
       </h3>
 
-      <p class="muted">
+      <p style="color: var(--muted);">
         Rotating worlds with custom rules, mods, or limited-time themes.
         These worlds change as new ideas are explored.
       </p>
-
-      <div class="node">Node: CloudCraft</div>
 
       <div
         class="ip copyable"
@@ -94,27 +81,20 @@ import BaseLayout from "../layouts/BaseLayout.astro";
       >
         modded.hulettcraft.com
       </div>
-
-      <div class="card-actions">
-        <a href="/status" class="status-link">
-          View live status →
-        </a>
-      </div>
     </div>
 
     <!-- Hytale -->
-    <div class="card" data-world="hytale">
+    <div class="card card-link">
+	<a href="/gallery/hytale" class="card-overlay" aria-label="Hytale (Beta)"></a>
       <h3>
         <span class="status-dot checking"></span>
         Hytale (Beta)
       </h3>
 
-      <p class="muted">
+      <p style="color: var(--muted);">
         Our next-generation sandbox world, currently in active beta.
         Experimental features, evolving content, and early exploration.
       </p>
-
-      <div class="node">Node: CloudCraft</div>
 
       <div
         class="ip copyable"
@@ -122,12 +102,6 @@ import BaseLayout from "../layouts/BaseLayout.astro";
         title="Click to copy"
       >
         hytale.hulettcraft.com
-      </div>
-
-      <div class="card-actions">
-        <a href="/hytale" class="status-link">
-          Learn more →
-        </a>
       </div>
     </div>
 

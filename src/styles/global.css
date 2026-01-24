@@ -210,6 +210,26 @@ nav a:hover {
   margin-top: 1.25rem;
 }
 
+.card-link {
+  position: relative;
+}
+
+.card-overlay {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  border-radius: inherit;
+  text-decoration: none;
+}
+
+/* Ensure interactive elements stay clickable */
+.card-link .copyable,
+.card-link button,
+.card-link a:not(.card-overlay) {
+  position: relative;
+  z-index: 2;
+}
+
 .status-link {
   display: inline-block;
   font-size: 0.9rem;
@@ -292,4 +312,28 @@ nav a:hover {
   100% {
     box-shadow: 0 0 0 0 rgba(34, 197, 94, 0);
   }
+}
+
+.world-link {
+  color: var(--text);
+  text-decoration: none;
+  position: relative;
+}
+
+.world-link:hover {
+  color: var(--accent);
+}
+
+.world-link::after {
+  content: "";
+  display: block;
+  width: 0;
+  height: 2px;
+  background: var(--accent);
+  transition: width 0.2s ease;
+  margin-top: 4px;
+}
+
+.world-link:hover::after {
+  width: 100%;
 }
