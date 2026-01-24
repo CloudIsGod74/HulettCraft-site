@@ -2,7 +2,7 @@
 import BaseLayout from "../../layouts/BaseLayout.astro";
 import { HULETTCRAFT } from "../../config/hulettcraft";
 
-// Sort seasons newest → oldest
+// seasons are keyed by season-number
 const seasons = Object.keys(HULETTCRAFT.seasons)
   .map(Number)
   .sort((a, b) => b - a);
@@ -14,43 +14,53 @@ const current = HULETTCRAFT.currentSeason;
 
   <!-- Hero -->
   <section class="hero">
-    <h1>Gallery</h1>
+    <h1>HulettCraft</h1>
     <p>
       A visual history of HulettCraft — worlds built, explored,
       and remembered across seasons.
     </p>
   </section>
 
-  <section class="gallery-seasons">
+  <section class="server-grid">
 
     {seasons.map(seasonNum => {
       const season = HULETTCRAFT.seasons[seasonNum];
       const isCurrent = seasonNum === current;
 
-      return (
-        <section class="season-block">
-          <header class="season-header">
-            <h2>
-              {season.title}
-              {isCurrent && <span class="season-badge current">Current</span>}
-            </h2>
-            <p class="season-tagline">{season.tagline}</p>
-          </header>
+      // 🔑 pull previews from the SAME images array the season page uses
+      const previews = season.images?.slice(0, 3) ?? [];
 
-          <div class="gallery-grid">
- 		 {season.images?.map((src, i) => (
-  		  <img
-    		  src={src}
-     		 alt={`${season.title} screenshot ${i + 1}`}
-     		 loading="lazy"
-   		 />
- 		 ))}
-		
- 	 {!season.images?.length && (
-   	 <p class="muted">No screenshots available yet.</p>
-  		)}
-	</div>
-        </section>
+      return (
+        <div class="card card-link" data-season={seasonNum}>
+          <a
+            href={`/gallery/hulettcraft/season-${seasonNum}`}
+            class="card-overlay"
+            aria-label={`Season ${seasonNum}`}
+          ></a>
+
+          <h3>
+            {season.title}
+            {isCurrent && (
+              <span class="season-badge current">Current</span>
+            )}
+          </h3>
+
+          <p style="color: var(--muted);">
+            {season.tagline}
+          </p>
+
+          {season.images?.length && (
+            <div class="preview-strip">
+              {season.images.slice(0, 3).map((src, i) => (
+                <img
+                  src={src}
+                  alt={`${season.title} preview ${i + 1}`}
+                  loading="lazy"
+                />
+              ))}
+            </div>
+          )}
+        </div>
       );
     })}
 
