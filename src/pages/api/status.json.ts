@@ -1,6 +1,6 @@
 export async function GET() {
   const status = {
-    vanilla: "online",
+    hulettcraft: "online",
     creative: "online",
     modded: "offline",
     hytale: "online"

@@ -17,11 +17,11 @@ import BaseLayout from "../layouts/BaseLayout.astro";
   <section class="server-grid">
 
     <!-- HulettCraft SMP -->
-    <div class="card card-link">
+    <div class="card card-link" data-server="hulettcraft">
   	<a href="/gallery/hulettcraft" class="card-overlay" aria-label="HulettCraft SMP"></a>
 
     <h3>
-   	 <span class="status-dot online"></span>
+   	 <span class="status-dot checking"></span>
    	 HulettCraft SMP
     </h3>
 
@@ -40,11 +40,11 @@ import BaseLayout from "../layouts/BaseLayout.astro";
   </div>
 
     <!-- Creative -->
-     <div class="card card-link">
-  	<a href="/gallery/creative" class="card-overlay" aria-label="Creative Server"></a>
+     <div class="card card-link" data-server="creative">
+  	<a href="/gallery" class="card-overlay" aria-label="Creative Server"></a>
 
      <h3>
-   	 <span class="status-dot online"></span>
+   	 <span class="status-dot checking"></span>
    	 Creative Server
      </h3>
 
@@ -62,7 +62,7 @@ import BaseLayout from "../layouts/BaseLayout.astro";
   </div>
 
     <!-- Seasonal / Modded -->
-    <div class="card card-link">
+    <div class="card card-link" data-server="modded">
 	<a href="/gallery/modded" class="card-overlay" aria-label="Seasonal/Modded"></a>
       <h3>
         <span class="status-dot checking"></span>
@@ -84,7 +84,7 @@ import BaseLayout from "../layouts/BaseLayout.astro";
     </div>
 
     <!-- Hytale -->
-    <div class="card card-link">
+    <div class="card card-link" data-server="hytale">
 	<a href="/gallery/hytale" class="card-overlay" aria-label="Hytale (Beta)"></a>
       <h3>
         <span class="status-dot checking"></span>
@@ -128,40 +128,36 @@ import BaseLayout from "../layouts/BaseLayout.astro";
   </script>
 
   <!-- Load status from Status page source of truth -->
-  <script type="module">
-    async function loadStatuses() {
-      try {
-        const res = await fetch("/api/status.json");
-        const statuses = await res.json();
+<script type="module">
+  async function syncWorldStatuses() {
+    try {
+      const res = await fetch(`/api/status.json?ts=${Date.now()}`);
+      const data = await res.json();
 
-        document.querySelectorAll("[data-world]").forEach(card => {
-          const world = card.dataset.world;
-          const dot = card.querySelector(".status-dot");
+      document.querySelectorAll(".card[data-server]").forEach(card => {
+        const id = card.dataset.server;
+        const dot = card.querySelector(".status-dot");
+        const server = data[id];
 
-          dot.className = "status-dot";
+        if (!dot || !server) return;
 
-          switch (statuses[world]) {
-            case "online":
-              dot.classList.add("online");
-              break;
-            case "offline":
-              dot.classList.add("offline");
-              break;
-            case "online-beta":
-              dot.classList.add("online", "beta");
-              break;
-            default:
-              dot.classList.add("unknown");
-          }
-        });
-      } catch {
-        document
-          .querySelectorAll(".status-dot")
-          .forEach(dot => dot.classList.add("unknown"));
-      }
+        dot.classList.remove("online", "offline", "beta", "checking");
+
+        if (server.state === "online") {
+          dot.classList.add("online");
+        } else if (server.state === "beta") {
+          dot.classList.add("beta");
+        } else {
+          dot.classList.add("offline");
+        }
+      });
+    } catch (err) {
+      console.warn("World status sync failed", err);
     }
+  }
 
-    loadStatuses();
-  </script>
+  syncWorldStatuses();
+</script>
+
 
 </BaseLayout>

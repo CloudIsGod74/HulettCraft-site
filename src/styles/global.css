@@ -182,11 +182,22 @@ nav a:hover {
   padding: 2rem;
 }
 
+.ip {
+  margin-top: auto;
+}
+
+.card p {
+  flex-grow: 1;
+}
+
 .card {
   background: linear-gradient(180deg, #111827, #020617);
   border: 1px solid var(--border);
   border-radius: 14px;
+  display: flex;
+  flex-direction: column;
   padding: 1.5rem;
+  position: relative;
   box-shadow: 0 0 25px rgba(0,0,0,0.5);
   transition:
     transform 0.15s ease,
@@ -219,13 +230,20 @@ nav a:hover {
   inset: 0;
   z-index: 1;
   border-radius: inherit;
-  text-decoration: none;
 }
 
 /* Ensure interactive elements stay clickable */
 .card-link .copyable,
 .card-link button,
 .card-link a:not(.card-overlay) {
+  position: relative;
+  z-index: 2;
+}
+
+/* Anything interactive must sit above the overlay */
+.card-actions,
+.copyable,
+.status-link {
   position: relative;
   z-index: 2;
 }
@@ -257,10 +275,6 @@ nav a:hover {
 
 .status-dot.offline {
   background: #ef4444;
-}
-
-.status-dot.beta {
-  background: var(--violet);
 }
 
 .status-dot.checking {
