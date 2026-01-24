@@ -2,6 +2,7 @@
 import BaseLayout from "../layouts/BaseLayout.astro";
 ---
 <BaseLayout>
+
   <!-- Hero -->
   <section class="hero">
     <h1>Network Status</h1>
@@ -12,38 +13,103 @@ import BaseLayout from "../layouts/BaseLayout.astro";
   <section class="server-grid">
 
     <!-- HulettCraft SMP -->
-    <div class="card" data-host="108.214.93.42" data-port="25565">
+    <div class="card card-link" data-server="hulettcraft"
+      data-host="108.214.93.42" data-port="25565">
+      <a href="/gallery/hulettcraft" class="card-overlay" aria-label="HulettCraft SMP"></a>
       <h3>HulettCraft SMP</h3>
       <div class="node">Node: HulettCraft</div>
-      <div class="ip">play.hulettcraft.com</div>
+    <div
+      class="ip copyable"
+      data-copy="play.hulettcraft.com"
+      title="Click to copy"
+    >
+      play.hulettcraft.com
+    </div>
       <div class="status">Checking…</div>
+ <p
+      style="
+        margin-top: 1rem;
+        text-align: center;
+        color: var(--muted);
+        font-size: 0.9rem;
+      "
+    >
+      If you'd like to see the world
+      <a
+        href="http://map.hulettcraft.com:8123"
+        target="_blank"
+        rel="noopener"
+        style="color: var(--text);"
+      >
+        open here</a>.
+    </p>
     </div>
 
     <!-- Creative -->
-    <div class="card" data-host="107.221.146.250" data-port="25566">
+    <div class="card card-link" data-server="creative"
+      data-host="107.221.146.250" data-port="25566">
+  	<a href="/worlds" class="card-overlay" aria-label="Creative"></a>
       <h3>Creative Server</h3>
       <div class="node">Node: CloudCraft</div>
-      <div class="ip">creative.hulettcraft.com</div>
+    <div
+      class="ip copyable"
+      data-copy="creative.hulettcraft.com"
+      title="Click to copy"
+    >
+      creative.hulettcraft.com
+    </div>
       <div class="status">Checking…</div>
     </div>
 
     <!-- Seasonal / Modded -->
-    <div class="card">
+    <div class="card card-link" data-server="modded"
+      data-host="107.221.146.250" data-port="25567">
+  	<a href="/worlds" class="card-overlay" aria-label="Modded"></a>
       <h3>Seasonal / Modded</h3>
       <div class="node">Node: CloudCraft</div>
-      <div class="ip">modded.hulettcraft.com</div>
+      <div
+        class="ip copyable"
+        data-copy="modded.hulettcraft.com"
+        title="Click to copy"
+      >
+        modded.hulettcraft.com
+      </div>
       <div class="status">🔴 Offline</div>
     </div>
 
     <!-- Hytale -->
-    <div class="card">
+    <div class="card card-link" data-server="hytale">
+     <a href="/hytale" class="card-overlay" aria-label="Hytale"></a>
       <h3>Hytale (Beta)</h3>
       <div class="node">Node: CloudCraft</div>
-      <div class="ip">hytale.hulettcraft.com</div>
-      <div class="status" id="hytale-status">Checking…</div>
-      <small style="color: var(--muted);">
+      <div
+        class="ip copyable"
+        data-copy="hytale.hulettcraft.com"
+        title="Click to copy"
+      >
+        hytale.hulettcraft.com
+      </div>
+      <div class="status" id="hytale-status">Checking…</div>      
+	<small style="color: var(--muted);">
         Status reflects world map availability
       </small>
+    <p
+      style="
+        margin-top: 1rem;
+        text-align: center;
+        color: var(--muted);
+        font-size: 0.9rem;
+      "
+    >
+      If you'd like to see the world
+      <a
+        href="http://hpmap.hulettcraft.com"
+        target="_blank"
+        rel="noopener"
+        style="color: var(--text);"
+      >
+        open here</a>.
+    </p>
     </div>
 
   </section>
@@ -101,5 +167,25 @@ import BaseLayout from "../layouts/BaseLayout.astro";
     }
 
     checkHytaleMap();
+  </script>
+
+  <!-- Copy-to-clipboard -->
+  <script type="module">
+    document.querySelectorAll(".copyable").forEach(el => {
+      el.addEventListener("click", async () => {
+        const value = el.dataset.copy;
+        try {
+          await navigator.clipboard.writeText(value);
+          el.classList.add("copied");
+          el.textContent = "Copied!";
+          setTimeout(() => {
+            el.textContent = value;
+            el.classList.remove("copied");
+          }, 1200);
+        } catch {
+          alert("Copy failed");
+        }
+      });
+    });
   </script>
 </BaseLayout>
