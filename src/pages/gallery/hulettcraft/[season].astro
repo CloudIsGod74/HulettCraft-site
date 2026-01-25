@@ -20,7 +20,7 @@ const isCurrent = season === HULETTCRAFT.currentSeason;
 let screenshots = [];
 if (!seasonConfig?.usesStaticImages) {
   const res = await fetch(
-    new URL(`/api/gallery/hulettcraft/season-${season}`, Astro.url)
+    `${Astro.site}/api/gallery/hulettcraft/season/${season}`
   );
   screenshots = res.ok ? await res.json() : [];
 }

@@ -16,10 +16,10 @@ export const GET: APIRoute = async ({ params, locals }) => {
     key: obj.key,
     url: `/api/gallery/image?key=${encodeURIComponent(obj.key)}`,
     uploadedAt: obj.uploaded,
-    metadata: obj.customMetadata ?? {},
+    metadata: obj.customMetadata ?? {}
   }));
 
   return new Response(JSON.stringify(items), {
-    headers: { "Content-Type": "application/json" },
+    headers: { "Content-Type": "application/json" }
   });
 };
