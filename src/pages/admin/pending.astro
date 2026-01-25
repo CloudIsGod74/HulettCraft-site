@@ -2,7 +2,7 @@
 import BaseLayout from "../../layouts/BaseLayout.astro";
 import { requireAdmin } from "../../lib/requireAdmin";
 
-const admin = await requireAdmin(Astro.request);
+const admin = await requireAdmin(Astro.request, Astro.locals);
 if (!admin) return Astro.redirect("/admin/login");
 
 const res = await fetch(new URL("/api/admin/pending", Astro.url), {

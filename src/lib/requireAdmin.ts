@@ -1,15 +1,20 @@
 import { verifySession } from "./adminSession";
 import { ADMIN_USERS } from "./adminAllowlist";
 
-export async function requireAdmin(request: Request) {
-  const cookie = request.headers
-    .get("cookie")
-    ?.match(/admin_session=([^;]+)/)?.[1];
+export async function requireAdmin(
+  request: Request,
+  locals: any
+): Promise<string | null> {
+  const cookieHeader = request.headers.get("cookie");
+  if (!cookieHeader) return null;
 
-  const secret = import.meta.env.ADMIN_SESSION_SECRET;
+  const token = cookieHeader.match(/admin_session=([^;]+)/)?.[1];
+  if (!token) return null;
+
+  const secret = locals?.runtime?.env?.ADMIN_SESSION_SECRET;
   if (!secret) return null;
 
-  const user = await verifySession(cookie, secret);
+  const user = await verifySession(token, secret);
   if (!user) return null;
 
   return ADMIN_USERS.has(user) ? user : null;
