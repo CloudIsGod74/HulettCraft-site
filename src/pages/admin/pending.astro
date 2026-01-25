@@ -31,17 +31,41 @@ try {
     <p>Awaiting admin approval</p>
   </section>
 
+  <section class="bulk-actions">
+    <label>
+      <input type="checkbox" id="select-all" />
+      Select all
+    </label>
+
+    <button id="bulk-approve" class="approve">
+      Approve selected
+    </button>
+
+    <button id="bulk-reject" class="reject">
+      Reject selected
+    </button>
+  </section>
+
+
   <section class="pending-list">
     {screenshots.length === 0 && (
       <p class="muted center">No pending screenshots 🎉</p>
     )}
 
     {screenshots.map((shot) => (
-      <div class="pending-card">
+      <div class="pending-card" data-key={shot.key}>
+ 	 <input
+   	  type="checkbox"
+  	  class="bulk-checkbox"
+   	  data-key={shot.key}
+  	 />
+
         <img src={shot.previewUrl} alt="Pending screenshot" />
 
         <div class="meta">
-          <small>Uploaded {new Date(shot.uploadedAt).toLocaleString()}</small>
+          <small>
+		Uploaded {new Date(shot.uploadedAt).toLocaleString()}
+	  </small>
 
           <div class="actions">
             <button class="approve" data-key={shot.key}>Approve</button>
@@ -93,6 +117,108 @@ try {
       action(btn, "/api/admin/reject")
     );
   });
+</script>
+
+<script type="module">
+  const container = document.getElementById("pending-list");
+
+  async function loadPending() {
+    try {
+      const res = await fetch("/api/admin/pending", {
+        credentials: "same-origin",
+      });
+
+      if (!res.ok) return;
+
+      const shots = await res.json();
+
+      if (!shots.length) {
+        container.innerHTML =
+          `<p class="muted center">No pending screenshots 🎉</p>`;
+        return;
+      }
+
+      container.innerHTML = shots
+        .map(
+          (shot) => `
+          <div class="pending-card" data-key="${shot.key}">
+            <img src="${shot.previewUrl}" alt="Pending screenshot" />
+
+            <div class="meta">
+              <small>
+                Uploaded ${new Date(shot.uploadedAt).toLocaleString()}
+              </small>
+
+              <div class="actions">
+                <button class="approve" data-key="${shot.key}">Approve</button>
+                <button class="reject" data-key="${shot.key}">Reject</button>
+              </div>
+            </div>
+          </div>
+        `
+        )
+        .join("");
+    } catch (err) {
+      console.error("Auto-refresh failed", err);
+    }
+  }
+
+  // Refresh every 10 seconds
+  setInterval(loadPending, 10000);
+</script>
+
+<script type="module">
+  const list = document.getElementById("pending-list");
+  const selectAll = document.getElementById("select-all");
+
+  function getSelectedKeys() {
+    return Array.from(
+      document.querySelectorAll(".bulk-checkbox:checked")
+    ).map((cb) => cb.dataset.key);
+  }
+
+  // Select all toggle
+  selectAll?.addEventListener("change", () => {
+    document
+      .querySelectorAll(".bulk-checkbox")
+      .forEach((cb) => (cb.checked = selectAll.checked));
+  });
+
+  async function bulkAction(endpoint) {
+    const keys = getSelectedKeys();
+    if (!keys.length) return;
+
+    const res = await fetch(endpoint, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ keys }),
+    });
+
+    if (!res.ok) {
+      alert("Bulk action failed");
+      return;
+    }
+
+    // Remove cards instantly
+    keys.forEach((key) => {
+      const card = document.querySelector(
+        `.pending-card[data-key="${key}"]`
+      );
+      card?.remove();
+    });
+  }
+
+  document
+    .getElementById("bulk-approve")
+    ?.addEventListener("click", () =>
+      bulkAction("/api/admin/approve")
+    );
+
+  document
+    .getElementById("bulk-reject")
+    ?.addEventListener("click", () =>
+      bulkAction("/api/admin/reject")
+    );
 </script>
 
 </BaseLayout>
