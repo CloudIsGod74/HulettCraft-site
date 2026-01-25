@@ -56,7 +56,7 @@ export async function GET({ url, locals }: { url: URL; locals: any }) {
       "Set-Cookie": [
         `admin_session=${session}`,
         "HttpOnly",
-        "SameSite=Strict",
+        "SameSite=Lax",
         "Path=/",
         "Max-Age=604800",
       ].join("; "),
