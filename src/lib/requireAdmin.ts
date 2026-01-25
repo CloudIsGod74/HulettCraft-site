@@ -1,5 +1,5 @@
-import { verifySession } from "@/lib/adminSession";
-import { ADMIN_USERS } from "@/lib/adminAllowlist";
+import { verifySession } from "./adminSession";
+import { ADMIN_USERS } from "./adminAllowlist";
 
 export function requireAdmin(request: Request) {
   const cookie = request.headers
