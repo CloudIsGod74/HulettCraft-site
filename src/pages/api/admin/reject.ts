@@ -1,35 +1,32 @@
 import type { APIRoute } from "astro";
-import { requireAdmin } from "../../../lib/requireAdmin";
 
-export async function POST({ request, locals }) {
-  const { key, keys } = await request.json();
+export const POST: APIRoute = async ({ request, locals }) => {
   const bucket = locals.runtime.env.HULETTCRAFT_BUCKET;
 
-  const targets = keys ?? (key ? [key] : []);
-  if (!targets.length) {
-    return new Response("No keys", { status: 400 });
+  if (!bucket) {
+    console.error("R2 bucket binding missing");
+    return new Response("Server misconfigured", { status: 500 });
+  }
+
+  let body;
+  try {
+    body = await request.json();
+  } catch {
+    return new Response("Invalid JSON", { status: 400 });
+  }
+
+  // Support single or bulk
+  const keys: string[] =
+    body.keys ??
+    (body.key ? [body.key] : []);
+
+  if (!keys.length) {
+    return new Response("No keys provided", { status: 400 });
   }
 
   await Promise.all(
-    targets.map((k) => bucket.delete(k))
+    keys.map((key) => bucket.delete(key))
   );
 
   return new Response("OK");
-}
-
-export const POST: APIRoute = async ({ request, locals }) => {
-  const admin = await requireAdmin(request, locals);
-  if (!admin) return new Response("Unauthorized", { status: 401 });
-
-  const bucket = locals.runtime.env.HULETTCRAFT_BUCKET;
-  if (!bucket) return new Response("R2 missing", { status: 500 });
-
-  const { key } = await request.json();
-  if (!key) return new Response("Missing key", { status: 400 });
-
-  await bucket.delete(key);
-
-  return new Response(JSON.stringify({ ok: true }), {
-    headers: { "Content-Type": "application/json" },
-  });
 };
