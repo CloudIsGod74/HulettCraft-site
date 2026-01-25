@@ -2,124 +2,36 @@
 import BaseLayout from "../../layouts/BaseLayout.astro";
 import { requireAdmin } from "../../lib/requireAdmin";
 
-const admin = requireAdmin(Astro.request);
-if (!admin) {
-  return Astro.redirect("/admin/login");
-}
+const admin = await requireAdmin(Astro.request);
+if (!admin) return Astro.redirect("/admin/login");
 
-/**
- * TEMP DATA — will come from KV/D1 later
- */
-const pendingScreenshots = [
-  {
-    id: "1",
-    world: "HulettCraft",
-    season: 8,
-    author: "Topher",
-    description: "First base build of the season",
-    uploadedAt: "2026-01-24T18:30:00Z",
-    previewUrl: "https://placehold.co/600x400?text=Screenshot",
-  },
-  {
-    id: "2",
-    world: "Hytale",
-    season: null,
-    author: "Alex",
-    description: "Terrain generation looks wild",
-    uploadedAt: "2026-01-23T21:10:00Z",
-    previewUrl: "https://placehold.co/600x400?text=Screenshot",
-  },
-];
+const res = await fetch(new URL("/api/admin/pending", Astro.url), {
+  headers: Astro.request.headers,
+});
+const screenshots = await res.json();
 ---
+
 <BaseLayout>
-  <!-- Hero -->
   <section class="hero">
     <h1>Pending Screenshots</h1>
     <p>Awaiting admin approval</p>
   </section>
 
-  <!-- Queue -->
-  <section
-    style="
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      gap: 1.5rem;
-      margin-top: 2rem;
-    "
-  >
-    {pendingScreenshots.length === 0 && (
-      <div class="card" style="max-width: 480px; text-align: center;">
-        <h3>All clear 🎉</h3>
-        <p style="color: var(--muted);">
-          There are no screenshots waiting for approval.
-        </p>
-      </div>
+  <section class="pending-list">
+    {screenshots.length === 0 && (
+      <p class="muted center">No pending screenshots 🎉</p>
     )}
 
-    {pendingScreenshots.map(item => (
-      <div
-        class="card"
-        style="
-          max-width: 720px;
-          width: 100%;
-          display: grid;
-          grid-template-columns: 220px 1fr;
-          gap: 1rem;
-        "
-      >
-        <!-- Image -->
-        <img
-          src={item.previewUrl}
-          alt="Screenshot preview"
-          style="
-            width: 100%;
-            border-radius: 6px;
-            object-fit: cover;
-          "
-        />
+    {screenshots.map((shot) => (
+      <div class="pending-card">
+        <img src={shot.url} alt="Pending screenshot" />
 
-        <!-- Info -->
-        <div>
-          <strong>{item.world}</strong>
-          {item.season && <span> · Season {item.season}</span>}
+        <div class="meta">
+          <small>Uploaded {new Date(shot.uploadedAt).toLocaleString()}</small>
 
-          <p style="margin: 0.5rem 0;">
-            {item.description}
-          </p>
-
-          <p style="color: var(--muted); font-size: 0.9rem;">
-            Uploaded by {item.author} ·{" "}
-            {new Date(item.uploadedAt).toLocaleString()}
-          </p>
-
-          <!-- Actions -->
-          <div style="margin-top: 1rem; display: flex; gap: 0.75rem;">
-            <button
-              style="
-                padding: 0.5rem 1rem;
-                background: #2ecc71;
-                color: white;
-                border: none;
-                border-radius: 4px;
-                cursor: pointer;
-              "
-            >
-              Approve
-            </button>
-
-            <button
-              style="
-                padding: 0.5rem 1rem;
-                background: #e74c3c;
-                color: white;
-                border: none;
-                border-radius: 4px;
-                cursor: pointer;
-              "
-            >
-              Reject
-            </button>
+          <div class="actions">
+            <button class="approve" data-key={shot.key}>Approve</button>
+            <button class="reject" data-key={shot.key}>Reject</button>
           </div>
         </div>
       </div>

@@ -248,6 +248,40 @@ nav a:hover {
   z-index: 2;
 }
 
+.pending-list {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+  max-width: 900px;
+  margin: 3rem auto;
+}
+
+.pending-card {
+  display: flex;
+  gap: 1.5rem;
+  padding: 1.5rem;
+  border-radius: 16px;
+  background: rgba(255,255,255,0.04);
+}
+
+.pending-card img {
+  width: 220px;
+  border-radius: 8px;
+  object-fit: cover;
+}
+
+.pending-card .actions {
+  margin-top: 1rem;
+}
+
+button.approve {
+  background: #22c55e;
+}
+
+button.reject {
+  background: #ef4444;
+}
+
 .preview-strip {
   display: flex;
   gap: 0.5rem;
