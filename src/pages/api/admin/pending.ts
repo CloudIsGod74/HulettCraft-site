@@ -4,7 +4,7 @@ import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
 import { GetObjectCommand } from "@aws-sdk/client-s3";
 
 export async function GET({ request, locals }: any) {
-  const admin = await requireAdmin(request);
+  const admin = await requireAdmin(request, locals);
   if (!admin) return new Response("Unauthorized", { status: 401 });
 
   const {
