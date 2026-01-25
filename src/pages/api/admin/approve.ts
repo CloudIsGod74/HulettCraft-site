@@ -16,30 +16,41 @@ export const POST: APIRoute = async ({ request, locals }) => {
     return new Response("No keys provided", { status: 400 });
   }
 
-  await Promise.all(
-    keys.map(async (pendingKey) => {
-      const obj = await bucket.get(pendingKey);
-      if (!obj) return;
+const { keys, updates } = await request.json();
 
-      const meta = obj.customMetadata ?? {};
+await Promise.all(
+  keys.map(async (pendingKey: string) => {
+    const obj = await bucket.get(pendingKey);
+    if (!obj) return;
 
-      const world = meta.world || "unknown";
-      const season = meta.season ? `season-${meta.season}` : "season-unknown";
+    const existing = obj.customMetadata ?? {};
+    const override = updates?.[pendingKey] ?? {};
 
-      const filename = pendingKey.split("/").pop();
-      if (!filename) return;
+    const meta = {
+      ...existing,
+      ...override,
+    };
 
-      const approvedKey =
-        `Screenshots/${world}/${season}/${filename}`;
+    const world = meta.world || "unknown";
+    const season = meta.season
+      ? `season-${meta.season}`
+      : "season-unknown";
 
-      await bucket.put(approvedKey, obj.body, {
-        httpMetadata: obj.httpMetadata,
-        customMetadata: meta,
-      });
+    const filename = pendingKey.split("/").pop();
+    if (!filename) return;
 
-      await bucket.delete(pendingKey);
-    })
-  );
+    const approvedKey =
+      `Screenshots/${world}/${season}/${filename}`;
+
+    await bucket.put(approvedKey, obj.body, {
+      httpMetadata: obj.httpMetadata,
+      customMetadata: meta,
+    });
+
+    await bucket.delete(pendingKey);
+  })
+);
+
 
   return new Response("OK");
 };

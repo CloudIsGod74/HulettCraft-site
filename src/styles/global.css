@@ -248,6 +248,27 @@ nav a:hover {
   z-index: 2;
 }
 
+.edit-fields {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  margin: 0.5rem 0;
+}
+
+.edit-fields textarea {
+  resize: vertical;
+  min-height: 2.5rem;
+}
+
+.edit-fields input,
+.edit-fields textarea {
+  background: var(--bg-soft);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 0.4rem 0.5rem;
+  color: var(--text);
+}
+
 .pending-list {
   display: flex;
   flex-direction: column;

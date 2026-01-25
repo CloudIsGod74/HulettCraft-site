@@ -62,7 +62,22 @@ try {
 
         <img src={shot.previewUrl} alt="Pending screenshot" />
 
-        <div class="meta">
+	<div class="edit-fields">
+ 	 <textarea
+	    class="edit-description"
+	    placeholder="Description (optional)"
+	  >{shot.metadata?.description ?? ""}</textarea>
+
+	  <input
+	    type="text"
+	    class="edit-author"
+	    placeholder="Author (optional)"
+	    value={shot.metadata?.author ?? ""}
+	  />
+	</div>
+
+	<div class="meta">
+
           <small>
 		Uploaded {new Date(shot.uploadedAt).toLocaleString()}
 	  </small>
@@ -81,6 +96,19 @@ try {
     const card = button.closest(".pending-card");
     const key = button.dataset.key;
 
+    const payload = { key };
+
+    if (endpoint.includes("approve")) {
+      payload.updates = {
+       [key]: {
+        description:
+          card.querySelector(".edit-description")?.value ?? "",
+        author:
+          card.querySelector(".edit-author")?.value ?? "",	
+	    },
+	  };
+	}
+
     // Optimistic UI
     card.style.opacity = "0.5";
     button.disabled = true;
@@ -91,7 +119,7 @@ try {
         headers: {
           "Content-Type": "application/json",
         },
-        body: JSON.stringify({ key }),
+        body: JSON.stringify(payload),
       });
 
       if (!res.ok) throw new Error(await res.text());
@@ -120,7 +148,7 @@ try {
 </script>
 
 <script type="module">
-  const container = document.getElementById("pending-list");
+  <section id="pending-list" class="pending-list">;
 
   async function loadPending() {
     try {
@@ -164,7 +192,7 @@ try {
   }
 
   // Refresh every 10 seconds
-  setInterval(loadPending, 10000);
+ // setInterval(loadPending, 10000);
 </script>
 
 <script type="module">
@@ -184,29 +212,44 @@ try {
       .forEach((cb) => (cb.checked = selectAll.checked));
   });
 
-  async function bulkAction(endpoint) {
-    const keys = getSelectedKeys();
-    if (!keys.length) return;
+async function bulkAction(endpoint) {
+  const keys = getSelectedKeys();
+  if (!keys.length) return;
 
-    const res = await fetch(endpoint, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ keys }),
-    });
+  // Build metadata overrides
+  const updates = {};
+  keys.forEach((key) => {
+    const card = document.querySelector(
+      `.pending-card[data-key="${key}"]`
+    );
 
-    if (!res.ok) {
-      alert("Bulk action failed");
-      return;
-    }
+    updates[key] = {
+      description:
+        card.querySelector(".edit-description")?.value ?? "",
+      author:
+        card.querySelector(".edit-author")?.value ?? "",
+    };
+  });
 
-    // Remove cards instantly
-    keys.forEach((key) => {
-      const card = document.querySelector(
-        `.pending-card[data-key="${key}"]`
-      );
-      card?.remove();
-    });
+  const res = await fetch(endpoint, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ keys, updates }),
+  });
+
+  if (!res.ok) {
+    alert("Bulk action failed");
+    return;
   }
+
+  // Remove cards instantly
+  keys.forEach((key) => {
+    document
+      .querySelector(`.pending-card[data-key="${key}"]`)
+      ?.remove();
+  });
+}
+
 
   document
     .getElementById("bulk-approve")

@@ -37,7 +37,7 @@ export const POST: APIRoute = async ({ request, locals }) => {
         world: String(world ?? ""),
         season: String(season ?? ""),
         description: String(description ?? ""),
-        author: String(description ?? ""),
+        author: String(author ?? ""),
       },
     });
 
