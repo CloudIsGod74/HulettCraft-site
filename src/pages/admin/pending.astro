@@ -5,12 +5,24 @@ import { requireAdmin } from "../../lib/requireAdmin";
 const admin = await requireAdmin(Astro.request, Astro.locals);
 if (!admin) return Astro.redirect("/admin/login");
 
-const res = await fetch(new URL("/api/admin/pending", Astro.url), {
-  headers: {
-	cooke: Astro.request.headers.get("cookie") ?? "",
+let screenshots: any[] = [];
+
+try {
+  const res = await fetch(new URL("/api/admin/pending", Astro.url), {
+    headers: {
+      cookie: Astro.request.headers.get("cookie") ?? "",
     },
-});
-const screenshots = await res.json();
+  });
+
+  if (!res.ok) {
+    throw new Error(`Pending API failed: ${res.status}`);
+  }
+
+  screenshots = await res.json();
+} catch (err) {
+  console.error("FAILED TO LOAD PENDING:", err);
+  screenshots = [];
+}
 ---
 
 <BaseLayout>
