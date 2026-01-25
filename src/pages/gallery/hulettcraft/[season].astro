@@ -53,15 +53,30 @@ if (!seasonConfig?.usesStaticImages) {
     ) : screenshots.length === 0 ? (
       <p class="muted center">No screenshots yet for this season.</p>
     ) : (
-      <div class="grid">
-        {screenshots.map((shot) => (
-          <img
-            src={shot.url}
-            loading="lazy"
-            style="width:100%; border-radius:16px;"
-          />
-        ))}
-      </div>
+<div class="grid">
+  {screenshots.map((shot) => (
+    <figure style="display:flex; flex-direction:column; gap:0.5rem;">
+      {shot.metadata?.description && (
+       <figcaption
+        style="
+          font-size: 0.85rem;
+          color: var(--muted);
+          text-align: left;
+        "
+      >
+        {shot.metadata.description}
+      </figcaption>
+    )}
+
+      <img
+        src={shot.url}
+        loading="lazy"
+        style="width:100%; border-radius:16px;"
+      />
+    </figure>
+  ))}
+</div>
+
     )}
   </section>
 
