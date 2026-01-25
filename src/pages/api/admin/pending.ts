@@ -26,7 +26,7 @@ export async function GET({ request, locals }: any) {
   const res = await client.send(
     new ListObjectsV2Command({
       Bucket: R2_BUCKET,
-      Prefix: "Need Approval/",
+      Prefix: "Screenshots - Need Approval/",
     })
   );
 
