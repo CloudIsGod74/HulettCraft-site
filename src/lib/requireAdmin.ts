@@ -1,17 +1,16 @@
 import { verifySession } from "./adminSession";
 import { ADMIN_USERS } from "./adminAllowlist";
 
-export function requireAdmin(request: Request) {
+export async function requireAdmin(request: Request) {
   const cookie = request.headers
     .get("cookie")
     ?.match(/admin_session=([^;]+)/)?.[1];
 
-  if (!cookie) return null;
+  const secret = import.meta.env.ADMIN_SESSION_SECRET;
+  if (!secret) return null;
 
-  const username = verifySession(cookie);
-  if (!username) return null;
+  const user = await verifySession(cookie, secret);
+  if (!user) return null;
 
-  if (!ADMIN_USERS.has(username)) return null;
-
-  return username;
+  return ADMIN_USERS.has(user) ? user : null;
 }
