@@ -1,0 +1,73 @@
+---
+import BaseLayout from "../../../layouts/BaseLayout.astro";
+import { HULETTCRAFT } from "../../../config/hulettcraft";
+import { HULETTCRAFT_SEASONS } from "@config/hulettcraftSeasons";
+
+const raw = Astro.params.season;
+const match = raw?.match(/^season-(\d+)$/);
+
+if (!match) {
+  throw new Error("Invalid season");
+}
+
+const season = Number(match[1]);
+
+
+const seasonConfig = HULETTCRAFT_SEASONS[season];
+const isCurrent = season === HULETTCRAFT.currentSeason;
+
+// Load screenshots unless this season is static
+let screenshots = [];
+if (!seasonConfig?.usesStaticImages) {
+  const res = await fetch(
+    new URL(`/api/gallery/hulettcraft/season-${season}`, Astro.url)
+  );
+  screenshots = res.ok ? await res.json() : [];
+}
+---
+
+<BaseLayout>
+  <section class="hero">
+    <h1>
+      HulettCraft — Season {season}
+      {isCurrent && (
+        <span style="color: var(--green); margin-left: 0.5rem;">
+          (Current)
+        </span>
+      )}
+    </h1>
+
+    <p>
+      {seasonConfig?.description ??
+        "A season in the history of HulettCraft."}
+    </p>
+  </section>
+
+  <section style="padding:3rem 2rem; max-width:1200px; margin:0 auto;">
+    {seasonConfig?.usesStaticImages ? (
+      <div class="grid">
+        <img src={`/images/gallery/hulettcraft/season-${season}/img1.jpg`} />
+        <img src={`/images/gallery/hulettcraft/season-${season}/img2.jpg`} />
+        <img src={`/images/gallery/hulettcraft/season-${season}/img3.jpg`} />
+      </div>
+    ) : screenshots.length === 0 ? (
+      <p class="muted center">No screenshots yet for this season.</p>
+    ) : (
+      <div class="grid">
+        {screenshots.map((shot) => (
+          <img
+            src={shot.url}
+            loading="lazy"
+            style="width:100%; border-radius:16px;"
+          />
+        ))}
+      </div>
+    )}
+  </section>
+
+  <section class="center">
+    <a href="/gallery/hulettcraft" class="status-link">
+      ← Back to all seasons
+    </a>
+  </section>
+</BaseLayout>
