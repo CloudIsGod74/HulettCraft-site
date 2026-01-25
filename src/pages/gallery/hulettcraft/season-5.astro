@@ -2,14 +2,19 @@
 import BaseLayout from "../../../layouts/BaseLayout.astro";
 import { HULETTCRAFT } from "../../../config/hulettcraft";
 
-const season = 5;
+const season = Number(Astro.params.season);
 const isCurrent = season === HULETTCRAFT.currentSeason;
----
-<BaseLayout>
 
+const res = await fetch(
+  new URL(`/api/gallery/hulettcraft/season/${season}`, Astro.url)
+);
+const screenshots = res.ok ? await res.json() : [];
+---
+
+<BaseLayout>
   <section class="hero">
     <h1>
-      HulettCraft — Season {season}
+      HulettCraft — Season 5{season}
       {isCurrent && (
         <span style="color: var(--green); margin-left: 0.5rem;">
           (Current)
@@ -31,17 +36,28 @@ const isCurrent = season === HULETTCRAFT.currentSeason;
       margin: 0 auto;
     "
   >
-    <div
-      style="
-        display: grid;
-        grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
-        gap: 1.5rem;
-      "
-    >
-      <img src="/images/gallery/hulettcraft/season-8/img1.jpg" style="width:100%; border-radius:16px;" />
-      <img src="/images/gallery/hulettcraft/season-8/img2.jpg" style="width:100%; border-radius:16px;" />
-      <img src="/images/gallery/hulettcraft/season-8/img3.jpg" style="width:100%; border-radius:16px;" />
-    </div>
+    {screenshots.length === 0 ? (
+      <p class="muted center">
+        No screenshots yet for this season.
+      </p>
+    ) : (
+      <div
+        style="
+          display: grid;
+          grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+          gap: 1.5rem;
+        "
+      >
+        {screenshots.map((shot) => (
+          <img
+            src={shot.url}
+            alt="HulettCraft screenshot"
+            style="width:100%; border-radius:16px;"
+            loading="lazy"
+          />
+        ))}
+      </div>
+    )}
   </section>
 
   <section style="text-align:center; padding-bottom:3rem;">
@@ -49,5 +65,4 @@ const isCurrent = season === HULETTCRAFT.currentSeason;
       ← Back to all seasons
     </a>
   </section>
-
 </BaseLayout>
