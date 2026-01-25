@@ -6,12 +6,13 @@ export async function GET({ url, locals }: { url: URL; locals: any }) {
     return new Response("NO CODE RECEIVED", { status: 400 });
   }
 
-  // Exchange code for access token
+  // Exchange code for token
   const tokenRes = await fetch("https://github.com/login/oauth/access_token", {
     method: "POST",
     headers: {
       Accept: "application/json",
       "Content-Type": "application/json",
+      "User-Agent": "HulettCraft-Admin",
     },
     body: JSON.stringify({
       client_id: GITHUB_CLIENT_ID,
@@ -29,11 +30,12 @@ export async function GET({ url, locals }: { url: URL; locals: any }) {
     );
   }
 
-  // Fetch GitHub user
+  // 🔴 THIS WAS THE CRASH POINT BEFORE
   const userRes = await fetch("https://api.github.com/user", {
     headers: {
       Authorization: `Bearer ${tokenData.access_token}`,
       Accept: "application/json",
+      "User-Agent": "HulettCraft-Admin", // ✅ REQUIRED
     },
   });
 
