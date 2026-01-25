@@ -6,7 +6,9 @@ const admin = await requireAdmin(Astro.request, Astro.locals);
 if (!admin) return Astro.redirect("/admin/login");
 
 const res = await fetch(new URL("/api/admin/pending", Astro.url), {
-  headers: Astro.request.headers,
+  headers: {
+	cooke: Astro.request.headers.get("cookie") ?? "",
+    },
 });
 const screenshots = await res.json();
 ---
