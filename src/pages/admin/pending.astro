@@ -51,4 +51,48 @@ try {
       </div>
     ))}
   </section>
+
+<script type="module">
+  async function action(button, endpoint) {
+    const card = button.closest(".pending-card");
+    const key = button.dataset.key;
+
+    // Optimistic UI
+    card.style.opacity = "0.5";
+    button.disabled = true;
+
+    try {
+      const res = await fetch(endpoint, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ key }),
+      });
+
+      if (!res.ok) throw new Error(await res.text());
+
+      // Remove card on success
+      card.remove();
+    } catch (err) {
+      console.error(err);
+      alert("Action failed. See console.");
+      card.style.opacity = "1";
+      button.disabled = false;
+    }
+  }
+
+  document.querySelectorAll(".approve").forEach((btn) => {
+    btn.addEventListener("click", () =>
+      action(btn, "/api/admin/approve")
+    );
+  });
+
+  document.querySelectorAll(".reject").forEach((btn) => {
+    btn.addEventListener("click", () =>
+      action(btn, "/api/admin/reject")
+    );
+  });
+</script>
+
 </BaseLayout>
