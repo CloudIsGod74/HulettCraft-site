@@ -1,12 +1,7 @@
 import { defineConfig } from "astro/config";
-import path from "node:path";
+import cloudflare from "@astrojs/cloudflare";
 
 export default defineConfig({
-  vite: {
-    resolve: {
-      alias: {
-        "@": path.resolve("./src"),
-      },
-    },
-  },
+  output: "server",
+  adapter: cloudflare(),
 });
