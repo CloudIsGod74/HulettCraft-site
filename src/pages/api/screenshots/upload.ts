@@ -2,7 +2,6 @@ import type { APIRoute } from "astro";
 
 export const POST: APIRoute = async ({ request, locals }) => {
   try {
-    // ---- GET R2 BUCKET BINDING ----
     const bucket = locals.runtime.env.HULETTCRAFT_BUCKET;
 
     if (!bucket) {
@@ -10,7 +9,6 @@ export const POST: APIRoute = async ({ request, locals }) => {
       return new Response("Server misconfigured", { status: 500 });
     }
 
-    // ---- PARSE FORM ----
     const formData = await request.formData();
     const file = formData.get("screenshot");
 
@@ -22,12 +20,10 @@ export const POST: APIRoute = async ({ request, locals }) => {
       return new Response("Invalid file type", { status: 400 });
     }
 
-    // Optional metadata
     const world = String(formData.get("world") ?? "unknown");
     const season = String(formData.get("season") ?? "");
     const author = String(formData.get("author") ?? "");
 
-    // ---- SAFE OBJECT KEY ----
     const timestamp = Date.now();
     const safeName = file.name.replace(/[^a-z0-9.\-_]/gi, "_");
 
@@ -36,7 +32,6 @@ export const POST: APIRoute = async ({ request, locals }) => {
       (season ? `season-${season}/` : "") +
       `${timestamp}-${safeName}`;
 
-    // ---- UPLOAD TO R2 (NATIVE API) ----
     await bucket.put(objectKey, await file.arrayBuffer(), {
       httpMetadata: {
         contentType: file.type,
@@ -48,7 +43,6 @@ export const POST: APIRoute = async ({ request, locals }) => {
       },
     });
 
-    // ---- REDIRECT BACK WITH SUCCESS ----
     return new Response(null, {
       status: 303,
       headers: {
@@ -57,4 +51,6 @@ export const POST: APIRoute = async ({ request, locals }) => {
     });
   } catch (err) {
     console.error("Upload error:", err);
-    return
+    return new Response("Upload failed", { status: 500 });
+  }
+};
