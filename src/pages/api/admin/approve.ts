@@ -8,49 +8,47 @@ export const POST: APIRoute = async ({ request, locals }) => {
   }
 
   const body = await request.json();
-  const keys: string[] =
+
+  // Normalize single + bulk into ONE array
+  const targetKeys: string[] =
     body.keys ??
     (body.key ? [body.key] : []);
 
-  if (!keys.length) {
+  if (!targetKeys.length) {
     return new Response("No keys provided", { status: 400 });
   }
 
-const { keys, updates } = await request.json();
+  const updates = body.updates ?? {};
 
-await Promise.all(
-  keys.map(async (pendingKey: string) => {
-    const obj = await bucket.get(pendingKey);
-    if (!obj) return;
+  await Promise.all(
+    targetKeys.map(async (pendingKey) => {
+      const obj = await bucket.get(pendingKey);
+      if (!obj) return;
 
-    const existing = obj.customMetadata ?? {};
-    const override = updates?.[pendingKey] ?? {};
+      const meta = {
+        ...(obj.customMetadata ?? {}),
+        ...(updates[pendingKey] ?? {}),
+      };
 
-    const meta = {
-      ...existing,
-      ...override,
-    };
+      const world = meta.world || "unknown";
+      const season = meta.season
+        ? `season-${meta.season}`
+        : "season-unknown";
 
-    const world = meta.world || "unknown";
-    const season = meta.season
-      ? `season-${meta.season}`
-      : "season-unknown";
+      const filename = pendingKey.split("/").pop();
+      if (!filename) return;
 
-    const filename = pendingKey.split("/").pop();
-    if (!filename) return;
+      const approvedKey =
+        `Screenshots/${world}/${season}/${filename}`;
 
-    const approvedKey =
-      `Screenshots/${world}/${season}/${filename}`;
+      await bucket.put(approvedKey, obj.body, {
+        httpMetadata: obj.httpMetadata,
+        customMetadata: meta,
+      });
 
-    await bucket.put(approvedKey, obj.body, {
-      httpMetadata: obj.httpMetadata,
-      customMetadata: meta,
-    });
-
-    await bucket.delete(pendingKey);
-  })
-);
-
+      await bucket.delete(pendingKey);
+    })
+  );
 
   return new Response("OK");
 };

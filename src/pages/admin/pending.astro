@@ -47,7 +47,7 @@ try {
   </section>
 
 
-  <section class="pending-list">
+  <section id="pending-list" class="pending-list">
     {screenshots.length === 0 && (
       <p class="muted center">No pending screenshots 🎉</p>
     )}
@@ -148,8 +148,6 @@ try {
 </script>
 
 <script type="module">
-  <section id="pending-list" class="pending-list">;
-
   async function loadPending() {
     try {
       const res = await fetch("/api/admin/pending", {
