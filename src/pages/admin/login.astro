@@ -1,13 +1,6 @@
 ---
 import BaseLayout from "../../layouts/BaseLayout.astro";
-import { requireAdmin } from "../../lib/requireAdmin";
 
-const admin = requireAdmin(Astro.request);
-
-// If already logged in, skip login page
-if (admin) {
-  return Astro.redirect("/admin/pending");
-}
 ---
 
 <BaseLayout>
