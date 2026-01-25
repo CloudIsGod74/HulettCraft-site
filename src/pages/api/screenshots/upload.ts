@@ -1,15 +1,12 @@
 import type { APIRoute } from "astro";
-import { S3Client, PutObjectCommand } from "@aws-sdk/client-s3";
 
-export const POST: APIRoute = async ({ request }) => {
+export const POST: APIRoute = async ({ request, locals }) => {
   try {
-    const bucketName = import.meta.env.R2_BUCKET;
-    const accountId = import.meta.env.CF_ACCOUNT_ID;
-    const accessKey = import.meta.env.R2_ACCESS_KEY_ID;
-    const secretKey = import.meta.env.R2_SECRET_ACCESS_KEY;
+    // ---- GET R2 BUCKET BINDING ----
+    const bucket = locals.runtime.env.HULETTCRAFT_BUCKET;
 
-    if (!bucketName || !accountId || !accessKey || !secretKey) {
-      console.error("Missing R2 environment variables");
+    if (!bucket) {
+      console.error("R2 bucket binding missing");
       return new Response("Server misconfigured", { status: 500 });
     }
 
@@ -39,41 +36,25 @@ export const POST: APIRoute = async ({ request }) => {
       (season ? `season-${season}/` : "") +
       `${timestamp}-${safeName}`;
 
-// ---- R2 UPLOAD (AWS SDK v3 – SigV4) ----
-
-// Convert File → ArrayBuffer
-const buffer = await file.arrayBuffer();
-
-// Create R2 client
-const s3 = new S3Client({
-  region: "auto",
-  endpoint: `https://${accountId}.r2.cloudflarestorage.com`,
-  credentials: {
-    accessKeyId: accessKey,
-    secretAccessKey: secretKey
-  }
-});
-
-// Upload to R2
-await s3.send(
-  new PutObjectCommand({
-    Bucket: bucketName,
-    Key: objectKey,
-    Body: buffer,
-    ContentType: file.type
-  })
-);
-
+    // ---- UPLOAD TO R2 (NATIVE API) ----
+    await bucket.put(objectKey, await file.arrayBuffer(), {
+      httpMetadata: {
+        contentType: file.type,
+      },
+      customMetadata: {
+        world,
+        season,
+        author,
+      },
+    });
 
     // ---- REDIRECT BACK WITH SUCCESS ----
     return new Response(null, {
       status: 303,
       headers: {
-        Location: "/gallery/upload?success=1"
-      }
+        Location: "/gallery/upload?success=1",
+      },
     });
   } catch (err) {
     console.error("Upload error:", err);
-    return new Response("Upload failed", { status: 500 });
-  }
-};
+    return
