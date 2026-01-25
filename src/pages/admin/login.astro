@@ -1,0 +1,59 @@
+---
+import BaseLayout from "../../layouts/BaseLayout.astro";
+import { requireAdmin } from "../../lib/requireAdmin";
+
+const admin = requireAdmin(Astro.request);
+
+// If already logged in, skip login page
+if (admin) {
+  return Astro.redirect("/admin/pending");
+}
+---
+
+<BaseLayout>
+  <!-- Hero -->
+  <section class="hero">
+    <h1>Admin Access</h1>
+    <p>HulettCraft moderation and approvals</p>
+  </section>
+
+  <!-- Centered Login Card -->
+  <section
+    style="
+      display: flex;
+      justify-content: center;
+      margin-top: 2rem;
+    "
+  >
+    <div
+      class="card"
+      style="
+        max-width: 420px;
+        width: 100%;
+      "
+    >
+      <h3>Administrator Login</h3>
+
+      <p style="color: var(--muted); margin-bottom: 1rem;">
+        This area is restricted to approved HulettCraft administrators.
+      </p>
+
+      <a
+        href="/api/admin/auth/login"
+        style="
+          display: block;
+          text-align: center;
+          padding: 0.75rem 1.25rem;
+          background: var(--accent);
+          color: white;
+          border-radius: 6px;
+          text-decoration: none;
+          font-weight: 600;
+        "
+      >
+        Login with GitHub
+      </a>
+    </div>
+  </section>
+</BaseLayout>
+
