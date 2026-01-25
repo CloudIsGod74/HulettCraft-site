@@ -8,8 +8,9 @@ export async function requireAdmin(
   const cookieHeader = request.headers.get("cookie");
   if (!cookieHeader) return null;
 
-  const token = cookieHeader.match(/admin_session=([^;]+)/)?.[1];
-  if (!token) return null;
+  const rawToken = cookieHeader.match(/admin_session=([^;]+)/)?.[1];
+  const token = rawToken ? decodeURIComponent(rawToken) : null;
+  if (!secret) return null;
 
   const secret = locals?.runtime?.env?.ADMIN_SESSION_SECRET;
   if (!secret) return null;
