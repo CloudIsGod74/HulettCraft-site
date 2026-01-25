@@ -337,6 +337,12 @@ button.reject {
   background: #ef4444;
 }
 
+.screenshot-meta {
+  font-size: 0.85rem;
+  color: var(--muted);
+  text-align: center;
+}
+
 .copyable {
   cursor: pointer;
   transition: color 0.15s ease;
