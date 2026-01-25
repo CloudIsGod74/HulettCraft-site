@@ -3,20 +3,28 @@ import { ADMIN_USERS } from "./adminAllowlist";
 
 export async function requireAdmin(
   request: Request,
-  locals: any
-): Promise<string | null> {
-  const cookieHeader = request.headers.get("cookie");
-  if (!cookieHeader) return null;
+  locals?: App.Locals
+) {
+  // ✅ READ SECRET AT RUNTIME
+  const secret = import.meta.env.ADMIN_SESSION_SECRET;
 
-  const rawToken = cookieHeader.match(/admin_session=([^;]+)/)?.[1];
-  const token = rawToken ? decodeURIComponent(rawToken) : null;
-  if (!secret) return null;
+  if (!secret) {
+    console.error("ADMIN_SESSION_SECRET is missing");
+    return null;
+  }
 
-  const secret = locals?.runtime?.env?.ADMIN_SESSION_SECRET;
-  if (!secret) return null;
+  const cookie = request.headers.get("cookie") ?? "";
+  const session = cookie
+    .split("; ")
+    .find((c) => c.startsWith("admin_session="))
+    ?.split("=")[1];
 
-  const user = await verifySession(token, secret);
-  if (!user) return null;
+  if (!session) return null;
 
-  return ADMIN_USERS.has(user) ? user : null;
+  const username = verifySession(session, secret);
+  if (!username) return null;
+
+  if (!ADMIN_USERS.has(username)) return null;
+
+  return { username };
 }
