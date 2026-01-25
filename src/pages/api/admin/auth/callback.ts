@@ -1,12 +1,17 @@
+import { ADMIN_USERS } from "../../../../lib/adminAllowlist";
+import { createSession } from "../../../../lib/adminSession";
+
 export async function GET({ url, locals }: { url: URL; locals: any }) {
-  const { GITHUB_CLIENT_ID, GITHUB_CLIENT_SECRET } = locals.runtime.env;
+  const {
+    GITHUB_CLIENT_ID,
+    GITHUB_CLIENT_SECRET,
+    ADMIN_SESSION_SECRET,
+  } = locals.runtime.env;
 
   const code = url.searchParams.get("code");
-  if (!code) {
-    return new Response("NO CODE RECEIVED", { status: 400 });
-  }
+  if (!code) return new Response("NO CODE", { status: 400 });
 
-  // Exchange code for token
+  // Exchange code → token
   const tokenRes = await fetch("https://github.com/login/oauth/access_token", {
     method: "POST",
     headers: {
@@ -22,27 +27,39 @@ export async function GET({ url, locals }: { url: URL; locals: any }) {
   });
 
   const tokenData = await tokenRes.json();
-
   if (!tokenData.access_token) {
-    return new Response(
-      "TOKEN EXCHANGE FAILED\n" + JSON.stringify(tokenData, null, 2),
-      { status: 500 }
-    );
+    return new Response("TOKEN FAIL", { status: 500 });
   }
 
-  // 🔴 THIS WAS THE CRASH POINT BEFORE
+  // Fetch GitHub user
   const userRes = await fetch("https://api.github.com/user", {
     headers: {
       Authorization: `Bearer ${tokenData.access_token}`,
       Accept: "application/json",
-      "User-Agent": "HulettCraft-Admin", // ✅ REQUIRED
+      "User-Agent": "HulettCraft-Admin",
     },
   });
 
   const user = await userRes.json();
+  const login = String(user.login).toLowerCase();
 
-  return new Response(
-    `OAUTH OK\nGitHub username: ${user.login}`,
-    { headers: { "Content-Type": "text/plain" } }
-  );
+  if (!ADMIN_USERS.has(login)) {
+    return new Response("ACCESS DENIED", { status: 403 });
+  }
+
+  const session = await createSession(login, ADMIN_SESSION_SECRET);
+
+  return new Response(null, {
+    status: 302,
+    headers: {
+      Location: "/admin/pending",
+      "Set-Cookie": [
+        `admin_session=${session}`,
+        "HttpOnly",
+        "SameSite=Strict",
+        "Path=/",
+        "Max-Age=604800",
+      ].join("; "),
+    },
+  });
 }

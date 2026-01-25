@@ -1,47 +1,29 @@
-import crypto from "node:crypto";
+const encoder = new TextEncoder();
 
-const SECRET = import.meta.env.ADMIN_SESSION_SECRET;
+async function hmacSHA256(secret: string, data: string) {
+  const key = await crypto.subtle.importKey(
+    "raw",
+    encoder.encode(secret),
+    { name: "HMAC", hash: "SHA-256" },
+    false,
+    ["sign"]
+  );
 
-/**
- * Create an HMAC signature for a string
- */
-function sign(data: string) {
-  return crypto
-    .createHmac("sha256", SECRET)
-    .update(data)
-    .digest("hex");
+  const sig = await crypto.subtle.sign(
+    "HMAC",
+    key,
+    encoder.encode(data)
+  );
+
+  return btoa(String.fromCharCode(...new Uint8Array(sig)));
 }
 
-/**
- * Create a signed session cookie value
- */
-export function createSession(username: string) {
-  const payload = {
+export async function createSession(username: string, secret: string) {
+  const payload = JSON.stringify({
     sub: username,
     iat: Date.now(),
-  };
+  });
 
-  const json = JSON.stringify(payload);
-  const sig = sign(json);
-
-  return Buffer.from(`${json}.${sig}`).toString("base64");
-}
-
-/**
- * Verify and decode a session cookie
- */
-export function verifySession(cookie: string): string | null {
-  try {
-    const decoded = Buffer.from(cookie, "base64").toString("utf8");
-    const [json, sig] = decoded.split(".");
-
-    if (!json || !sig) return null;
-    if (sign(json) !== sig) return null;
-
-    const payload = JSON.parse(json);
-
-    return payload.sub as string;
-  } catch {
-    return null;
-  }
+  const sig = await hmacSHA256(secret, payload);
+  return btoa(`${payload}.${sig}`);
 }
