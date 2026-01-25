@@ -1,0 +1,103 @@
+---
+import BaseLayout from "../../layouts/BaseLayout.astro";
+
+const url = new URL(Astro.request.url);
+const success = url.searchParams.get("success");
+
+console.log("UPLOAD PAGE success param:", success);
+---
+
+
+<BaseLayout>
+
+  {success && (
+    <div style="
+      margin: 2rem auto;
+      max-width: 720px;
+      background: rgba(34,197,94,0.12);
+      border: 1px solid rgba(34,197,94,0.4);
+      padding: 1rem 1.25rem;
+      border-radius: 10px;
+      color: #e5e7eb;
+    ">
+      ✅ <strong>Submission successful!</strong><br />
+      Your screenshot has been sent for admin approval.
+    </div>
+  )}
+
+  <!-- Hero -->
+  <section class="hero">
+    <h1>Submit a Screenshot</h1>
+    <p>
+      Share moments from HulettCraft.  
+      All submissions are reviewed before appearing in the gallery.
+    </p>
+  </section>
+
+  <section class="upload-panel">
+    <form 
+	class="upload-form" 
+	method="POST" 
+	action="/api/screenshots/upload"
+	enctype="multipart/form-data">
+
+      <!-- Screenshot -->
+      <label>
+        Screenshot
+        <input type="file" name="screenshot" accept="image/*" required />
+      </label>
+
+      <!-- World -->
+      <label>
+        World
+        <select name="world" required>
+          <option value="">Select a world</option>
+          <option value="hulettcraft">HulettCraft</option>
+          <option value="modded">Modded</option>
+          <option value="hytale">Hytale</option>
+        </select>
+      </label>
+
+      <!-- Season -->
+      <label>
+        Season <span class="muted">(optional)</span>
+        <input
+          type="number"
+          name="season"
+          placeholder="e.g. 8"
+          min="1"
+        />
+      </label>
+
+      <!-- Description -->
+      <label>
+        Description <span class="muted">(optional)</span>
+        <textarea
+          name="description"
+          rows="3"
+          placeholder="What’s happening in this screenshot?"
+        ></textarea>
+      </label>
+
+      <!-- Name / Discord -->
+      <label>
+        Your name or Discord <span class="muted">(optional)</span>
+        <input
+          type="text"
+          name="author"
+          placeholder="Topher / username#1234"
+        />
+      </label>
+
+      <!-- Submit -->
+      <button type="submit" class="submit-btn">
+        Submit for approval
+      </button>
+
+      <p class="upload-note">
+        Screenshots are reviewed by admins before being published.
+      </p>
+
+    </form>
+  </section>
+</BaseLayout>
