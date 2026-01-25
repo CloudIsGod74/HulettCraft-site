@@ -8,7 +8,6 @@ export async function GET({ url, locals }: { url: URL; locals: any }) {
     return new Response("NO CODE RECEIVED", { status: 400 });
   }
 
-  // Exchange code for token
   const tokenRes = await fetch("https://github.com/login/oauth/access_token", {
     method: "POST",
     headers: {
@@ -27,7 +26,6 @@ export async function GET({ url, locals }: { url: URL; locals: any }) {
     return new Response("TOKEN EXCHANGE FAILED", { status: 500 });
   }
 
-  // Fetch GitHub user
   const userRes = await fetch("https://api.github.com/user", {
     headers: {
       Authorization: `Bearer ${tokenData.access_token}`,
