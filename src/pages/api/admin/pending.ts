@@ -1,54 +1,42 @@
+import type { APIRoute } from "astro";
 import { requireAdmin } from "../../../lib/requireAdmin";
-import { S3Client, ListObjectsV2Command } from "@aws-sdk/client-s3";
-import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
-import { GetObjectCommand } from "@aws-sdk/client-s3";
 
-export async function GET({ request, locals }: any) {
+export const GET: APIRoute = async ({ request, locals }) => {
+  // ---- AUTH ----
   const admin = await requireAdmin(request, locals);
-  if (!admin) return new Response("Unauthorized", { status: 401 });
+  if (!admin) {
+    return new Response("Unauthorized", { status: 401 });
+  }
 
-  const {
-    CF_ACCOUNT_ID,
-    R2_BUCKET,
-    R2_ACCESS_KEY_ID,
-    R2_SECRET_ACCESS_KEY,
-  } = locals.runtime.env;
+  // ---- R2 BINDING ----
+  const bucket = locals.runtime.env.HULETTCRAFT_BUCKET;
+  if (!bucket) {
+    console.error("R2 bucket binding missing");
+    return new Response("Server misconfigured", { status: 500 });
+  }
 
-  const client = new S3Client({
-    region: "auto",
-    endpoint: `https://${CF_ACCOUNT_ID}.r2.cloudflarestorage.com`,
-    credentials: {
-      accessKeyId: R2_ACCESS_KEY_ID,
-      secretAccessKey: R2_SECRET_ACCESS_KEY,
-    },
+  // ---- LIST OBJECTS ----
+  const prefix = "Screenshots - Need Approval/";
+
+  const list = await bucket.list({
+    prefix,
   });
 
-  const res = await client.send(
-    new ListObjectsV2Command({
-      Bucket: R2_BUCKET,
-      Prefix: "Screenshots - Need Approval/",
-    })
-  );
-
-  const items = await Promise.all(
-    (res.Contents ?? []).map(async (obj) => {
-      const key = obj.Key!;
-      const url = await getSignedUrl(
-        client,
-        new GetObjectCommand({
-          Bucket: R2_BUCKET,
-          Key: key,
-        }),
-        { expiresIn: 60 * 5 } // 5 min preview
-      );
-
+  // ---- BUILD RESPONSE ----
+  const screenshots = list.objects
+    .filter((obj) => !obj.key.endsWith("/")) // ignore pseudo-directories
+    .map((obj) => {
       return {
-        key,
-        url,
-        uploadedAt: obj.LastModified?.toISOString(),
+        key: obj.key,
+        filename: obj.key.split("/").pop(),
+        uploadedAt: obj.uploaded?.toISOString() ?? null,
+        size: obj.size,
+        metadata: obj.customMetadata ?? {},
+        // later: generate signed URL here if needed
       };
-    })
-  );
+    });
 
-  return Response.json(items);
-}
+  return new Response(JSON.stringify(screenshots), {
+    headers: { "Content-Type": "application/json" },
+  });
+};
