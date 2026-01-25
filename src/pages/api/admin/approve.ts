@@ -1,32 +1,45 @@
 import type { APIRoute } from "astro";
-import { requireAdmin } from "../../../lib/requireAdmin";
 
 export const POST: APIRoute = async ({ request, locals }) => {
-  const admin = await requireAdmin(request, locals);
-  if (!admin) return new Response("Unauthorized", { status: 401 });
-
   const bucket = locals.runtime.env.HULETTCRAFT_BUCKET;
-  if (!bucket) return new Response("R2 missing", { status: 500 });
+  if (!bucket) {
+    console.error("R2 bucket binding missing");
+    return new Response("Server misconfigured", { status: 500 });
+  }
 
-  const { key } = await request.json();
-  if (!key) return new Response("Missing key", { status: 400 });
+  const body = await request.json();
+  const keys: string[] =
+    body.keys ??
+    (body.key ? [body.key] : []);
 
-  const obj = await bucket.get(key);
-  if (!obj) return new Response("Not found", { status: 404 });
+  if (!keys.length) {
+    return new Response("No keys provided", { status: 400 });
+  }
 
-  const approvedKey = key.replace(
-    "Screenshots - Need Approval/",
-    "Screenshots/"
+  await Promise.all(
+    keys.map(async (pendingKey) => {
+      const obj = await bucket.get(pendingKey);
+      if (!obj) return;
+
+      const meta = obj.customMetadata ?? {};
+
+      const world = meta.world || "unknown";
+      const season = meta.season ? `season-${meta.season}` : "season-unknown";
+
+      const filename = pendingKey.split("/").pop();
+      if (!filename) return;
+
+      const approvedKey =
+        `Screenshots/${world}/${season}/${filename}`;
+
+      await bucket.put(approvedKey, obj.body, {
+        httpMetadata: obj.httpMetadata,
+        customMetadata: meta,
+      });
+
+      await bucket.delete(pendingKey);
+    })
   );
 
-  await bucket.put(approvedKey, obj.body, {
-    httpMetadata: obj.httpMetadata,
-    customMetadata: obj.customMetadata,
-  });
-
-  await bucket.delete(key);
-
-  return new Response(JSON.stringify({ ok: true }), {
-    headers: { "Content-Type": "application/json" },
-  });
+  return new Response("OK");
 };
