@@ -1,5 +1,8 @@
-export async function GET() {
-  return new Response("CALLBACK ALIVE", {
-    headers: { "Content-Type": "text/plain" },
-  });
+export async function GET({ url }: { url: URL }) {
+  const code = url.searchParams.get("code");
+
+  return new Response(
+    `CODE=${code ?? "none"}`,
+    { headers: { "Content-Type": "text/plain" } }
+  );
 }
