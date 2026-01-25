@@ -3,7 +3,6 @@ import type { APIRoute } from "astro";
 export const POST: APIRoute = async ({ request, locals }) => {
   try {
     const bucket = locals.runtime.env.HULETTCRAFT_BUCKET;
-
     if (!bucket) {
       console.error("R2 bucket binding missing");
       return new Response("Server misconfigured", { status: 500 });
@@ -22,15 +21,13 @@ export const POST: APIRoute = async ({ request, locals }) => {
 
     const world = String(formData.get("world") ?? "unknown");
     const season = String(formData.get("season") ?? "");
+    const description = String(formData.get("description") ?? "");
     const author = String(formData.get("author") ?? "");
 
     const timestamp = Date.now();
     const safeName = file.name.replace(/[^a-z0-9.\-_]/gi, "_");
 
-    const objectKey =
-      `Screenshots - Need Approval/${world}/` +
-      (season ? `season-${season}/` : "") +
-      `${timestamp}-${safeName}`;
+    const objectKey = `Screenshots - Need Approval/${timestamp}-${safeName}`;
 
     await bucket.put(objectKey, await file.arrayBuffer(), {
       httpMetadata: {
@@ -39,6 +36,7 @@ export const POST: APIRoute = async ({ request, locals }) => {
       customMetadata: {
         world,
         season,
+        description,
         author,
       },
     });
