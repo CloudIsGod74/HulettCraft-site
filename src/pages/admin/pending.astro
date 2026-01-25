@@ -38,7 +38,7 @@ try {
 
     {screenshots.map((shot) => (
       <div class="pending-card">
-        <img src={shot.url} alt="Pending screenshot" />
+        <img src={shot.previewUrl} alt="Pending screenshot" />
 
         <div class="meta">
           <small>Uploaded {new Date(shot.uploadedAt).toLocaleString()}</small>

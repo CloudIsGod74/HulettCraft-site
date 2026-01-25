@@ -1,63 +1,32 @@
+import type { APIRoute } from "astro";
 import { requireAdmin } from "../../../lib/requireAdmin";
-import {
-  S3Client,
-  CopyObjectCommand,
-  DeleteObjectCommand,
-} from "@aws-sdk/client-s3";
 
-export async function POST({ request, locals }) {
+export const POST: APIRoute = async ({ request, locals }) => {
   const admin = await requireAdmin(request, locals);
   if (!admin) return new Response("Unauthorized", { status: 401 });
+
+  const bucket = locals.runtime.env.HULETTCRAFT_BUCKET;
+  if (!bucket) return new Response("R2 missing", { status: 500 });
 
   const { key } = await request.json();
   if (!key) return new Response("Missing key", { status: 400 });
 
-  const {
-    CF_ACCOUNT_ID,
-    R2_BUCKET,
-    R2_ACCESS_KEY_ID,
-    R2_SECRET_ACCESS_KEY,
-  } = locals.runtime.env;
-
-  if (
-    !CF_ACCOUNT_ID ||
-    !R2_BUCKET ||
-    !R2_ACCESS_KEY_ID ||
-    !R2_SECRET_ACCESS_KEY
-  ) {
-    return new Response("R2 env missing", { status: 500 });
-  }
-
-  const client = new S3Client({
-    region: "auto",
-    endpoint: `https://${CF_ACCOUNT_ID}.r2.cloudflarestorage.com`,
-    credentials: {
-      accessKeyId: R2_ACCESS_KEY_ID,
-      secretAccessKey: R2_SECRET_ACCESS_KEY,
-    },
-  });
+  const obj = await bucket.get(key);
+  if (!obj) return new Response("Not found", { status: 404 });
 
   const approvedKey = key.replace(
     "Screenshots - Need Approval/",
     "Screenshots/"
   );
 
-  // Copy → Approved
-  await client.send(
-    new CopyObjectCommand({
-      Bucket: R2_BUCKET,
-      CopySource: `${R2_BUCKET}/${key}`,
-      Key: approvedKey,
-    })
-  );
+  await bucket.put(approvedKey, obj.body, {
+    httpMetadata: obj.httpMetadata,
+    customMetadata: obj.customMetadata,
+  });
 
-  // Delete original
-  await client.send(
-    new DeleteObjectCommand({
-      Bucket: R2_BUCKET,
-      Key: key,
-    })
-  );
+  await bucket.delete(key);
 
-  return new Response(JSON.stringify({ ok: true }));
-}
+  return new Response(JSON.stringify({ ok: true }), {
+    headers: { "Content-Type": "application/json" },
+  });
+};

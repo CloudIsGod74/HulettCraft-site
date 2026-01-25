@@ -32,6 +32,7 @@ export const GET: APIRoute = async ({ request, locals }) => {
         uploadedAt: obj.uploaded?.toISOString() ?? null,
         size: obj.size,
         metadata: obj.customMetadata ?? {},
+	previewUrl: `/api/admin/preview?key=${encodeURIComponent(obj.key)}`
         // later: generate signed URL here if needed
       };
     });
