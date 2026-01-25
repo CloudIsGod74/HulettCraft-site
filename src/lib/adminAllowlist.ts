@@ -1,4 +1,4 @@
 export const ADMIN_USERS = new Set([
-  "CloudIsGod74",
+  "cloudisgod74",
   // add more later
 ]);
