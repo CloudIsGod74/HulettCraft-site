@@ -1,0 +1,234 @@
+---
+import BaseLayout from "@/layouts/BaseLayout.astro";
+import { requireAdmin } from "@/lib/requireAdmin";
+
+requireAdmin(Astro.locals);
+---
+
+<BaseLayout>
+  <h1>Bulk Upload Screenshots</h1>
+  <p class="subtitle">Admin-only direct upload (skips approval)</p>
+
+  <input
+    type="file"
+    id="fileInput"
+    multiple
+    accept="image/*"
+    hidden
+  />
+
+  <div id="dropzone">
+    Drag images here or click to select
+  </div>
+
+  <form id="uploadForm">
+    <table id="uploadTable">
+      <thead>
+        <tr>
+          <th>Preview</th>
+          <th>Filename</th>
+          <th>World</th>
+          <th style ="white-space: nowrap:">
+ 	 Season
+ 	 <input
+ 	   type="number"
+ 	   id="bulkSeasonHeader"
+ 	   placeholder="All"
+ 	   style="width: 4.5rem; margin-top: 0.25rem;
+	  "
+ 	 />
+	</th>
+
+          <th>Description</th>
+          <th>Author</th>
+        </tr>
+      </thead>
+      <tbody></tbody>
+    </table>
+
+    <div class="actions">
+      <button type="submit">Upload all</button>
+    </div>
+  </form>
+</BaseLayout>
+
+<style>
+.subtitle {
+  opacity: 0.75;
+  margin-bottom: 1.25rem;
+}
+
+#dropzone {
+  border: 2px dashed #2fa36b;
+  background: rgba(15, 30, 40, 0.6);
+  padding: 1.5rem;
+  text-align: center;
+  cursor: pointer;
+  margin-bottom: 1.5rem;
+  border-radius: 8px;
+}
+
+table {
+  width: 100%;
+  background: rgba(10, 20, 30, 0.75);
+  border-radius: 10px;
+  overflow: hidden;
+}
+
+thead {
+  background: rgba(20, 40, 55, 0.95);
+}
+
+th {
+  padding: 0.75rem;
+  text-transform: uppercase;
+  font-size: 0.8rem;
+  border-bottom: 2px solid #2fa36b;
+}
+
+td {
+  padding: 0.5rem;
+}
+
+.preview {
+  width: 96px;
+  height: 54px;
+  object-fit: cover;
+  border-radius: 6px;
+}
+
+input {
+  width: 100%;
+  background: rgba(0,0,0,0.35);
+  border: 1px solid rgba(255,255,255,0.15);
+  color: white;
+  padding: 0.4rem;
+  border-radius: 6px;
+}
+
+.actions {
+  margin-top: 1rem;
+  text-align: right;
+}
+
+.actions button {
+  background: #2fa36b;
+  border: none;
+  padding: 0.6rem 1.2rem;
+  font-weight: 600;
+  border-radius: 6px;
+  cursor: pointer;
+}
+</style>
+
+<script is:inline>
+  window.addEventListener("DOMContentLoaded", () => {
+    const dropzone = document.getElementById("dropzone");
+    const fileInput = document.getElementById("fileInput");
+    const tableBody = document.querySelector("#uploadTable tbody");
+    const form = document.getElementById("uploadForm");
+
+    let rows = [];
+
+    const bulkSeasonHeader = document.getElementById("bulkSeasonHeader");
+
+   bulkSeasonHeader.addEventListener("input", () => {
+     const value = bulkSeasonHeader.value;
+     if (!value) return;
+
+     rows.forEach(row => {
+       row.season = value;
+     });
+
+     render();
+   });
+
+
+    dropzone.addEventListener("click", () => {
+      fileInput.value = "";
+      fileInput.click();
+    });
+
+    dropzone.addEventListener("dragover", (e) => e.preventDefault());
+
+    dropzone.addEventListener("drop", (e) => {
+      e.preventDefault();
+      addFiles([...e.dataTransfer.files]);
+    });
+
+    fileInput.addEventListener("change", () => {
+      if (!fileInput.files?.length) return;
+      addFiles([...fileInput.files]);
+    });
+
+    function addFiles(files) {
+      files.forEach(file => {
+        rows.push({
+          file,
+          world: "hulettcraft",
+          season: "",
+          description: "",
+          author: "",
+        });
+      });
+      render();
+    }
+
+    function render() {
+      tableBody.innerHTML = "";
+
+      rows.forEach((row, i) => {
+        const url = URL.createObjectURL(row.file);
+
+        tableBody.insertAdjacentHTML("beforeend", `
+          <tr>
+            <td><img class="preview" src="${url}" /></td>
+            <td>${row.file.name}</td>
+            <td><input data-i="${i}" data-k="world" value="${row.world}" /></td>
+            <td><input type="number" data-i="${i}" data-k="season" /></td>
+            <td><input data-i="${i}" data-k="description" /></td>
+            <td><input data-i="${i}" data-k="author" /></td>
+          </tr>
+        `);
+      });
+
+      tableBody.querySelectorAll("input").forEach(input => {
+        input.addEventListener("input", (e) => {
+          const i = e.target.dataset.i;
+          const k = e.target.dataset.k;
+          rows[i][k] = e.target.value;
+        });
+      });
+    }
+
+    form.addEventListener("submit", async (e) => {
+      e.preventDefault();
+
+      const fd = new FormData();
+      fd.append("manifest", JSON.stringify(
+        rows.map(r => ({
+          filename: r.file.name,
+          world: r.world,
+          season: Number(r.season),
+          description: r.description,
+          author: r.author,
+        }))
+      ));
+
+      rows.forEach(r => fd.append("files", r.file));
+
+      const res = await fetch("/api/admin/bulk-upload", {
+        method: "POST",
+        body: fd,
+      });
+
+      if (res.ok) {
+        rows = [];
+        render();
+        alert("Upload complete");
+      } else {
+        alert("Upload failed");
+      }
+    });
+  });
+</script>

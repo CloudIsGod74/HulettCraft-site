@@ -8,6 +8,7 @@ export default defineConfig({
   vite: {
     resolve: {
       alias: {
+	"@": "/src",
         "@config": "/src/config",
       },
     },
