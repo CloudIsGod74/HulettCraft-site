@@ -56,36 +56,37 @@ if (!seasonConfig?.usesStaticImages) {
       <div class="season-grid">
         {screenshots.map((shot) => (
           <figure data-key={shot.key}>
-            {admin ? (
-              <>
-                <textarea
-                  class="edit-description"
-                  placeholder="Description"
-                >{shot.metadata?.description ?? ""}</textarea>
+  <img
+    src={shot.url}
+    loading="lazy"
+    alt={shot.metadata?.description ?? "Season screenshot"}
+  />
 
-                <input
-                  class="edit-author"
-                  type="text"
-                  placeholder="Author"
-                  value={shot.metadata?.author ?? ""}
-                />
+  {admin ? (
+    <div class="admin-fields">
+      <textarea
+        class="edit-description"
+        placeholder="Description"
+      >{shot.metadata?.description ?? ""}</textarea>
 
-                <button class="save-meta" data-key={shot.key}>
-                  Save
-                </button>
-              </>
-            ) : (
-              shot.metadata?.description && (
-                <figcaption>{shot.metadata.description}</figcaption>
-              )
-            )}
+      <input
+        class="edit-author"
+        type="text"
+        placeholder="Author"
+        value={shot.metadata?.author ?? ""}
+      />
 
-            <img
-              src={shot.url}
-              loading="lazy"
-              alt={shot.metadata?.description ?? "Season screenshot"}
-            />
-          </figure>
+      <button class="save-meta" data-key={shot.key}>
+        Save
+      </button>
+    </div>
+  ) : (
+    shot.metadata?.description && (
+      <figcaption>{shot.metadata.description}</figcaption>
+    )
+  )}
+</figure>
+
         ))}
       </div>
     )}
@@ -160,7 +161,7 @@ if (!seasonConfig?.usesStaticImages) {
 }
 </style>
 
-<script>
+<script is:inline>
   // Lightbox
   const lightbox = document.getElementById("lightbox");
   const lightboxImg = document.getElementById("lightbox-img");
