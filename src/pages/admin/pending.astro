@@ -31,21 +31,29 @@ try {
     <p>Awaiting admin approval</p>
   </section>
 
+  <!-- Bulk actions -->
   <section class="bulk-actions">
-    <label>
-      <input type="checkbox" id="select-all" />
-      Select all
-    </label>
+    <div class="bulk-left">
+      <label>
+        <input type="checkbox" id="select-all" />
+        Select all
+      </label>
 
-    <button id="bulk-approve" class="approve">
-      Approve selected
-    </button>
+      <button id="bulk-approve" class="btn approve">
+        Approve selected
+      </button>
 
-    <button id="bulk-reject" class="reject">
-      Reject selected
-    </button>
+      <button id="bulk-reject" class="btn reject">
+        Reject selected
+      </button>
+    </div>
+
+    <div class="bulk-right">
+      <a href="/admin/bulk-upload" class="btn bulk-upload">
+        Bulk Upload Screenshots
+      </a>
+    </div>
   </section>
-
 
   <section id="pending-list" class="pending-list">
     {screenshots.length === 0 && (
@@ -54,42 +62,110 @@ try {
 
     {screenshots.map((shot) => (
       <div class="pending-card" data-key={shot.key}>
- 	 <input
-   	  type="checkbox"
-  	  class="bulk-checkbox"
-   	  data-key={shot.key}
-  	 />
+        <input
+          type="checkbox"
+          class="bulk-checkbox"
+          data-key={shot.key}
+        />
 
         <img src={shot.previewUrl} alt="Pending screenshot" />
 
-	<div class="edit-fields">
- 	 <textarea
-	    class="edit-description"
-	    placeholder="Description (optional)"
-	  >{shot.metadata?.description ?? ""}</textarea>
+        <div class="edit-fields">
+          <textarea
+            class="edit-description"
+            placeholder="Description (optional)"
+          >{shot.metadata?.description ?? ""}</textarea>
 
-	  <input
-	    type="text"
-	    class="edit-author"
-	    placeholder="Author (optional)"
-	    value={shot.metadata?.author ?? ""}
-	  />
-	</div>
+          <input
+            type="text"
+            class="edit-author"
+            placeholder="Author (optional)"
+            value={shot.metadata?.author ?? ""}
+          />
+        </div>
 
-	<div class="meta">
-
+        <div class="meta">
           <small>
-		Uploaded {new Date(shot.uploadedAt).toLocaleString()}
-	  </small>
+            Uploaded {new Date(shot.uploadedAt).toLocaleString()}
+          </small>
 
           <div class="actions">
-            <button class="approve" data-key={shot.key}>Approve</button>
-            <button class="reject" data-key={shot.key}>Reject</button>
+            <button class="btn approve" data-key={shot.key}>
+              Approve
+            </button>
+            <button class="btn reject" data-key={shot.key}>
+              Reject
+            </button>
           </div>
         </div>
       </div>
     ))}
   </section>
+
+  <style>
+    .bulk-actions {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin: 2rem 0;
+      gap: 1rem;
+      flex-wrap: wrap;
+    }
+
+    .bulk-left {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+    }
+
+    .bulk-right {
+      display: flex;
+      align-items: center;
+    }
+
+    .btn {
+      padding: 0.45rem 0.9rem;
+      border-radius: 6px;
+      border: 1px solid transparent;
+      font-size: 0.85rem;
+      cursor: pointer;
+      font-weight: 600;
+      transition: background 0.15s ease, opacity 0.15s ease;
+    }
+
+    .btn.approve {
+      background: rgba(47, 163, 107, 0.85);
+      color: #000;
+    }
+
+    .btn.approve:hover {
+      background: rgba(47, 163, 107, 1);
+    }
+
+    .btn.reject {
+      background: rgba(220, 70, 70, 0.85);
+      color: #000;
+    }
+
+    .btn.reject:hover {
+      background: rgba(220, 70, 70, 1);
+    }
+
+    .btn.bulk-upload {
+      background: rgba(70, 140, 220, 0.9);
+      color: #000;
+      text-decoration: none;
+    }
+
+    .btn.bulk-upload:hover {
+      background: rgba(70, 140, 220, 1);
+    }
+
+    .btn:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+    }
+  </style>
 
 <script type="module">
   async function action(button, endpoint) {
@@ -100,31 +176,26 @@ try {
 
     if (endpoint.includes("approve")) {
       payload.updates = {
-       [key]: {
-        description:
-          card.querySelector(".edit-description")?.value ?? "",
-        author:
-          card.querySelector(".edit-author")?.value ?? "",	
-	    },
-	  };
-	}
+        [key]: {
+          description:
+            card.querySelector(".edit-description")?.value ?? "",
+          author:
+            card.querySelector(".edit-author")?.value ?? "",
+        },
+      };
+    }
 
-    // Optimistic UI
     card.style.opacity = "0.5";
     button.disabled = true;
 
     try {
       const res = await fetch(endpoint, {
         method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify(payload),
       });
 
       if (!res.ok) throw new Error(await res.text());
-
-      // Remove card on success
       card.remove();
     } catch (err) {
       console.error(err);
@@ -148,53 +219,6 @@ try {
 </script>
 
 <script type="module">
-  async function loadPending() {
-    try {
-      const res = await fetch("/api/admin/pending", {
-        credentials: "same-origin",
-      });
-
-      if (!res.ok) return;
-
-      const shots = await res.json();
-
-      if (!shots.length) {
-        container.innerHTML =
-          `<p class="muted center">No pending screenshots 🎉</p>`;
-        return;
-      }
-
-      container.innerHTML = shots
-        .map(
-          (shot) => `
-          <div class="pending-card" data-key="${shot.key}">
-            <img src="${shot.previewUrl}" alt="Pending screenshot" />
-
-            <div class="meta">
-              <small>
-                Uploaded ${new Date(shot.uploadedAt).toLocaleString()}
-              </small>
-
-              <div class="actions">
-                <button class="approve" data-key="${shot.key}">Approve</button>
-                <button class="reject" data-key="${shot.key}">Reject</button>
-              </div>
-            </div>
-          </div>
-        `
-        )
-        .join("");
-    } catch (err) {
-      console.error("Auto-refresh failed", err);
-    }
-  }
-
-  // Refresh every 10 seconds
- // setInterval(loadPending, 10000);
-</script>
-
-<script type="module">
-  const list = document.getElementById("pending-list");
   const selectAll = document.getElementById("select-all");
 
   function getSelectedKeys() {
@@ -203,51 +227,47 @@ try {
     ).map((cb) => cb.dataset.key);
   }
 
-  // Select all toggle
   selectAll?.addEventListener("change", () => {
     document
       .querySelectorAll(".bulk-checkbox")
       .forEach((cb) => (cb.checked = selectAll.checked));
   });
 
-async function bulkAction(endpoint) {
-  const keys = getSelectedKeys();
-  if (!keys.length) return;
+  async function bulkAction(endpoint) {
+    const keys = getSelectedKeys();
+    if (!keys.length) return;
 
-  // Build metadata overrides
-  const updates = {};
-  keys.forEach((key) => {
-    const card = document.querySelector(
-      `.pending-card[data-key="${key}"]`
-    );
+    const updates = {};
+    keys.forEach((key) => {
+      const card = document.querySelector(
+        `.pending-card[data-key="${key}"]`
+      );
 
-    updates[key] = {
-      description:
-        card.querySelector(".edit-description")?.value ?? "",
-      author:
-        card.querySelector(".edit-author")?.value ?? "",
-    };
-  });
+      updates[key] = {
+        description:
+          card.querySelector(".edit-description")?.value ?? "",
+        author:
+          card.querySelector(".edit-author")?.value ?? "",
+      };
+    });
 
-  const res = await fetch(endpoint, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ keys, updates }),
-  });
+    const res = await fetch(endpoint, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ keys, updates }),
+    });
 
-  if (!res.ok) {
-    alert("Bulk action failed");
-    return;
+    if (!res.ok) {
+      alert("Bulk action failed");
+      return;
+    }
+
+    keys.forEach((key) => {
+      document
+        .querySelector(`.pending-card[data-key="${key}"]`)
+        ?.remove();
+    });
   }
-
-  // Remove cards instantly
-  keys.forEach((key) => {
-    document
-      .querySelector(`.pending-card[data-key="${key}"]`)
-      ?.remove();
-  });
-}
-
 
   document
     .getElementById("bulk-approve")
@@ -261,5 +281,4 @@ async function bulkAction(endpoint) {
       bulkAction("/api/admin/reject")
     );
 </script>
-
 </BaseLayout>
