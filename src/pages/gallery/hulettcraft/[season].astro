@@ -85,4 +85,26 @@ if (!seasonConfig?.usesStaticImages) {
       ← Back to all seasons
     </a>
   </section>
+<div id="lightbox" class="lightbox hidden">
+  <div class="lightbox-backdrop"></div>
+  <img id="lightbox-img" />
+</div>
+
+<script>
+  const lightbox = document.getElementById("lightbox");
+  const lightboxImg = document.getElementById("lightbox-img");
+
+  document.querySelectorAll(".season-grid img").forEach(img => {
+    img.addEventListener("click", () => {
+      lightboxImg.src = img.src;
+      lightbox.classList.remove("hidden");
+    });
+  });
+
+  lightbox.addEventListener("click", () => {
+    lightbox.classList.add("hidden");
+    lightboxImg.src = "";
+  });
+</script>
+
 </BaseLayout>
