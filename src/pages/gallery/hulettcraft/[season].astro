@@ -2,25 +2,25 @@
 import BaseLayout from "../../../layouts/BaseLayout.astro";
 import { HULETTCRAFT } from "../../../config/hulettcraft";
 import { HULETTCRAFT_SEASONS } from "@config/hulettcraftSeasons";
+import { requireAdmin } from "../../../lib/requireAdmin";
 
 const raw = Astro.params.season;
 const match = raw?.match(/^season-(\d+)$/);
-
-if (!match) {
-  throw new Error("Invalid season");
-}
+if (!match) throw new Error("Invalid season");
 
 const season = Number(match[1]);
-
-
 const seasonConfig = HULETTCRAFT_SEASONS[season];
 const isCurrent = season === HULETTCRAFT.currentSeason;
 
-// Load screenshots unless this season is static
+// Detect admin (non-blocking)
+const admin = await requireAdmin(Astro.request, Astro.locals);
+
+// Load screenshots unless static
 let screenshots = [];
 if (!seasonConfig?.usesStaticImages) {
   const res = await fetch(
-    `${Astro.site}/api/gallery/hulettcraft/season/${season}`
+    `${Astro.site}/api/gallery/hulettcraft/season/${season}`,
+    { headers: { cookie: Astro.request.headers.get("cookie") ?? "" } }
   );
   screenshots = res.ok ? await res.json() : [];
 }
@@ -53,30 +53,41 @@ if (!seasonConfig?.usesStaticImages) {
     ) : screenshots.length === 0 ? (
       <p class="muted center">No screenshots yet for this season.</p>
     ) : (
-<div class="season-grid">
-  {screenshots.map((shot) => (
-    <figure style="display:flex; flex-direction:column; gap:0.5rem;">
-      {shot.metadata?.description && (
-       <figcaption
-        style="
-          font-size: 0.85rem;
-          color: var(--muted);
-          text-align: left;
-        "
-      >
-        {shot.metadata.description}
-      </figcaption>
-    )}
+      <div class="season-grid">
+        {screenshots.map((shot) => (
+          <figure data-key={shot.key}>
+            {admin ? (
+              <>
+                <textarea
+                  class="edit-description"
+                  placeholder="Description"
+                >{shot.metadata?.description ?? ""}</textarea>
 
-      <img
-        src={shot.url}
-        loading="lazy"
-        style="width:100%; border-radius:16px;"
-      />
-    </figure>
-  ))}
-</div>
+                <input
+                  class="edit-author"
+                  type="text"
+                  placeholder="Author"
+                  value={shot.metadata?.author ?? ""}
+                />
 
+                <button class="save-meta" data-key={shot.key}>
+                  Save
+                </button>
+              </>
+            ) : (
+              shot.metadata?.description && (
+                <figcaption>{shot.metadata.description}</figcaption>
+              )
+            )}
+
+            <img
+              src={shot.url}
+              loading="lazy"
+              alt={shot.metadata?.description ?? "Season screenshot"}
+            />
+          </figure>
+        ))}
+      </div>
     )}
   </section>
 
@@ -85,12 +96,72 @@ if (!seasonConfig?.usesStaticImages) {
       ← Back to all seasons
     </a>
   </section>
-<div id="lightbox" class="lightbox hidden">
-  <div class="lightbox-backdrop"></div>
-  <img id="lightbox-img" />
-</div>
+
+  <!-- Lightbox -->
+  <div id="lightbox" class="lightbox hidden">
+    <div class="lightbox-backdrop"></div>
+    <img id="lightbox-img" />
+  </div>
+
+<style>
+.season-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+  gap: 1.5rem;
+}
+
+.season-grid figure {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+  transition: transform 0.18s ease, box-shadow 0.18s ease;
+}
+
+.season-grid figure:hover {
+  transform: translateY(-4px);
+  box-shadow:
+    0 12px 28px rgba(0, 0, 0, 0.35),
+    0 0 0 1px rgba(255, 255, 255, 0.06);
+}
+
+.season-grid img {
+  width: 100%;
+  aspect-ratio: 16 / 9;
+  object-fit: cover;
+  border-radius: 14px;
+  cursor: zoom-in;
+}
+
+.season-grid figcaption {
+  font-size: 0.8rem;
+  color: var(--muted);
+}
+
+.edit-description,
+.edit-author {
+  width: 100%;
+  background: rgba(0,0,0,0.35);
+  border: 1px solid rgba(255,255,255,0.15);
+  color: white;
+  padding: 0.4rem;
+  border-radius: 6px;
+  font-size: 0.8rem;
+}
+
+.save-meta {
+  align-self: flex-end;
+  background: #2fa36b;
+  border: none;
+  padding: 0.35rem 0.75rem;
+  font-size: 0.75rem;
+  font-weight: 600;
+  border-radius: 6px;
+  cursor: pointer;
+}
+</style>
 
 <script>
+  // Lightbox
   const lightbox = document.getElementById("lightbox");
   const lightboxImg = document.getElementById("lightbox-img");
 
@@ -105,6 +176,32 @@ if (!seasonConfig?.usesStaticImages) {
     lightbox.classList.add("hidden");
     lightboxImg.src = "";
   });
-</script>
 
+  // Admin save metadata
+  document.querySelectorAll(".save-meta").forEach(btn => {
+    btn.addEventListener("click", async () => {
+      const fig = btn.closest("figure");
+      const key = btn.dataset.key;
+
+      const description =
+        fig.querySelector(".edit-description")?.value ?? "";
+      const author =
+        fig.querySelector(".edit-author")?.value ?? "";
+
+      const res = await fetch("/api/admin/update-metadata", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        credentials: "same-origin",
+        body: JSON.stringify({
+          key,
+          updates: { description, author },
+        }),
+      });
+
+      if (!res.ok) {
+        alert("Save failed");
+      }
+    });
+  });
+</script>
 </BaseLayout>
