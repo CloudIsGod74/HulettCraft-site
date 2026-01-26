@@ -403,6 +403,12 @@ button.reject {
   }
 }
 
+.season-cell select {
+  width: 4.5rem;
+  margin: 0 auto;      /* ← THIS is the missing piece */
+  display: block;      /* ← required for margin auto to work */
+}
+
 .subtitle {
   opacity: 0.75;
   margin-bottom: 1.25rem;

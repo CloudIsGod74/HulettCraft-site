@@ -28,16 +28,16 @@ requireAdmin(Astro.locals);
           <th>Preview</th>
           <th>Filename</th>
           <th>World</th>
-          <th style ="white-space: nowrap:">
- 	 Season
- 	 <input
- 	   type="number"
- 	   id="bulkSeasonHeader"
- 	   placeholder="All"
- 	   style="width: 4.5rem; margin-top: 0.25rem;
-	  "
- 	 />
-	</th>
+
+          <!-- Season header with centered label + dropdown -->
+          <th class="season-header">
+            <div class="season-header-inner">
+              <span>Season</span>
+              <select id="bulkSeasonHeader">
+                <option value="">—</option>
+              </select>
+            </div>
+          </th>
 
           <th>Description</th>
           <th>Author</th>
@@ -84,6 +84,7 @@ th {
   text-transform: uppercase;
   font-size: 0.8rem;
   border-bottom: 2px solid #2fa36b;
+  text-align: left;
 }
 
 td {
@@ -97,15 +98,48 @@ td {
   border-radius: 6px;
 }
 
-input {
+/* Inputs & selects */
+input,
+select {
   width: 100%;
-  background: rgba(0,0,0,0.35);
-  border: 1px solid rgba(255,255,255,0.15);
+  background: rgba(0, 0, 0, 0.35);
+  border: 1px solid rgba(255, 255, 255, 0.15);
   color: white;
   padding: 0.4rem;
   border-radius: 6px;
+  font-size: 0.85rem;
 }
 
+/* Season column sizing & centering */
+.season-header {
+  width: 120px;
+}
+
+.season-header-inner {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.4rem;
+}
+
+.season-header-inner span {
+  white-space: nowrap;
+}
+
+.season-header-inner select {
+  width: 4.5rem;
+}
+
+.season-cell {
+  width: 120px;
+  text-align: center;
+}
+
+.season-cell select {
+  width: 4.5rem;
+}
+
+/* Actions */
 .actions {
   margin-top: 1rem;
   text-align: right;
@@ -123,35 +157,55 @@ input {
 
 <script is:inline>
   window.addEventListener("DOMContentLoaded", () => {
+    const AVAILABLE_SEASONS = [1, 2, 3, 4, 5, 6, 7, 8];
+
     const dropzone = document.getElementById("dropzone");
     const fileInput = document.getElementById("fileInput");
     const tableBody = document.querySelector("#uploadTable tbody");
     const form = document.getElementById("uploadForm");
+    const bulkSeasonHeader = document.getElementById("bulkSeasonHeader");
 
     let rows = [];
 
-    const bulkSeasonHeader = document.getElementById("bulkSeasonHeader");
+    /* Populate header dropdown */
+    AVAILABLE_SEASONS.forEach(season => {
+      const opt = document.createElement("option");
+      opt.value = season;
+      opt.textContent = season;
+      bulkSeasonHeader.appendChild(opt);
+    });
 
-   bulkSeasonHeader.addEventListener("input", () => {
-     const value = bulkSeasonHeader.value;
-     if (!value) return;
+    function syncBulkSeasonHeader() {
+      if (!rows.length) {
+        bulkSeasonHeader.value = "";
+        return;
+      }
 
-     rows.forEach(row => {
-       row.season = value;
-     });
+      const first = rows[0].season;
+      const allSame = rows.every(r => r.season === first && first !== "");
 
-     render();
-   });
+      bulkSeasonHeader.value = allSame ? first : "";
+    }
 
+    bulkSeasonHeader.addEventListener("change", () => {
+      const value = bulkSeasonHeader.value;
+      if (!value) return;
+
+      rows.forEach(row => {
+        row.season = value;
+      });
+
+      render();
+    });
 
     dropzone.addEventListener("click", () => {
       fileInput.value = "";
       fileInput.click();
     });
 
-    dropzone.addEventListener("dragover", (e) => e.preventDefault());
+    dropzone.addEventListener("dragover", e => e.preventDefault());
 
-    dropzone.addEventListener("drop", (e) => {
+    dropzone.addEventListener("drop", e => {
       e.preventDefault();
       addFiles([...e.dataTransfer.files]);
     });
@@ -185,35 +239,51 @@ input {
             <td><img class="preview" src="${url}" /></td>
             <td>${row.file.name}</td>
             <td><input data-i="${i}" data-k="world" value="${row.world}" /></td>
-            <td><input type="number" data-i="${i}" data-k="season" /></td>
+
+            <td class="season-cell">
+              <select data-i="${i}" data-k="season">
+                <option value="">—</option>
+                ${AVAILABLE_SEASONS.map(
+                  s => `<option value="${s}" ${row.season == s ? "selected" : ""}>${s}</option>`
+                ).join("")}
+              </select>
+            </td>
+
             <td><input data-i="${i}" data-k="description" /></td>
             <td><input data-i="${i}" data-k="author" /></td>
           </tr>
         `);
       });
 
-      tableBody.querySelectorAll("input").forEach(input => {
-        input.addEventListener("input", (e) => {
+      tableBody.querySelectorAll("input, select").forEach(el => {
+        el.addEventListener("change", e => {
           const i = e.target.dataset.i;
           const k = e.target.dataset.k;
+          if (!k) return;
           rows[i][k] = e.target.value;
+          syncBulkSeasonHeader();
         });
       });
+
+      syncBulkSeasonHeader();
     }
 
-    form.addEventListener("submit", async (e) => {
+    form.addEventListener("submit", async e => {
       e.preventDefault();
 
       const fd = new FormData();
-      fd.append("manifest", JSON.stringify(
-        rows.map(r => ({
-          filename: r.file.name,
-          world: r.world,
-          season: Number(r.season),
-          description: r.description,
-          author: r.author,
-        }))
-      ));
+      fd.append(
+        "manifest",
+        JSON.stringify(
+          rows.map(r => ({
+            filename: r.file.name,
+            world: r.world,
+            season: Number(r.season),
+            description: r.description,
+            author: r.author,
+          }))
+        )
+      );
 
       rows.forEach(r => fd.append("files", r.file));
 
