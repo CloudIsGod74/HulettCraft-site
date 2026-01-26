@@ -2,7 +2,8 @@
 import BaseLayout from "@/layouts/BaseLayout.astro";
 import { requireAdmin } from "@/lib/requireAdmin";
 
-requireAdmin(Astro.locals);
+const admin = await requireAdmin(Astro.request, Astro.locals);
+if (!admin) return Astro.redirect("/admin/login");
 ---
 
 <BaseLayout>
