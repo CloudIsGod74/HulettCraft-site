@@ -1,49 +1,47 @@
 import type { APIRoute } from "astro";
+import { requireAdmin } from "../../../lib/requireAdmin";
 
 export const POST: APIRoute = async ({ request, locals }) => {
+  const admin = await requireAdmin(request, locals);
+  if (!admin) return new Response("Unauthorized", { status: 401 });
+
   const bucket = locals.runtime.env.HULETTCRAFT_BUCKET;
-  if (!bucket) {
-    console.error("R2 bucket binding missing");
-    return new Response("Server misconfigured", { status: 500 });
-  }
+  if (!bucket) return new Response("Server misconfigured", { status: 500 });
 
   const body = await request.json();
+  const keys: string[] = body.keys ?? (body.key ? [body.key] : []);
+  const updates: Record<string, any> = body.updates ?? {};
 
-  // Normalize single + bulk into ONE array
-  const targetKeys: string[] =
-    body.keys ??
-    (body.key ? [body.key] : []);
-
-  if (!targetKeys.length) {
+  if (!keys.length) {
     return new Response("No keys provided", { status: 400 });
   }
 
-  const updates = body.updates ?? {};
-
   await Promise.all(
-    targetKeys.map(async (pendingKey) => {
+    keys.map(async (pendingKey) => {
       const obj = await bucket.get(pendingKey);
       if (!obj) return;
 
-      const meta = {
-        ...(obj.customMetadata ?? {}),
-        ...(updates[pendingKey] ?? {}),
+      const originalMeta = obj.customMetadata ?? {};
+      const overrideMeta = updates[pendingKey] ?? {};
+
+      const finalMeta = {
+        ...originalMeta,
+        ...overrideMeta,
       };
 
-      const world = meta.world || "unknown";
-      const season = meta.season
-        ? `season-${meta.season}`
+      const world = finalMeta.world || "hulettcraft";
+      const season = finalMeta.season
+        ? `season-${finalMeta.season}`
         : "season-unknown";
 
       const filename = pendingKey.split("/").pop();
       if (!filename) return;
 
-      const approvedKey =
-        `Screenshots/${world}/${season}/${filename}`;
+      const approvedKey = `Screenshots/${world}/${season}/${filename}`;
 
       await bucket.put(approvedKey, obj.body, {
         httpMetadata: obj.httpMetadata,
-        customMetadata: meta,
+        customMetadata: finalMeta,
       });
 
       await bucket.delete(pendingKey);
