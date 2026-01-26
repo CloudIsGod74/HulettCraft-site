@@ -1,9 +1,12 @@
 import type { APIRoute } from "astro";
-import { requireAdmin } from "@/lib/requireAdmin";
-import { r2 } from "@/lib/r2";
+import { requireAdmin } from "../../../lib/requireAdmin";
 
 export const POST: APIRoute = async ({ request, locals }) => {
-  requireAdmin(locals);
+  const admin = await requireAdmin(request, locals);
+  if (!admin) return new Response("Unauthorized", { status: 401 });
+
+  const bucket = locals.runtime.env.HULETTCRAFT_BUCKET;
+  if (!bucket) return new Response("Server misconfigured", { status: 500 });
 
   const form = await request.formData();
   const files = form.getAll("files") as File[];
@@ -15,8 +18,8 @@ export const POST: APIRoute = async ({ request, locals }) => {
 
   let manifest: Array<{
     filename: string;
-    world: string;
-    season: number;
+    world?: string;
+    season?: string | number;
     description?: string;
     author?: string;
   }>;
@@ -27,32 +30,31 @@ export const POST: APIRoute = async ({ request, locals }) => {
     return new Response("Invalid manifest JSON", { status: 400 });
   }
 
-  const uploads = files.map(async (file) => {
-    const meta = manifest.find((m) => m.filename === file.name);
-    if (!meta) return;
+  await Promise.all(
+    files.map(async (file) => {
+      const meta = manifest.find((m) => m.filename === file.name);
+      if (!meta) return;
 
-    const world = meta.world || "hulettcraft";
-    const season = meta.season;
+      const world = meta.world || "hulettcraft";
+      const season = meta.season
+        ? `season-${meta.season}`
+        : "season-unknown";
 
-    const key = `Screenshots/${world}/season-${season}/${file.name}`;
+      const key = `Screenshots/${world}/${season}/${file.name}`;
 
-    await r2.put(key, file.stream(), {
-      httpMetadata: {
-        contentType: file.type,
-      },
-      customMetadata: {
-        world,
-        season: String(season),
-        description: meta.description ?? "",
-        author: meta.author ?? "",
-        approved: "true",
-      },
-    });
-  });
+      await bucket.put(key, file.stream(), {
+        httpMetadata: {
+          contentType: file.type,
+        },
+        customMetadata: {
+          world,
+          season: meta.season ? String(meta.season) : "",
+          description: meta.description ?? "",
+          author: meta.author ?? "",
+        },
+      });
+    })
+  );
 
-  await Promise.all(uploads);
-
-  return new Response(JSON.stringify({ success: true }), {
-    headers: { "Content-Type": "application/json" },
-  });
+  return new Response("OK");
 };
