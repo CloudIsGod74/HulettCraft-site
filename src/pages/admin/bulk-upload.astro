@@ -294,13 +294,16 @@ select {
 	credentials: "same-origin",
       });
 
-      if (res.ok) {
-        rows = [];
-        render();
-        alert("Upload complete");
-      } else {
-        alert("Upload failed");
-      }
+      if (!res.ok) {
+ 	 const text = await res.text();
+ 	 alert(`Upload failed: ${text}`);
+ 	 return;
+	}
+
+	rows = [];
+	render();
+	alert("Upload complete");
+
     });
   });
 </script>
