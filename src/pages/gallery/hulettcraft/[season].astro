@@ -56,35 +56,35 @@ if (!seasonConfig?.usesStaticImages) {
       <div class="season-grid">
         {screenshots.map((shot) => (
           <figure data-key={shot.key}>
-  <img
-    src={shot.url}
-    loading="lazy"
-    alt={shot.metadata?.description ?? "Season screenshot"}
-  />
+ 	   <img
+ 	     src={shot.url}
+ 	     loading="lazy"
+   	     alt={shot.metadata?.description ?? "Season screenshot"}
+ 	 />
 
-  {admin ? (
-    <div class="admin-fields">
-      <textarea
-        class="edit-description"
-        placeholder="Description"
-      >{shot.metadata?.description ?? ""}</textarea>
+	  {admin ? (
+  	   <div class="admin-fields">
+	      <textarea
+	        class="edit-description"
+	        placeholder="Description"
+	      >{shot.metadata?.description ?? ""}</textarea>
 
-      <input
-        class="edit-author"
-        type="text"
-        placeholder="Author"
-        value={shot.metadata?.author ?? ""}
-      />
+	      <input
+	        class="edit-author"
+	        type="text"
+	        placeholder="Author"
+	        value={shot.metadata?.author ?? ""}
+	      />
 
-      <button class="save-meta" data-key={shot.key}>
-        Save
-      </button>
-    </div>
-  ) : (
-    shot.metadata?.description && (
-      <figcaption>{shot.metadata.description}</figcaption>
-    )
-  )}
+	      <button class="save-meta" data-key={shot.key}>
+	        Save
+	      </button>
+	    </div>
+	  ) : (
+	    shot.metadata?.description && (
+	      <figcaption>{shot.metadata.description}</figcaption>
+	    )
+	  )}
 </figure>
 
         ))}

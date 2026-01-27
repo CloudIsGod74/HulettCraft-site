@@ -690,6 +690,16 @@ input:focus {
   font-weight: normal;
 }
 
+.webmap-preview {
+  transition: transform 0.15s ease, box-shadow 0.15s ease;
+}
+
+.webmap-preview:hover {
+  transform: scale(1.01);
+  box-shadow: 0 0 0 1px rgba(34, 197, 94, 0.4);
+  cursor: pointer;
+}
+
 .world-link {
   color: var(--text);
   text-decoration: none;
