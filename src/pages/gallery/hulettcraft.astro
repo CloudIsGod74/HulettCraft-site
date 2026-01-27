@@ -94,12 +94,13 @@ const current = HULETTCRAFT.currentSeason;
         display: block;
       "
     >
-      <img
-	class="webmap-preview"
-        src="/api/gallery/image?key=Screenshots/hulettcraft/webmap/overworld.png"
-        alt="HulettCraft World Map — click to open interactive map"
-        loading="lazy"
-        style="
+        <img
+    src={`/api/gallery/image?key=${encodeURIComponent(
+      "Screenshots/Season_8_Map.JPG"
+    )}`}
+    alt="HulettCraft World Map — click to open interactive map"
+    loading="lazy"
+    style="
           width: 100%;
           height: 100%;
           object-fit: contain;
