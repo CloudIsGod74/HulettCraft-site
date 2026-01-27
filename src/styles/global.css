@@ -391,6 +391,15 @@ button.reject {
   box-shadow: 0 30px 60px rgba(0, 0, 0, 0.6);
 }
 
+.map-link img {
+  transition: transform 0.25s ease, filter 0.25s ease;
+}
+
+.map-link:hover img {
+  transform: scale(1.02);
+  filter: brightness(1.05);
+}
+
 .status-link {
   display: inline-block;
   font-size: 0.9rem;
