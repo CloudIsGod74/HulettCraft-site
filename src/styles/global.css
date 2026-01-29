@@ -136,6 +136,23 @@ nav a:hover {
    MOBILE NAV
 ========================================= */
 
+.site-nav {
+  display: flex;
+  flex-wrap: wrap;        /* allow wrapping */
+  align-items: center;
+  row-gap: 0.25rem;       /* control vertical spacing */
+  column-gap: 1rem;       /* horizontal spacing */
+}
+
+/* Normalize anchor sizing */
+.site-nav a {
+  display: inline-flex;
+  align-items: center;
+  line-height: 1.2;
+  padding: 0.35rem 0;     /* tap-friendly without height creep */
+  white-space: nowrap;   /* prevents awkward multi-line buttons */
+}
+
 @media (max-width: 640px) {
   .nav-toggle {
     display: block;
