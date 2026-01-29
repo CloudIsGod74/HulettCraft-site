@@ -26,6 +26,6 @@ export const HULETTCRAFT_SEASONS: Record<number, {
   },
   8: {
     description: "The active season of HulettCraft, featuring ongoing survival and community builds.",
-    usesStaticImages: true
+    usesStaticImages: false
   }
 };

@@ -64,10 +64,12 @@ if (!seasonConfig?.usesStaticImages) {
 
 	  {admin ? (
   	   <div class="admin-fields">
-	      <textarea
+	      <input
 	        class="edit-description"
-	        placeholder="Description"
-	      >{shot.metadata?.description ?? ""}</textarea>
+	        type="text"
+		placeholder="Description"
+		value={shot.metadata?.description ?? ""}
+	      />
 
 	      <input
 	        class="edit-author"
@@ -179,20 +181,19 @@ if (!seasonConfig?.usesStaticImages) {
   });
 
   // Admin save metadata
-  document.querySelectorAll(".save-meta").forEach(btn => {
+  document.querySelectorAll(".save-meta").forEach((btn) => {
     btn.addEventListener("click", async () => {
-      const fig = btn.closest("figure");
-      const key = btn.dataset.key;
+      const card = btn.closest("[data-key]");
+      const key = card.dataset.key;
 
       const description =
-        fig.querySelector(".edit-description")?.value ?? "";
+        card.querySelector(".edit-description")?.value ?? "";
       const author =
-        fig.querySelector(".edit-author")?.value ?? "";
+        card.querySelector(".edit-author")?.value ?? "";
 
       const res = await fetch("/api/admin/update-metadata", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        credentials: "same-origin",
         body: JSON.stringify({
           key,
           updates: { description, author },
@@ -201,7 +202,11 @@ if (!seasonConfig?.usesStaticImages) {
 
       if (!res.ok) {
         alert("Save failed");
+        return;
       }
+
+      btn.textContent = "Saved ✓";
+      setTimeout(() => (btn.textContent = "Save"), 1500);
     });
   });
 </script>
