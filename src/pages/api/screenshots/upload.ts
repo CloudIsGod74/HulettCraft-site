@@ -34,10 +34,10 @@ export const POST: APIRoute = async ({ request, locals }) => {
         contentType: file.type,
       },
       customMetadata: {
-        world: String(world ?? ""),
-        season: String(season ?? ""),
-        description: String(description ?? ""),
-        author: String(author ?? ""),
+        world,
+        season,
+        description,
+        author,
       },
     });
 

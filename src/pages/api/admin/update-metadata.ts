@@ -16,10 +16,12 @@ export const POST: APIRoute = async ({ request, locals }) => {
   const obj = await bucket.get(key);
   if (!obj) return new Response("Not found", { status: 404 });
 
-  const finalMeta = {
-    ...(obj.customMetadata ?? {}),
-    ...updates,
-  };
+  const finalMeta = Object.fromEntries(
+   Object.entries({
+     ...(obj.customMetadata ?? {}),
+     ...updates,
+   }).map(([k, v]) => [k, String(v ?? "")])
+  );
 
   await bucket.put(key, obj.body, {
     httpMetadata: obj.httpMetadata,
