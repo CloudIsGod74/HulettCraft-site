@@ -9,12 +9,30 @@ import "../styles/global.css";
     <meta name="viewport" content="width=device-width, initial-scale=1" />
   </head>
 
+<script>
+  const toggle = document.querySelector(".nav-toggle");
+  const nav = document.querySelector("#site-nav");
+
+  toggle.addEventListener("click", () => {
+    const isOpen = nav.classList.toggle("open");
+    toggle.classList.toggle("open", isOpen);
+    toggle.setAttribute("aria-expanded", isOpen);
+  });
+</script>
+
   <body>
     <header class="site-header">
       <div class="header-inner">
         <strong class="site-title">
           <a href="/">HulettCraft</a>
         </strong>
+
+    <!-- Hamburger -->
+    <button class="nav-toggle" aria-label="Toggle navigation" aria-expanded="false">
+      <span></span>
+      <span></span>
+      <span></span>
+    </button>
 
         <nav class="site-nav">
           <a href="/">Home</a>
