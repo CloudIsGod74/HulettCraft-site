@@ -60,6 +60,10 @@ body {
 }
 
 .header-inner {
+  position: relative; /* anchors absolute nav */
+}
+
+.header-inner {
   padding: 1rem 1.5rem;
   display: flex;
   align-items: center;
@@ -129,44 +133,78 @@ nav a:hover {
 }
 
 /* =========================================
-   MOBILE NAV FIX
+   MOBILE NAV
 ========================================= */
 
-.site-nav {
-  display: flex;
-  flex-wrap: wrap;        /* allow wrapping */
-  align-items: center;
-  row-gap: 0.25rem;       /* control vertical spacing */
-  column-gap: 1rem;       /* horizontal spacing */
-}
-
-/* Normalize anchor sizing */
-.site-nav a {
-  display: inline-flex;
-  align-items: center;
-  line-height: 1.2;
-  padding: 0.35rem 0;     /* tap-friendly without height creep */
-  white-space: nowrap;   /* prevents awkward multi-line buttons */
-}
-
-/* ---------- Mobile breakpoint ---------- */
 @media (max-width: 640px) {
-  .header-inner {
-    flex-direction: column;
-    align-items: flex-start;
-    gap: 0.75rem;
+  .nav-toggle {
+    display: block;
   }
 
+  /* Hide nav completely by default */
   .site-nav {
-    width: 100%;
+    display: none;
+    position: absolute;
+    top: 100%;
+    left: 0;
+    right: 0;
+
+    background: rgba(15, 17, 21, 0.97);
+    backdrop-filter: blur(8px);
+    border-bottom: 1px solid var(--border);
+
+    padding: 0.75rem 1.5rem;
+    z-index: 200;
+  }
+
+  /* Show nav ONLY when open */
+  .site-nav.open {
     display: grid;
-    grid-template-columns: repeat(2, 1fr); /* clean 2-column layout */
-    gap: 0.5rem 1rem;
+    grid-template-columns: 1fr;
+    gap: 0.5rem;
   }
 
   .site-nav a {
-    padding: 0.5rem 0;
+    padding: 0.65rem 0;
+    font-size: 1rem;
   }
+}
+
+/* =========================================
+   HAMBURGER BUTTON
+========================================= */
+.nav-toggle {
+  display: none;
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 0.5rem;
+  margin-left: auto; /* push to right */
+}
+
+.nav-toggle span {
+  display: block;
+  width: 22px;
+  height: 2px;
+  background: var(--text);
+  border-radius: 2px;
+  transition: transform 0.25s ease, opacity 0.25s ease;
+}
+
+.nav-toggle span + span {
+  margin-top: 5px;
+}
+
+.nav-toggle.open span:nth-child(1) {
+  transform: translateY(7px) rotate(45deg);
+}
+
+.nav-toggle.open span:nth-child(2) {
+  opacity: 0;
+}
+
+.nav-toggle.open span:nth-child(3) {
+  transform: translateY(-7px) rotate(-45deg);
 }
 
 /* =========================================================
