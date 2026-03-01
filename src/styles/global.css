@@ -319,6 +319,20 @@ nav a:hover {
   z-index: 2;
 }
 
+.admin-preview {
+  width: 200px;
+  aspect-ratio: 16 / 9;
+  object-fit: cover;
+}
+
+.pending-card img,
+.preview {
+  width: 220px;
+  height: 124px;
+  object-fit: cover;
+  border-radius: 8px;
+}
+
 /* =========================================================
    SEASONS / MEDIA
 ========================================================= */

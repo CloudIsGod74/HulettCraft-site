@@ -103,7 +103,7 @@ if (!seasonConfig?.usesStaticImages) {
   <!-- Lightbox -->
   <div id="lightbox" class="lightbox hidden">
     <div class="lightbox-backdrop"></div>
-    <img id="lightbox-img" />
+    <img id="lightbox-img" alt=""/>
   </div>
 
 <style>
@@ -208,6 +208,49 @@ if (!seasonConfig?.usesStaticImages) {
       btn.textContent = "Saved ✓";
       setTimeout(() => (btn.textContent = "Save"), 1500);
     });
+  });
+</script>
+<script type="module">
+  const images = Array.from(
+    document.querySelectorAll(".lightbox-trigger")
+  );
+  const lightbox = document.getElementById("lightbox");
+  const lightboxImg = document.getElementById("lightbox-img");
+  const backdrop = lightbox.querySelector(".lightbox-backdrop");
+
+  let index = 0;
+
+  function open(i) {
+    index = i;
+    lightboxImg.src = images[index].src;
+    lightbox.classList.remove("hidden");
+  }
+
+  function close() {
+    lightbox.classList.add("hidden");
+  }
+
+  function next() {
+    index = (index + 1) % images.length;
+    lightboxImg.src = images[index].src;
+  }
+
+  function prev() {
+    index = (index - 1 + images.length) % images.length;
+    lightboxImg.src = images[index].src;
+  }
+
+  images.forEach((img, i) => {
+    img.addEventListener("click", () => open(i));
+  });
+
+  backdrop.addEventListener("click", close);
+
+  document.addEventListener("keydown", (e) => {
+    if (lightbox.classList.contains("hidden")) return;
+    if (e.key === "Escape") close();
+    if (e.key === "ArrowRight") next();
+    if (e.key === "ArrowLeft") prev();
   });
 </script>
 </BaseLayout>

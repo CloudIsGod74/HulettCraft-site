@@ -63,7 +63,7 @@ import BaseLayout from "../layouts/BaseLayout.astro";
 
     <!-- Seasonal / Modded -->
     <div class="card card-link" data-server="modded"
-      data-host="107.221.146.250" data-port="25567">
+      data-host="107.221.146.250" data-port="25555">
   	<a href="/worlds" class="card-overlay" aria-label="Modded"></a>
       <h3>Seasonal / Modded</h3>
       <div class="node">Node: CloudCraft</div>
@@ -74,7 +74,24 @@ import BaseLayout from "../layouts/BaseLayout.astro";
       >
         modded.hulettcraft.com
       </div>
-      <div class="status">🔴 Offline</div>
+      <div class="status">Checking…</div>
+ <p
+      style="
+        margin-top: 1rem;
+        text-align: center;
+        color: var(--muted);
+        font-size: 0.9rem;
+      "
+    >
+      If you'd like to see the world
+      <a
+        href="https://modded.hulettcraft.com"
+        target="_blank"
+        rel="noopener"
+        style="color: var(--text);"
+      >
+        open here</a>.
+    </p>
     </div>
 
     <!-- Hytale -->
