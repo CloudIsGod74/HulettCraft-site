@@ -6,12 +6,16 @@
     "dev": "astro dev",
     "build": "astro build",
     "preview": "astro preview",
-    "astro": "astro"
+    "astro": "astro",
+    "test": "node --import tsx --test --test-isolation=none tests/*.test.ts"
   },
   "dependencies": {
     "@astrojs/cloudflare": "^12.6.12",
     "@aws-sdk/client-s3": "^3.975.0",
     "@aws-sdk/s3-request-presigner": "^3.975.0",
     "astro": "^5.16.14"
+  },
+  "devDependencies": {
+    "tsx": "4.21.0"
   }
 }
