@@ -3,6 +3,9 @@ import { createSession } from "../../src/lib/adminSession";
 import { png } from "../helpers";
 const secret = "browser-test-only-secret-never-use-in-production";
 test.beforeEach(async ({ page }) => {
+  await page.route("**/api/favicon.png?*", (route) =>
+    route.fulfill({ contentType: "image/png", body: Buffer.from(png) }),
+  );
   await page.route("**/api/server-status.json", (route) =>
     route.fulfill({
       json: {
@@ -202,13 +205,11 @@ test("public submission stays private until approval", async ({
   context,
 }) => {
   await page.goto("/gallery/upload");
-  await page
-    .locator('input[name="screenshot"]')
-    .setInputFiles({
-      name: "public-browser.png",
-      mimeType: "image/png",
-      buffer: Buffer.from(png),
-    });
+  await page.locator('input[name="screenshot"]').setInputFiles({
+    name: "public-browser.png",
+    mimeType: "image/png",
+    buffer: Buffer.from(png),
+  });
   await page.locator('select[name="world"]').selectOption("modded");
   await page
     .locator('textarea[name="description"]')
@@ -298,4 +299,43 @@ test("bulk upload preserves edited fields through rerenders and safely displays 
         image.metadata.description === "Bulk caption",
     ),
   ).toBe(true);
+});
+
+test("favicon refreshes in open tabs and when returning to a cached page", async ({
+  page,
+}) => {
+  await page.clock.install({ time: new Date("2026-10-17T12:00:01Z") });
+  await page.goto("/");
+  const link = page.locator("link[data-server-favicon]");
+  const initial = await link.getAttribute("href");
+  expect(initial).toMatch(/^\/api\/favicon\.png\?v=\d+$/);
+  await page.clock.fastForward(5 * 60 * 1000);
+  await expect(link).not.toHaveAttribute("href", initial!);
+  const updated = await link.getAttribute("href");
+  await page.clock.setSystemTime(new Date("2026-10-17T12:20:01Z"));
+  await page.evaluate(() =>
+    window.dispatchEvent(
+      new PageTransitionEvent("pageshow", { persisted: true }),
+    ),
+  );
+  await expect(link).not.toHaveAttribute("href", updated!);
+  const resumed = await link.getAttribute("href");
+  await page.evaluate(() => window.dispatchEvent(new Event("focus")));
+  await expect(link).toHaveAttribute("href", resumed!);
+});
+
+test("compiled Pages favicon endpoint reads local KV and honors conditional requests", async ({
+  request,
+}) => {
+  const response = await request.get("/api/favicon.png?v=runtime-test");
+  expect(response.status()).toBe(200);
+  expect(response.headers()["content-type"]).toBe("image/png");
+  expect(response.headers()["cache-control"]).toContain("max-age=300");
+  const bytes = await response.body();
+  expect([...bytes.subarray(0, 8)]).toEqual([137, 80, 78, 71, 13, 10, 26, 10]);
+  expect(bytes.readUInt32BE(16)).toBe(64);
+  const conditional = await request.get("/api/favicon.png?v=different", {
+    headers: { "If-None-Match": response.headers().etag },
+  });
+  expect(conditional.status()).toBe(304);
 });

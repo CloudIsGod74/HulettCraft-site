@@ -50,6 +50,8 @@ Public image streaming accepts common stored raster MIME types and known raster 
 
 ## Local testing
 
+npm test uses Node's default process isolation, which works on the CI version Node 22.22.0. Do not add `--test-isolation=none`; that option requires a newer Node release.
+
 npm run test:e2e generates .wrangler/browser/wrangler.jsonc, dummy-only .dev.vars, and isolated state. Its seed script resets only that test state. It never uses a remote R2 binding. Do not point it at production configuration.
 
 Ordinary local development can use npm run setup:local; existing wrangler.jsonc and .dev.vars are preserved. Local configuration and emulator data are ignored by Git. CI uses the same checks and local emulation.
@@ -68,3 +70,15 @@ No deploy, merge, production cache purge, DNS change, plugin change, map-service
 ## Map removal
 
 The public SMP map section and preview, the SMP/Modded/Hytale Status links, and the Hytale iframe/fallback/check have been removed. No public source references the map services. Screenshot galleries, Minecraft player counts, server addresses, and external map infrastructure remain intact.
+
+## Dynamic SMP favicon
+
+`/api/favicon.png` retrieves the Java server icon from `https://api.mcstatus.io/v2/status/java/play.hulettcraft.com`. The address comes from the HulettCraft SMP entry in `src/config/servers.ts`. It requires an online response and a canonical PNG data URI. Validation checks 64×64 dimensions, PNG chunks and CRCs, legal color/depth combinations, bounded decompression, and scanline filters. Arbitrary remote icon URLs and other image formats are rejected. Upstream calls have a five-second timeout and bounded response sizes.
+
+Refreshes are traffic-driven with a five-minute freshness interval; no cron job, rebuild, or redeployment is needed when the Minecraft icon changes. The public response and fallback redirect cache for five minutes and use ETags when an icon is available. BaseLayout uses a five-minute version in the favicon URL, and the browser checks every 30 seconds while visible and on return/focus. This lets open and returning tabs request the new icon despite persistent browser favicon caches. Allow roughly 5–10 minutes after mcstatus.io sees the change, occasionally longer due to browser scheduling or upstream caching. Browsers ultimately control their tab/favicon UI.
+
+An isolate cache and Cloudflare Cache API coalesce requests, ignoring browser version queries. Edge snapshots last up to seven days, with freshness enforced by the application. The existing `SESSION` KV binding additionally keeps the last successful icon indefinitely under the separate key `public:server-favicon:v1:hulettcraft`. It is not an admin session and never touches R2 or gallery objects. Successful refreshes update this one small KV value; writes can happen in multiple active Cloudflare locations. Review KV usage for a very busy globally distributed site. No new binding or secret is required. KV is eventually consistent. Without that binding, retention across restarts/edge eviction is best effort.
+
+Offline servers, bad icons, timeouts, and provider/storage failures do not overwrite a saved good icon. Failed attempts are throttled locally for five minutes. If there is no valid saved icon, the endpoint redirects to the existing `/favicon.ico` asset (PNG bytes despite its historical filename). The next refresh can recover automatically. Keep that asset available. Do not apply an immutable favicon cache rule or override the endpoint's cache headers.
+
+Tests use generated PNG fixtures and isolated local KV; they do not contact the live Minecraft server or mcstatus.io. Before an approved deployment, verify a real mcstatus.io response, the existing Pages `SESSION` binding, and any site-wide cache rules. No production configuration or data was changed while implementing this endpoint.

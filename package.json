@@ -7,7 +7,7 @@
     "build": "astro build",
     "preview": "astro preview",
     "astro": "astro",
-    "test": "node --import tsx --test --test-isolation=none tests/*.test.ts",
+    "test": "node --import tsx --test tests/*.test.ts",
     "check": "astro check",
     "test:e2e": "playwright test",
     "setup:local": "node scripts/setup-local.mjs",

@@ -1,5 +1,6 @@
 ---
 import "../styles/global.css";
+import { faviconUrl } from "../config/favicon";
 interface Props {
   title?: string;
 }
@@ -13,7 +14,13 @@ const { title = "HulettCraft" } = Astro.props;
     <title>{title}</title><meta
       name="description"
       content="HulettCraft community worlds, screenshots, and server information."
-    /><link rel="icon" href="/favicon.ico" />
+    /><link
+      rel="icon"
+      type="image/png"
+      sizes="any"
+      href={faviconUrl()}
+      data-server-favicon
+    />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
   </head>
 
@@ -62,6 +69,7 @@ const { title = "HulettCraft" } = Astro.props;
     </footer>
     <script>
       import "../scripts/navigation";
+      import "../scripts/favicon";
     </script>
   </body>
 </html>
