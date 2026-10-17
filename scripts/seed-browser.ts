@@ -1,5 +1,7 @@
 import { mkdir, writeFile, readFile, rm } from "node:fs/promises";
 import { getPlatformProxy } from "wrangler";
+import { icon } from "../tests/fixtures/serverIcon";
+import { FAVICON_KV_KEY } from "../src/lib/favicon";
 import type { Env } from "../src/lib/runtime";
 const directory = ".wrangler/browser",
   state = directory + "/state/v3";
@@ -32,6 +34,11 @@ const proxy = await getPlatformProxy<Env>({
   persist: { path: state },
 });
 try {
+  // A valid local icon prevents any live upstream request during browser tests.
+  await proxy.env.SESSION!.put(
+    FAVICON_KV_KEY,
+    JSON.stringify({ checkedAt: Date.now(), icon: icon().uri }),
+  );
   const bucket = proxy.env.HULETTCRAFT_BUCKET!;
   for (const [name, description, file] of [
     ["first", "Browser build one", "HCS4.jpg"],
