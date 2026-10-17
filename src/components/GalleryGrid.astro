@@ -1,0 +1,95 @@
+---
+import type { GalleryItem } from "../lib/gallery";
+interface Props {
+  images: GalleryItem[];
+  admin?: string | null;
+  viewer?: boolean;
+}
+const { images, admin, viewer = true } = Astro.props;
+---
+
+<div class="season-grid">
+  {
+    images.map((shot) => (
+      <figure data-key={shot.key}>
+        <button
+          type="button"
+          class="image-button"
+          data-gallery-open
+          aria-label={shot.metadata.description || "Open screenshot"}
+        >
+          <img
+            src={shot.url}
+            loading="lazy"
+            alt={shot.metadata.description || "Community screenshot"}
+          />
+        </button>
+        {admin ? (
+          <div class="admin-fields">
+            <label>
+              Description
+              <textarea
+                class="edit-description"
+                maxlength="2000"
+                set:text={shot.metadata.description ?? ""}
+              />
+            </label>
+            <label>
+              Author
+              <input
+                class="edit-author"
+                maxlength="100"
+                value={shot.metadata.author ?? ""}
+              />
+            </label>
+            <button type="button" class="save-meta">
+              Save
+            </button>
+            <span class="save-result" role="status" />
+          </div>
+        ) : (
+          <figcaption>
+            {shot.metadata.description}
+            {shot.metadata.author && <span> — {shot.metadata.author}</span>}
+          </figcaption>
+        )}
+      </figure>
+    ))
+  }
+</div>
+{
+  viewer && (
+    <dialog class="gallery-dialog" aria-label="Screenshot viewer">
+      <button
+        class="gallery-close"
+        type="button"
+        aria-label="Close screenshot viewer"
+      >
+        Close ×
+      </button>
+      <div class="gallery-view">
+        <>
+          <button
+            class="gallery-prev"
+            type="button"
+            aria-label="Previous screenshot"
+          >
+            ←
+          </button>
+          <img alt="" />
+          <button
+            class="gallery-next"
+            type="button"
+            aria-label="Next screenshot"
+          >
+            →
+          </button>
+        </>
+      </div>
+      <p class="gallery-caption" aria-live="polite" />
+    </dialog>
+  )
+}
+<script>
+  import "../scripts/gallery";
+</script>

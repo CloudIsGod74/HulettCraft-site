@@ -1,0 +1,5 @@
+# Local development only. Copy to .dev.vars; never commit real secrets.
+ADMIN_SESSION_SECRET=replace-with-a-random-local-secret-at-least-32-characters
+# GitHub OAuth is optional locally. Use a separate local OAuth application.
+# GITHUB_CLIENT_ID=
+# GITHUB_CLIENT_SECRET=

@@ -1,0 +1,52 @@
+---
+import GalleryGrid from "./GalleryGrid.astro";
+import { listGallery, type GalleryItem } from "../lib/gallery";
+import { getBucket } from "../lib/runtime";
+import type { World } from "../lib/galleryKeys";
+interface Props {
+  world: World;
+}
+const { world } = Astro.props;
+let images: GalleryItem[] = [],
+  error = false;
+try {
+  images = await listGallery(getBucket(Astro.locals), world);
+} catch {
+  error = true;
+}
+const seasons = [...new Set(images.map((i) => i.key.split("/")[2]))].sort(
+  (a, b) => parseInt(b.slice(7)) - parseInt(a.slice(7)) || a.localeCompare(b),
+);
+---
+
+<section class="gallery-panel">
+  {
+    error && (
+      <p role="alert">
+        Uploaded screenshots could not be loaded. Please try again later.
+      </p>
+    )
+  }
+  {
+    !error && !images.length && (
+      <p class="muted">No uploaded screenshots yet.</p>
+    )
+  }
+  {
+    seasons.map((season, index) => (
+      <section class="world-season">
+        <>
+          <h2>
+            {season === "season-unknown"
+              ? "Community screenshots"
+              : "Season " + season.slice(7)}
+          </h2>
+          <GalleryGrid
+            images={images.filter((i) => i.key.split("/")[2] === season)}
+            viewer={index === 0}
+          />
+        </>
+      </section>
+    ))
+  }
+</section>

@@ -1,25 +1,14 @@
 import type { APIRoute } from "astro";
-
-export const GET: APIRoute = async ({ request, locals }) => {
-  const bucket = locals.runtime.env.HULETTCRAFT_BUCKET;
-  if (!bucket) {
-    return new Response("R2 not configured", { status: 500 });
-  }
-
-  const key = new URL(request.url).searchParams.get("key");
-  if (!key) {
-    return new Response("Missing key", { status: 400 });
-  }
-
-  const obj = await bucket.get(key);
-  if (!obj) {
-    return new Response("Not found", { status: 404 });
-  }
-
-  return new Response(obj.body, {
-    headers: {
-      "Content-Type": obj.httpMetadata?.contentType ?? "image/png",
-      "Cache-Control": "public, max-age=86400",
-    },
+import { isPublishedKey } from "../../../lib/galleryKeys";
+import { getBucket } from "../../../lib/runtime";
+import { api } from "../../../lib/http";
+import { imageResponse } from "../../../lib/images";
+export const GET: APIRoute = ({ url, locals }) =>
+  api(async () => {
+    const key = url.searchParams.get("key");
+    if (!isPublishedKey(key)) return new Response("Not found", { status: 404 });
+    const obj = await getBucket(locals).get(key);
+    return obj
+      ? imageResponse(obj, true)
+      : new Response("Not found", { status: 404 });
   });
-};

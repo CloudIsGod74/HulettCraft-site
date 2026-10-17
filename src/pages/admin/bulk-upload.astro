@@ -1,7 +1,8 @@
 ---
-import BaseLayout from "@/layouts/BaseLayout.astro";
-import { requireAdmin } from "@/lib/requireAdmin";
+import BaseLayout from "../../layouts/BaseLayout.astro";
+import { requireAdmin } from "../../lib/requireAdmin";
 
+Astro.response.headers.set("Cache-Control", "private, no-store");
 const admin = await requireAdmin(Astro.request, Astro.locals);
 if (!admin) return Astro.redirect("/admin/login");
 ---
@@ -14,38 +15,45 @@ if (!admin) return Astro.redirect("/admin/login");
     type="file"
     id="fileInput"
     multiple
-    accept="image/*"
+    accept="image/png,image/jpeg,image/webp,image/gif"
     hidden
   />
 
-  <div id="dropzone">
+  <button type="button" id="dropzone">
     Drag images here or click to select
-  </div>
+  </button>
 
   <form id="uploadForm">
-    <table id="uploadTable">
-      <thead>
-        <tr>
-          <th>Preview</th>
-          <th>Filename</th>
-          <th>World</th>
+    <p id="upload-result" role="status" aria-live="polite"></p><div
+      class="table-scroll"
+    >
+      <table id="uploadTable">
+        <thead>
+          <tr>
+            <th>Preview</th>
+            <th>Filename</th>
+            <th>World</th>
 
-          <!-- Season header with centered label + dropdown -->
-          <th class="season-header">
-            <div class="season-header-inner">
-              <span>Season</span>
-              <select id="bulkSeasonHeader">
-                <option value="">—</option>
-              </select>
-            </div>
-          </th>
+            <!-- Season header with centered label + dropdown -->
+            <th class="season-header">
+              <div class="season-header-inner">
+                <span>Season</span>
+                <select
+                  id="bulkSeasonHeader"
+                  aria-label="Set season for all images"
+                >
+                  <option value="">—</option>
+                </select>
+              </div>
+            </th>
 
-          <th>Description</th>
-          <th>Author</th>
-        </tr>
-      </thead>
-      <tbody></tbody>
-    </table>
+            <th>Description</th>
+            <th>Author</th>
+          </tr>
+        </thead>
+        <tbody></tbody>
+      </table>
+    </div>
 
     <div class="actions">
       <button type="submit">Upload all</button>
@@ -54,256 +62,108 @@ if (!admin) return Astro.redirect("/admin/login");
 </BaseLayout>
 
 <style>
-.subtitle {
-  opacity: 0.75;
-  margin-bottom: 1.25rem;
-}
+  .subtitle {
+    opacity: 0.75;
+    margin-bottom: 1.25rem;
+  }
 
-#dropzone {
-  border: 2px dashed #2fa36b;
-  background: rgba(15, 30, 40, 0.6);
-  padding: 1.5rem;
-  text-align: center;
-  cursor: pointer;
-  margin-bottom: 1.5rem;
-  border-radius: 8px;
-}
+  #dropzone {
+    border: 2px dashed #2fa36b;
+    background: rgba(15, 30, 40, 0.6);
+    padding: 1.5rem;
+    text-align: center;
+    cursor: pointer;
+    margin-bottom: 1.5rem;
+    border-radius: 8px;
+  }
 
-table {
-  width: 100%;
-  background: rgba(10, 20, 30, 0.75);
-  border-radius: 10px;
-  overflow: hidden;
-}
+  table {
+    width: 100%;
+    background: rgba(10, 20, 30, 0.75);
+    border-radius: 10px;
+    overflow: hidden;
+  }
 
-thead {
-  background: rgba(20, 40, 55, 0.95);
-}
+  thead {
+    background: rgba(20, 40, 55, 0.95);
+  }
 
-th {
-  padding: 0.75rem;
-  text-transform: uppercase;
-  font-size: 0.8rem;
-  border-bottom: 2px solid #2fa36b;
-  text-align: left;
-}
+  th {
+    padding: 0.75rem;
+    text-transform: uppercase;
+    font-size: 0.8rem;
+    border-bottom: 2px solid #2fa36b;
+    text-align: left;
+  }
 
-td {
-  padding: 0.5rem;
-}
+  td {
+    padding: 0.5rem;
+  }
 
-.preview {
-  width: 96px;
-  height: 54px;
-  object-fit: cover;
-  border-radius: 6px;
-}
+  .preview {
+    width: 96px;
+    height: 54px;
+    object-fit: cover;
+    border-radius: 6px;
+  }
 
-/* Inputs & selects */
-input,
-select {
-  width: 100%;
-  background: rgba(0, 0, 0, 0.35);
-  border: 1px solid rgba(255, 255, 255, 0.15);
-  color: white;
-  padding: 0.4rem;
-  border-radius: 6px;
-  font-size: 0.85rem;
-}
+  /* Inputs & selects */
+  input,
+  select {
+    width: 100%;
+    background: rgba(0, 0, 0, 0.35);
+    border: 1px solid rgba(255, 255, 255, 0.15);
+    color: white;
+    padding: 0.4rem;
+    border-radius: 6px;
+    font-size: 0.85rem;
+  }
 
-/* Season column sizing & centering */
-.season-header {
-  width: 120px;
-}
+  /* Season column sizing & centering */
+  .season-header {
+    width: 120px;
+  }
 
-.season-header-inner {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 0.4rem;
-}
+  .season-header-inner {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.4rem;
+  }
 
-.season-header-inner span {
-  white-space: nowrap;
-}
+  .season-header-inner span {
+    white-space: nowrap;
+  }
 
-.season-header-inner select {
-  width: 4.5rem;
-}
+  .season-header-inner select {
+    width: 4.5rem;
+  }
 
-.season-cell {
-  width: 120px;
-  text-align: center;
-}
+  .season-cell {
+    width: 120px;
+    text-align: center;
+  }
 
-.season-cell select {
-  width: 4.5rem;
-}
+  .season-cell select {
+    width: 4.5rem;
+  }
 
-/* Actions */
-.actions {
-  margin-top: 1rem;
-  text-align: right;
-}
+  /* Actions */
+  .actions {
+    margin-top: 1rem;
+    text-align: right;
+  }
 
-.actions button {
-  background: #2fa36b;
-  border: none;
-  padding: 0.6rem 1.2rem;
-  font-weight: 600;
-  border-radius: 6px;
-  cursor: pointer;
-}
+  .actions button {
+    background: #2fa36b;
+    border: none;
+    padding: 0.6rem 1.2rem;
+    font-weight: 600;
+    border-radius: 6px;
+    cursor: pointer;
+  }
 </style>
 
-<script is:inline>
-  window.addEventListener("DOMContentLoaded", () => {
-    const AVAILABLE_SEASONS = [1, 2, 3, 4, 5, 6, 7, 8];
-
-    const dropzone = document.getElementById("dropzone");
-    const fileInput = document.getElementById("fileInput");
-    const tableBody = document.querySelector("#uploadTable tbody");
-    const form = document.getElementById("uploadForm");
-    const bulkSeasonHeader = document.getElementById("bulkSeasonHeader");
-
-    let rows = [];
-
-    /* Populate header dropdown */
-    AVAILABLE_SEASONS.forEach(season => {
-      const opt = document.createElement("option");
-      opt.value = season;
-      opt.textContent = season;
-      bulkSeasonHeader.appendChild(opt);
-    });
-
-    function syncBulkSeasonHeader() {
-      if (!rows.length) {
-        bulkSeasonHeader.value = "";
-        return;
-      }
-
-      const first = rows[0].season;
-      const allSame = rows.every(r => r.season === first && first !== "");
-
-      bulkSeasonHeader.value = allSame ? first : "";
-    }
-
-    bulkSeasonHeader.addEventListener("change", () => {
-      const value = bulkSeasonHeader.value;
-      if (!value) return;
-
-      rows.forEach(row => {
-        row.season = value;
-      });
-
-      render();
-    });
-
-    dropzone.addEventListener("click", () => {
-      fileInput.value = "";
-      fileInput.click();
-    });
-
-    dropzone.addEventListener("dragover", e => e.preventDefault());
-
-    dropzone.addEventListener("drop", e => {
-      e.preventDefault();
-      addFiles([...e.dataTransfer.files]);
-    });
-
-    fileInput.addEventListener("change", () => {
-      if (!fileInput.files?.length) return;
-      addFiles([...fileInput.files]);
-    });
-
-    function addFiles(files) {
-      files.forEach(file => {
-        rows.push({
-          file,
-          world: "hulettcraft",
-          season: "",
-          description: "",
-          author: "",
-        });
-      });
-      render();
-    }
-
-    function render() {
-      tableBody.innerHTML = "";
-
-      rows.forEach((row, i) => {
-        const url = URL.createObjectURL(row.file);
-
-        tableBody.insertAdjacentHTML("beforeend", `
-          <tr>
-            <td><img class="preview" src="${url}" /></td>
-            <td>${row.file.name}</td>
-            <td><input data-i="${i}" data-k="world" value="${row.world}" /></td>
-
-            <td class="season-cell">
-              <select data-i="${i}" data-k="season">
-                <option value="">—</option>
-                ${AVAILABLE_SEASONS.map(
-                  s => `<option value="${s}" ${row.season == s ? "selected" : ""}>${s}</option>`
-                ).join("")}
-              </select>
-            </td>
-
-            <td><input data-i="${i}" data-k="description" /></td>
-            <td><input data-i="${i}" data-k="author" /></td>
-          </tr>
-        `);
-      });
-
-      tableBody.querySelectorAll("input, select").forEach(el => {
-        el.addEventListener("change", e => {
-          const i = e.target.dataset.i;
-          const k = e.target.dataset.k;
-          if (!k) return;
-          rows[i][k] = e.target.value;
-          syncBulkSeasonHeader();
-        });
-      });
-
-      syncBulkSeasonHeader();
-    }
-
-    form.addEventListener("submit", async e => {
-      e.preventDefault();
-
-      const fd = new FormData();
-      fd.append(
-        "manifest",
-        JSON.stringify(
-          rows.map(r => ({
-            filename: r.file.name,
-            world: r.world,
-            season: Number(r.season),
-            description: r.description,
-            author: r.author,
-          }))
-        )
-      );
-
-      rows.forEach(r => fd.append("files", r.file));
-
-      const res = await fetch("/api/admin/bulk-upload", {
-        method: "POST",
-        body: fd,
-	credentials: "same-origin",
-      });
-
-      if (!res.ok) {
- 	 const text = await res.text();
- 	 alert(`Upload failed: ${text}`);
- 	 return;
-	}
-
-	rows = [];
-	render();
-	alert("Upload complete");
-
-    });
-  });
+<script>
+  import "../../scripts/bulkUpload";
 </script>

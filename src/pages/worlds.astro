@@ -1,164 +1,40 @@
 ---
 import BaseLayout from "../layouts/BaseLayout.astro";
+import ServerState from "../components/ServerState.astro";
+import { SERVERS } from "../config/servers";
 ---
 
 <BaseLayout>
-
-  <!-- Hero -->
   <section class="hero">
-    <h1>Worlds of HulettCraft</h1>
-    <p>
-        Each world has its own story.
-	Explore active worlds below, then dive deeper into their history,
-	screenshots, and seasons.
+    <h1>Worlds of HulettCraft</h1><p>
+      Each world has its own story. Explore active worlds below, then dive
+      deeper into their history, screenshots, and seasons.
     </p>
   </section>
-
   <section class="server-grid">
-
-    <!-- HulettCraft SMP -->
-    <div class="card card-link" data-server="hulettcraft">
-  	<a href="/gallery/hulettcraft" class="card-overlay" aria-label="HulettCraft SMP"></a>
-
-    <h3>
-   	 <span class="status-dot checking"></span>
-   	 HulettCraft SMP
-    </h3>
-
-    <p style="color: var(--muted);">
-      Our primary world. Long-running, lightly governed, and built around
-      trust, cooperation, and player-driven projects.
-    </p>
-
-    <div
-      class="ip copyable"
-      data-copy="play.hulettcraft.com"
-      title="Click to copy"
-    >
-      play.hulettcraft.com
-    </div>
-  </div>
-
-    <!-- Creative -->
-     <div class="card card-link" data-server="creative">
-  	<a href="/gallery" class="card-overlay" aria-label="Creative Server"></a>
-
-     <h3>
-   	 <span class="status-dot checking"></span>
-   	 Creative Server
-     </h3>
-
-     <p style="color: var(--muted);">
-       A shared creative environment for large-scale builds, testing ideas, and collaborative construction.
-     </p>
-
-    <div
-      class="ip copyable"
-      data-copy="creative.hulettcraft.com"
-      title="Click to copy"
-    >
-      creative.hulettcraft.com
-    </div>
-  </div>
-
-    <!-- Seasonal / Modded -->
-    <div class="card card-link" data-server="modded">
-	<a href="/gallery/modded" class="card-overlay" aria-label="Seasonal/Modded"></a>
-      <h3>
-        <span class="status-dot checking"></span>
-        Seasonal / Modded
-      </h3>
-
-      <p style="color: var(--muted);">
-        Rotating worlds with custom rules, mods, or limited-time themes.
-        These worlds change as new ideas are explored.
-      </p>
-
-      <div
-        class="ip copyable"
-        data-copy="modded.hulettcraft.com"
-        title="Click to copy"
-      >
-        modded.hulettcraft.com
-      </div>
-    </div>
-
-    <!-- Hytale -->
-    <div class="card card-link" data-server="hytale">
-	<a href="/gallery/hytale" class="card-overlay" aria-label="Hytale (Beta)"></a>
-      <h3>
-        <span class="status-dot checking"></span>
-        Hytale (Beta)
-      </h3>
-
-      <p style="color: var(--muted);">
-        Our next-generation sandbox world, currently in active beta.
-        Experimental features, evolving content, and early exploration.
-      </p>
-
-      <div
-        class="ip copyable"
-        data-copy="hytale.hulettcraft.com"
-        title="Click to copy"
-      >
-        hytale.hulettcraft.com
-      </div>
-    </div>
-
-  </section>
-
-  <!-- Copy-to-clipboard -->
-  <script type="module">
-    document.querySelectorAll(".copyable").forEach(el => {
-      el.addEventListener("click", async () => {
-        const value = el.dataset.copy;
-        try {
-          await navigator.clipboard.writeText(value);
-          el.classList.add("copied");
-          el.textContent = "Copied!";
-          setTimeout(() => {
-            el.textContent = value;
-            el.classList.remove("copied");
-          }, 1200);
-        } catch {
-          alert("Copy failed");
-        }
-      });
-    });
-  </script>
-
-  <!-- Load status from Status page source of truth -->
-<script type="module">
-  async function syncWorldStatuses() {
-    try {
-      const res = await fetch(`/api/status.json?ts=${Date.now()}`);
-      const data = await res.json();
-
-      document.querySelectorAll(".card[data-server]").forEach(card => {
-        const id = card.dataset.server;
-        const dot = card.querySelector(".status-dot");
-        const state = data[id];
-
-        if (!dot || !state) return;
-
-        dot.classList.remove("online", "offline", "beta", "checking");
-
-        if (state === "online") {
-          dot.classList.add("online");
-        } else if (state === "beta") {
-          dot.classList.add("beta");
-        } else {
-          dot.classList.add("offline");
-        }
-      });
-    } catch (err) {
-      console.warn("World status sync failed", err);
+    {
+      SERVERS.map((server) => (
+        <div class="card card-link">
+          <a
+            href={server.gallery}
+            class="card-overlay"
+            aria-label={server.title}
+          />
+          <>
+            <h3>{server.title}</h3>
+            <ServerState id={server.id} />
+          </>
+          <p class="muted">{server.description}</p>
+          <button
+            type="button"
+            class="ip copyable"
+            data-copy={server.address}
+            title="Click to copy"
+          >
+            {server.address}
+          </button>
+        </div>
+      ))
     }
-  }
-
-  syncWorldStatuses();
-</script>
-
-
-
+  </section>
 </BaseLayout>

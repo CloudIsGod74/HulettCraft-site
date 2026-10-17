@@ -2,16 +2,14 @@
 import BaseLayout from "../../layouts/BaseLayout.astro";
 
 const url = new URL(Astro.request.url);
-const success = url.searchParams.get("success");
-
-console.log("UPLOAD PAGE success param:", success);
+const success = url.searchParams.get("success") === "1";
 ---
 
-
 <BaseLayout>
-
-  {success && (
-    <div style="
+  {
+    success && (
+      <div
+        style="
       margin: 2rem auto;
       max-width: 720px;
       background: rgba(34,197,94,0.12);
@@ -19,32 +17,43 @@ console.log("UPLOAD PAGE success param:", success);
       padding: 1rem 1.25rem;
       border-radius: 10px;
       color: #e5e7eb;
-    ">
-      ✅ <strong>Submission successful!</strong><br />
-      Your screenshot has been sent for admin approval.
-    </div>
-  )}
+    "
+      >
+        ✅{" "}
+        <>
+          <strong>Submission successful!</strong>
+          <br />
+        </>
+        Your screenshot has been sent for admin approval.
+      </div>
+    )
+  }
 
   <!-- Hero -->
   <section class="hero">
     <h1>Submit a Screenshot</h1>
     <p>
-      Share moments from HulettCraft.  
-      All submissions are reviewed before appearing in the gallery.
+      Share moments from HulettCraft. All submissions are reviewed before
+      appearing in the gallery.
     </p>
   </section>
 
   <section class="upload-panel">
-    <form 
-	class="upload-form" 
-	method="POST" 
-	action="/api/screenshots/upload"
-	enctype="multipart/form-data">
-
+    <form
+      class="upload-form"
+      method="POST"
+      action="/api/screenshots/upload"
+      enctype="multipart/form-data"
+    >
       <!-- Screenshot -->
       <label>
         Screenshot
-        <input type="file" name="screenshot" accept="image/*" required />
+        <input
+          type="file"
+          name="screenshot"
+          accept="image/png,image/jpeg,image/webp,image/gif"
+          required
+        />
       </label>
 
       <!-- World -->
@@ -61,12 +70,7 @@ console.log("UPLOAD PAGE success param:", success);
       <!-- Season -->
       <label>
         Season <span class="muted">(optional)</span>
-        <input
-          type="number"
-          name="season"
-          placeholder="e.g. 8"
-          min="1"
-        />
+        <input type="number" name="season" placeholder="e.g. 8" min="1" />
       </label>
 
       <!-- Description -->
@@ -75,29 +79,52 @@ console.log("UPLOAD PAGE success param:", success);
         <textarea
           name="description"
           rows="3"
-          placeholder="What’s happening in this screenshot?"
-        ></textarea>
+          placeholder="What’s happening in this screenshot?"></textarea>
       </label>
 
       <!-- Name / Discord -->
       <label>
         Your name or Discord <span class="muted">(optional)</span>
-        <input
-          type="text"
-          name="author"
-          placeholder="Cloud / username#1234"
-        />
+        <input type="text" name="author" placeholder="Cloud / username#1234" />
       </label>
 
       <!-- Submit -->
-      <button type="submit" class="submit-btn">
-        Submit for approval
-      </button>
+      <button type="submit" class="submit-btn"> Submit for approval </button>
 
       <p class="upload-note">
-        Screenshots are reviewed by admins before being published.
+        PNG, JPEG, GIF, or WebP; up to 10 MiB and 40 megapixels. Screenshots are
+        reviewed before publication.
       </p>
 
+      <p class="upload-result" role="status" aria-live="polite"></p>
     </form>
   </section>
-</BaseLayout>
+  <script>
+    const form = document.querySelector<HTMLFormElement>(".upload-form");
+    form?.addEventListener("submit", async (event) => {
+      event.preventDefault();
+      const status = form.querySelector<HTMLElement>(".upload-result"),
+        button = form.querySelector<HTMLButtonElement>('button[type="submit"]');
+      if (button) button.disabled = true;
+      if (status) status.textContent = "Uploading…";
+      try {
+        const response = await fetch(form.action, {
+          method: "POST",
+          body: new FormData(form),
+        });
+        if (response.redirected && response.ok) {
+          window.location.assign(response.url);
+          return;
+        }
+        throw new Error(await response.text());
+      } catch (error) {
+        if (status)
+          status.textContent =
+            error instanceof Error
+              ? error.message
+              : "Upload failed. Please try again.";
+        if (button) button.disabled = false;
+      }
+    });
+  </script></BaseLayout
+>
