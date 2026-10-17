@@ -1,43 +1,40 @@
-# Astro Starter Kit: Minimal
+# HulettCraft
+
+An Astro community website for Minecraft and Hytale, deployed using the existing Cloudflare Pages adapter. The site uses Cloudflare R2 for screenshots, GitHub OAuth for administrators, and mcstatus.io for Minecraft status. Hytale status is unavailable until a reliable game-server health source is configured.
+
+## Development
+
+Use Node 22.22 or later and npm.
 
 ```sh
-npm create astro@latest -- --template minimal
+npm ci
+npm run setup:local
+npm run dev
 ```
 
-> 🧑‍🚀 **Seasoned astronaut?** Delete this file. Have fun!
+The setup command preserves existing local files. The example bucket and KV namespace are emulated locally; they are not production resources. The generated browser-test configuration uses a separate bucket and state directory. Real GitHub login requires a separate local OAuth application; automated tests use signed local fixture sessions.
 
-## 🚀 Project Structure
-
-Inside of your Astro project, you'll see the following folders and files:
-
-```text
-/
-├── public/
-├── src/
-│   └── pages/
-│       └── index.astro
-└── package.json
+```sh
+npm test
+npm run check
+npm run build
+npm run test:e2e
 ```
 
-Astro looks for `.astro` or `.md` files in the `src/pages/` directory. Each page is exposed as a route based on its file name.
+In a managed environment without a writable default config directory, set `ASTRO_TELEMETRY_DISABLED=1 WRANGLER_SEND_METRICS=false XDG_CONFIG_HOME=/tmp/hulettcraft-config` for Astro commands.
 
-There's nothing special about `src/components/`, but that's where we like to put any Astro/React/Vue/Svelte/Preact components.
+Browser tests build the site and run the compiled Pages output with local Wrangler, R2, and KV. They use an existing /usr/bin/chromium when available. Set PLAYWRIGHT_CHROMIUM_EXECUTABLE to another executable, or install the matching Playwright browser using `npx playwright install chromium`. Tests inspect desktop, tablet, and mobile layouts, keyboard navigation, private images, metadata saves, and moderation against local R2/KV. They mock the upstream Minecraft status response and do not prove live server availability.
 
-Any static assets, like images, can be placed in the `public/` directory.
+## Organization
 
-## 🧞 Commands
+- src/pages: public pages, administrator pages, and API routes.
+- src/components and src/scripts: shared galleries, status display, and browser interactions.
+- src/lib: authentication, image validation, key boundaries, R2 pagination, metadata, and status-provider checks.
+- src/config/hulettcraft.ts: season titles, descriptions, and current season.
+- src/config/servers.ts: existing game-server addresses and status-provider targets.
+- public/images: existing static photographs/screenshots, retained in place.
+- tests: API/security tests with memory-only storage and browser tests with local Cloudflare emulation.
 
-All commands are run from the root of the project, from a terminal:
+HulettCraft season galleries read Screenshots/hulettcraft/season-N/. Hytale and Modded galleries read their corresponding world prefixes and group approved screenshots by season. The existing static Hytale photographs remain visible. See [operations and deployment](docs/OPERATIONS.md) and the [future platform migration](docs/MIGRATION.md).
 
-| Command                   | Action                                           |
-| :------------------------ | :----------------------------------------------- |
-| `npm install`             | Installs dependencies                            |
-| `npm run dev`             | Starts local dev server at `localhost:4321`      |
-| `npm run build`           | Build your production site to `./dist/`          |
-| `npm run preview`         | Preview your build locally, before deploying     |
-| `npm run astro ...`       | Run CLI commands like `astro add`, `astro check` |
-| `npm run astro -- --help` | Get help using the Astro CLI                     |
-
-## 👀 Want to learn more?
-
-Feel free to check [our documentation](https://docs.astro.build) or jump into our [Discord server](https://astro.build/chat).
+Public live maps have been removed. External map services, map screenshots in R2, DNS, Minecraft plugins, and game servers were not changed.

@@ -1,33 +1,27 @@
 ---
 import BaseLayout from "../../layouts/BaseLayout.astro";
+import WorldGallery from "../../components/WorldGallery.astro";
 ---
-<BaseLayout>
 
+<BaseLayout>
   <section class="hero">
-    <h1>Hytale</h1>
-    <p>
+    <h1>Hytale</h1><p>
       Early exploration, builds, and moments from the Hytale beta.
     </p>
   </section>
-
-  <section
-    style="
-      padding: 3rem 2rem;
-      max-width: 1200px;
-      margin: 0 auto;
-    "
-  >
-    <div
-      style="
-        display: grid;
-        grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
-        gap: 1.5rem;
-      "
-    >
-      <img src="/images/gallery/hytale/cloudnhwoarong.jpg" style="width:100%; border-radius:16px;" />
-      <img src="/images/gallery/hytale/hytaleserver.jpg" style="width:100%; border-radius:16px;" />
-      <!-- add more freely -->
+  <WorldGallery world="hytale" />
+  <section class="gallery-panel">
+    <h2>From the early days</h2><div class="season-grid">
+      <img
+        src="/images/gallery/hytale/cloudnhwoarong.jpg"
+        alt="Hytale community screenshot"
+        loading="lazy"
+      />
+      <img
+        src="/images/gallery/hytale/hytaleserver.jpg"
+        alt="Hytale server landscape"
+        loading="lazy"
+      />
     </div>
   </section>
-
 </BaseLayout>

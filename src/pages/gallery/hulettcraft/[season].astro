@@ -1,256 +1,65 @@
 ---
 import BaseLayout from "../../../layouts/BaseLayout.astro";
+import GalleryGrid from "../../../components/GalleryGrid.astro";
 import { HULETTCRAFT } from "../../../config/hulettcraft";
-import { HULETTCRAFT_SEASONS } from "@config/hulettcraftSeasons";
 import { requireAdmin } from "../../../lib/requireAdmin";
-
-const raw = Astro.params.season;
-const match = raw?.match(/^season-(\d+)$/);
-if (!match) throw new Error("Invalid season");
-
-const season = Number(match[1]);
-const seasonConfig = HULETTCRAFT_SEASONS[season];
-const isCurrent = season === HULETTCRAFT.currentSeason;
-
-// Detect admin (non-blocking)
+import { getBucket } from "../../../lib/runtime";
+import { listGallery, type GalleryItem } from "../../../lib/gallery";
+Astro.response.headers.set("Cache-Control", "private, no-store");
+const match = Astro.params.season?.match(/^season-([1-9][0-9]{0,3}|unknown)$/);
+const season = match?.[1];
+if (!season) Astro.response.status = 404;
+const config = season ? HULETTCRAFT.seasons[Number(season)] : undefined;
 const admin = await requireAdmin(Astro.request, Astro.locals);
-
-// Load screenshots unless static
-let screenshots = [];
-if (!seasonConfig?.usesStaticImages) {
-  const res = await fetch(
-    `${Astro.site}/api/gallery/hulettcraft/season/${season}`,
-    { headers: { cookie: Astro.request.headers.get("cookie") ?? "" } }
-  );
-  screenshots = res.ok ? await res.json() : [];
-}
+let images: GalleryItem[] = [],
+  error = false;
+if (season)
+  try {
+    images = await listGallery(getBucket(Astro.locals), "hulettcraft", season);
+  } catch {
+    error = true;
+  }
 ---
 
 <BaseLayout>
   <section class="hero">
     <h1>
-      HulettCraft — Season {season}
-      {isCurrent && (
-        <span style="color: var(--green); margin-left: 0.5rem;">
-          (Current)
-        </span>
-      )}
+      {
+        season
+          ? "HulettCraft — " +
+            (season === "unknown" ? "Unassigned season" : "Season " + season)
+          : "Season not found"
+      }{
+        Number(season) === HULETTCRAFT.currentSeason && (
+          <span class="current-label"> (Current)</span>
+        )
+      }
     </h1>
-
     <p>
-      {seasonConfig?.description ??
-        "A season in the history of HulettCraft."}
+      {
+        config?.description ??
+          (season
+            ? "A season in the history of HulettCraft."
+            : "Choose a season from the gallery.")
+      }
     </p>
   </section>
-
-  <section style="padding:3rem 2rem; max-width:1200px; margin:0 auto;">
-    {seasonConfig?.usesStaticImages ? (
-      <div class="season-grid">
-        <img src={`/images/gallery/hulettcraft/season-${season}/img1.jpg`} />
-        <img src={`/images/gallery/hulettcraft/season-${season}/img2.jpg`} />
-        <img src={`/images/gallery/hulettcraft/season-${season}/img3.jpg`} />
-      </div>
-    ) : screenshots.length === 0 ? (
-      <p class="muted center">No screenshots yet for this season.</p>
-    ) : (
-      <div class="season-grid">
-        {screenshots.map((shot) => (
-          <figure data-key={shot.key}>
- 	   <img
- 	     src={shot.url}
- 	     loading="lazy"
-   	     alt={shot.metadata?.description ?? "Season screenshot"}
- 	 />
-
-	  {admin ? (
-  	   <div class="admin-fields">
-	      <input
-	        class="edit-description"
-	        type="text"
-		placeholder="Description"
-		value={shot.metadata?.description ?? ""}
-	      />
-
-	      <input
-	        class="edit-author"
-	        type="text"
-	        placeholder="Author"
-	        value={shot.metadata?.author ?? ""}
-	      />
-
-	      <button class="save-meta" data-key={shot.key}>
-	        Save
-	      </button>
-	    </div>
-	  ) : (
-	    shot.metadata?.description && (
-	      <figcaption>{shot.metadata.description}</figcaption>
-	    )
-	  )}
-</figure>
-
-        ))}
-      </div>
-    )}
+  <section class="gallery-panel">
+    {
+      error ? (
+        <p role="alert">
+          Screenshots could not be loaded. Please refresh or try again later.
+        </p>
+      ) : images.length ? (
+        <GalleryGrid images={images} admin={admin} />
+      ) : (
+        season && (
+          <p class="muted center">No screenshots yet for this season.</p>
+        )
+      )
+    }
   </section>
-
-  <section class="center">
-    <a href="/gallery/hulettcraft" class="status-link">
-      ← Back to all seasons
-    </a>
-  </section>
-
-  <!-- Lightbox -->
-  <div id="lightbox" class="lightbox hidden">
-    <div class="lightbox-backdrop"></div>
-    <img id="lightbox-img" alt=""/>
-  </div>
-
-<style>
-.season-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
-  gap: 1.5rem;
-}
-
-.season-grid figure {
-  display: flex;
-  flex-direction: column;
-  gap: 0.4rem;
-  transition: transform 0.18s ease, box-shadow 0.18s ease;
-}
-
-.season-grid figure:hover {
-  transform: translateY(-4px);
-  box-shadow:
-    0 12px 28px rgba(0, 0, 0, 0.35),
-    0 0 0 1px rgba(255, 255, 255, 0.06);
-}
-
-.season-grid img {
-  width: 100%;
-  aspect-ratio: 16 / 9;
-  object-fit: cover;
-  border-radius: 14px;
-  cursor: zoom-in;
-}
-
-.season-grid figcaption {
-  font-size: 0.8rem;
-  color: var(--muted);
-}
-
-.edit-description,
-.edit-author {
-  width: 100%;
-  background: rgba(0,0,0,0.35);
-  border: 1px solid rgba(255,255,255,0.15);
-  color: white;
-  padding: 0.4rem;
-  border-radius: 6px;
-  font-size: 0.8rem;
-}
-
-.save-meta {
-  align-self: flex-end;
-  background: #2fa36b;
-  border: none;
-  padding: 0.35rem 0.75rem;
-  font-size: 0.75rem;
-  font-weight: 600;
-  border-radius: 6px;
-  cursor: pointer;
-}
-</style>
-
-<script is:inline>
-  // Lightbox
-  const lightbox = document.getElementById("lightbox");
-  const lightboxImg = document.getElementById("lightbox-img");
-
-  document.querySelectorAll(".season-grid img").forEach(img => {
-    img.addEventListener("click", () => {
-      lightboxImg.src = img.src;
-      lightbox.classList.remove("hidden");
-    });
-  });
-
-  lightbox.addEventListener("click", () => {
-    lightbox.classList.add("hidden");
-    lightboxImg.src = "";
-  });
-
-  // Admin save metadata
-  document.querySelectorAll(".save-meta").forEach((btn) => {
-    btn.addEventListener("click", async () => {
-      const card = btn.closest("[data-key]");
-      const key = card.dataset.key;
-
-      const description =
-        card.querySelector(".edit-description")?.value ?? "";
-      const author =
-        card.querySelector(".edit-author")?.value ?? "";
-
-      const res = await fetch("/api/admin/update-metadata", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          key,
-          updates: { description, author },
-        }),
-      });
-
-      if (!res.ok) {
-        alert("Save failed");
-        return;
-      }
-
-      btn.textContent = "Saved ✓";
-      setTimeout(() => (btn.textContent = "Save"), 1500);
-    });
-  });
-</script>
-<script type="module">
-  const images = Array.from(
-    document.querySelectorAll(".lightbox-trigger")
-  );
-  const lightbox = document.getElementById("lightbox");
-  const lightboxImg = document.getElementById("lightbox-img");
-  const backdrop = lightbox.querySelector(".lightbox-backdrop");
-
-  let index = 0;
-
-  function open(i) {
-    index = i;
-    lightboxImg.src = images[index].src;
-    lightbox.classList.remove("hidden");
-  }
-
-  function close() {
-    lightbox.classList.add("hidden");
-  }
-
-  function next() {
-    index = (index + 1) % images.length;
-    lightboxImg.src = images[index].src;
-  }
-
-  function prev() {
-    index = (index - 1 + images.length) % images.length;
-    lightboxImg.src = images[index].src;
-  }
-
-  images.forEach((img, i) => {
-    img.addEventListener("click", () => open(i));
-  });
-
-  backdrop.addEventListener("click", close);
-
-  document.addEventListener("keydown", (e) => {
-    if (lightbox.classList.contains("hidden")) return;
-    if (e.key === "Escape") close();
-    if (e.key === "ArrowRight") next();
-    if (e.key === "ArrowLeft") prev();
-  });
-</script>
+  <p class="center">
+    <a href="/gallery/hulettcraft" class="status-link">← Back to all seasons</a>
+  </p>
 </BaseLayout>
