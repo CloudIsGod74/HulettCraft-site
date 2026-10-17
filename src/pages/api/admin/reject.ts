@@ -1,32 +1,18 @@
 import type { APIRoute } from "astro";
-
-export const POST: APIRoute = async ({ request, locals }) => {
-  const bucket = locals.runtime.env.HULETTCRAFT_BUCKET;
-
-  if (!bucket) {
-    console.error("R2 bucket binding missing");
-    return new Response("Server misconfigured", { status: 500 });
-  }
-
-  let body;
-  try {
-    body = await request.json();
-  } catch {
-    return new Response("Invalid JSON", { status: 400 });
-  }
-
-  // Support single or bulk
-  const keys: string[] =
-    body.keys ??
-    (body.key ? [body.key] : []);
-
-  if (!keys.length) {
-    return new Response("No keys provided", { status: 400 });
-  }
-
-  await Promise.all(
-    keys.map((key) => bucket.delete(key))
-  );
-
-  return new Response("OK");
-};
+import { getBucket } from "../../../lib/runtime";
+import { adminMutation, api, readJson } from "../../../lib/http";
+import { pendingKeys } from "../../../lib/gallery";
+export const POST: APIRoute = ({ request, locals }) =>
+  api(async () => {
+    await adminMutation(request, locals);
+    const keys = pendingKeys(await readJson(request)),
+      bucket = getBucket(locals);
+    try {
+      for (const key of keys) await bucket.delete(key);
+    } catch {
+      return new Response("Deletion failed; refresh before retrying", {
+        status: 503,
+      });
+    }
+    return new Response("OK", { headers: { "Cache-Control": "no-store" } });
+  });

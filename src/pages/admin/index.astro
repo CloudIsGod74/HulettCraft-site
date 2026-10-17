@@ -1,3 +1,8 @@
 ---
-return Astro.redirect("/admin/login");
+import { requireAdmin } from "../../lib/requireAdmin";
+return Astro.redirect(
+  (await requireAdmin(Astro.request, Astro.locals))
+    ? "/admin/pending"
+    : "/admin/login",
+);
 ---

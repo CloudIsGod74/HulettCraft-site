@@ -1,0 +1,22 @@
+---
+interface Props {
+  id: string;
+  detailed?: boolean;
+}
+const { id, detailed = false } = Astro.props;
+---
+
+<div
+  class="server-state"
+  data-status-server={id}
+  data-detailed={detailed ? "true" : "false"}
+  role="status"
+>
+  <span class="status-dot checking" aria-hidden="true"></span><span
+    class="server-state-text"
+    >{id === "hytale" ? "Status unavailable" : "Checking…"}</span
+  >
+</div>
+<script>
+  import "../scripts/serverStatus";
+</script>

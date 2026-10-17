@@ -1,34 +1,29 @@
 ---
 import BaseLayout from "../../layouts/BaseLayout.astro";
 import { requireAdmin } from "../../lib/requireAdmin";
-
+import { listPending, type GalleryItem } from "../../lib/gallery";
+import { getBucket } from "../../lib/runtime";
+Astro.response.headers.set("Cache-Control", "private, no-store");
 const admin = await requireAdmin(Astro.request, Astro.locals);
 if (!admin) return Astro.redirect("/admin/login");
-
-let screenshots: any[] = [];
-
+let screenshots: GalleryItem[] = [],
+  loadError = false;
 try {
-  const res = await fetch(new URL("/api/admin/pending", Astro.url), {
-    headers: {
-      cookie: Astro.request.headers.get("cookie") ?? "",
-    },
-  });
-
-  if (!res.ok) {
-    throw new Error(`Pending API failed: ${res.status}`);
-  }
-
-  screenshots = await res.json();
-} catch (err) {
-  console.error("FAILED TO LOAD PENDING:", err);
-  screenshots = [];
+  screenshots = await listPending(getBucket(Astro.locals));
+} catch {
+  loadError = true;
 }
 ---
 
 <BaseLayout>
   <section class="hero">
     <h1>Pending Screenshots</h1>
-    <p>Awaiting admin approval</p>
+    <p>Awaiting admin approval</p><form
+      method="POST"
+      action="/api/admin/auth/logout"
+    >
+      <button type="submit">Log out</button>
+    </form>
   </section>
 
   <!-- Bulk actions -->
@@ -39,13 +34,9 @@ try {
         Select all
       </label>
 
-      <button id="bulk-approve" class="btn approve">
-        Approve selected
-      </button>
+      <button id="bulk-approve" class="btn approve"> Approve selected </button>
 
-      <button id="bulk-reject" class="btn reject">
-        Reject selected
-      </button>
+      <button id="bulk-reject" class="btn reject"> Reject selected </button>
     </div>
 
     <div class="bulk-right">
@@ -55,51 +46,68 @@ try {
     </div>
   </section>
 
+  <p id="moderation-result" role="status" aria-live="polite"></p>
+  {
+    loadError && (
+      <p role="alert">
+        Pending screenshots could not be loaded. Please refresh or try again
+        later.
+      </p>
+    )
+  }
   <section id="pending-list" class="pending-list">
-    {screenshots.length === 0 && (
-      <p class="muted center">No pending screenshots 🎉</p>
-    )}
+    {
+      !loadError && screenshots.length === 0 && (
+        <p class="muted center">No pending screenshots 🎉</p>
+      )
+    }
 
-    {screenshots.map((shot) => (
-      <div class="pending-card" data-key={shot.key}>
-        <input
-          type="checkbox"
-          class="bulk-checkbox"
-          data-key={shot.key}
-        />
-
-        <img src={shot.previewUrl} alt="Pending screenshot" />
-
-        <div class="edit-fields">
-          <textarea
-            class="edit-description"
-            placeholder="Description (optional)"
-          >{shot.metadata?.description ?? ""}</textarea>
-
+    {
+      screenshots.map((shot) => (
+        <div class="pending-card" data-key={shot.key}>
           <input
-            type="text"
-            class="edit-author"
-            placeholder="Author (optional)"
-            value={shot.metadata?.author ?? ""}
+            type="checkbox"
+            class="bulk-checkbox"
+            aria-label={"Select " + shot.filename}
+            data-key={shot.key}
           />
-        </div>
 
-        <div class="meta">
-          <small>
-            Uploaded {new Date(shot.uploadedAt).toLocaleString()}
-          </small>
+          <img src={shot.previewUrl} alt="Pending screenshot" />
 
-          <div class="actions">
-            <button class="btn approve" data-key={shot.key}>
-              Approve
-            </button>
-            <button class="btn reject" data-key={shot.key}>
-              Reject
-            </button>
+          <div class="edit-fields">
+            <textarea
+              class="edit-description"
+              placeholder="Description (optional)"
+              aria-label="Screenshot description"
+              maxlength="2000"
+              set:text={shot.metadata.description ?? ""}
+            />
+
+            <input
+              type="text"
+              class="edit-author"
+              placeholder="Author (optional)"
+              aria-label="Screenshot author"
+              maxlength="100"
+              value={shot.metadata?.author ?? ""}
+            />
+          </div>
+
+          <div class="meta">
+            <small>Uploaded {new Date(shot.uploadedAt).toLocaleString()}</small>
+
+            <div class="actions">
+              <button class="btn approve" data-key={shot.key}>
+                Approve
+              </button>
+              <button class="btn reject" data-key={shot.key}>
+                Reject
+              </button>
+            </div>
           </div>
         </div>
-      </div>
-    ))}
+      ))
+    }
   </section>
 
   <style>
@@ -130,7 +138,9 @@ try {
       font-size: 0.85rem;
       cursor: pointer;
       font-weight: 600;
-      transition: background 0.15s ease, opacity 0.15s ease;
+      transition:
+        background 0.15s ease,
+        opacity 0.15s ease;
     }
 
     .btn.approve {
@@ -167,118 +177,7 @@ try {
     }
   </style>
 
-<script type="module">
-  async function action(button, endpoint) {
-    const card = button.closest(".pending-card");
-    const key = button.dataset.key;
-
-    const payload = { key };
-
-    if (endpoint.includes("approve")) {
-      payload.updates = {
-        [key]: {
-          description:
-            card.querySelector(".edit-description")?.value ?? "",
-          author:
-            card.querySelector(".edit-author")?.value ?? "",
-        },
-      };
-    }
-
-    card.style.opacity = "0.5";
-    button.disabled = true;
-
-    try {
-      const res = await fetch(endpoint, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(payload),
-      });
-
-      if (!res.ok) throw new Error(await res.text());
-      card.remove();
-    } catch (err) {
-      console.error(err);
-      alert("Action failed. See console.");
-      card.style.opacity = "1";
-      button.disabled = false;
-    }
-  }
-
-  document.querySelectorAll(".approve").forEach((btn) => {
-    btn.addEventListener("click", () =>
-      action(btn, "/api/admin/approve")
-    );
-  });
-
-  document.querySelectorAll(".reject").forEach((btn) => {
-    btn.addEventListener("click", () =>
-      action(btn, "/api/admin/reject")
-    );
-  });
-</script>
-
-<script type="module">
-  const selectAll = document.getElementById("select-all");
-
-  function getSelectedKeys() {
-    return Array.from(
-      document.querySelectorAll(".bulk-checkbox:checked")
-    ).map((cb) => cb.dataset.key);
-  }
-
-  selectAll?.addEventListener("change", () => {
-    document
-      .querySelectorAll(".bulk-checkbox")
-      .forEach((cb) => (cb.checked = selectAll.checked));
-  });
-
-  async function bulkAction(endpoint) {
-    const keys = getSelectedKeys();
-    if (!keys.length) return;
-
-    const updates = {};
-    keys.forEach((key) => {
-      const card = document.querySelector(
-        `.pending-card[data-key="${key}"]`
-      );
-
-      updates[key] = {
-        description:
-          card.querySelector(".edit-description")?.value ?? "",
-        author:
-          card.querySelector(".edit-author")?.value ?? "",
-      };
-    });
-
-    const res = await fetch(endpoint, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ keys, updates }),
-    });
-
-    if (!res.ok) {
-      alert("Bulk action failed");
-      return;
-    }
-
-    keys.forEach((key) => {
-      document
-        .querySelector(`.pending-card[data-key="${key}"]`)
-        ?.remove();
-    });
-  }
-
-  document
-    .getElementById("bulk-approve")
-    ?.addEventListener("click", () =>
-      bulkAction("/api/admin/approve")
-    );
-
-  document
-    .getElementById("bulk-reject")
-    ?.addEventListener("click", () =>
-      bulkAction("/api/admin/reject")
-    );
-</script>
+  <script>
+    import "../../scripts/moderation";
+  </script>
 </BaseLayout>

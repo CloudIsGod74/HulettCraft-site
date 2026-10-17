@@ -1,25 +1,22 @@
-import { verifySession } from "./adminSession";
+import { readCookie, verifySessionData } from "./adminSession";
 import { ADMIN_USERS } from "./adminAllowlist";
-
 export async function requireAdmin(
   request: Request,
-  locals: any
+  locals: App.Locals,
 ): Promise<string | null> {
-  const secret = locals?.runtime?.env?.ADMIN_SESSION_SECRET;
-  if (!secret) {
-    console.error("ADMIN_SESSION_SECRET missing");
-    return null;
+  const env = locals.runtime?.env;
+  if (!env?.ADMIN_SESSION_SECRET) return null;
+  const data = await verifySessionData(
+    readCookie(request, "admin_session"),
+    env.ADMIN_SESSION_SECRET,
+  );
+  if (!data || !ADMIN_USERS.has(data.sub)) return null;
+  if (data.sid && env.SESSION) {
+    try {
+      if (await env.SESSION.get("revoked:" + data.sid)) return null;
+    } catch {
+      return null;
+    }
   }
-
-  const cookieHeader = request.headers.get("cookie");
-  if (!cookieHeader) return null;
-
-  const rawToken = cookieHeader.match(/admin_session=([^;]+)/)?.[1];
-  const token = rawToken ? decodeURIComponent(rawToken) : null;
-  if (!token) return null;
-
-  const user = await verifySession(token, secret);
-  if (!user) return null;
-
-  return ADMIN_USERS.has(user) ? user : null;
+  return data.sub;
 }

@@ -1,0 +1,10 @@
+// LOCAL ONLY. Copy to wrangler.jsonc for local development; never deploy it.
+{
+  "name": "hulettcraft-local",
+  "compatibility_date": "2026-01-01",
+  "pages_build_output_dir": "./dist",
+  "r2_buckets": [
+    { "binding": "HULETTCRAFT_BUCKET", "bucket_name": "hulettcraft-local" },
+  ],
+  "kv_namespaces": [{ "binding": "SESSION", "id": "local-session" }],
+}

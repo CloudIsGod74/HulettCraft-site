@@ -6,12 +6,27 @@
     "dev": "astro dev",
     "build": "astro build",
     "preview": "astro preview",
-    "astro": "astro"
+    "astro": "astro",
+    "test": "node --import tsx --test --test-isolation=none tests/*.test.ts",
+    "check": "astro check",
+    "test:e2e": "playwright test",
+    "setup:local": "node scripts/setup-local.mjs",
+    "format": "prettier --write src tests scripts docs"
   },
   "dependencies": {
-    "@astrojs/cloudflare": "^12.6.12",
-    "@aws-sdk/client-s3": "^3.975.0",
-    "@aws-sdk/s3-request-presigner": "^3.975.0",
-    "astro": "^5.16.14"
+    "@astrojs/cloudflare": "12.6.13",
+    "astro": "5.18.2"
+  },
+  "devDependencies": {
+    "@astrojs/check": "0.9.9",
+    "@playwright/test": "1.58.2",
+    "@types/node": "22.19.1",
+    "prettier": "3.8.1",
+    "prettier-plugin-astro": "0.14.1",
+    "tsx": "4.21.0",
+    "typescript": "5.9.3"
+  },
+  "engines": {
+    "node": ">=22.22.0"
   }
 }

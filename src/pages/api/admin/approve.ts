@@ -1,52 +1,78 @@
 import type { APIRoute } from "astro";
-import { requireAdmin } from "../../../lib/requireAdmin";
-
-export const POST: APIRoute = async ({ request, locals }) => {
-  const admin = await requireAdmin(request, locals);
-  if (!admin) return new Response("Unauthorized", { status: 401 });
-
-  const bucket = locals.runtime.env.HULETTCRAFT_BUCKET;
-  if (!bucket) return new Response("Server misconfigured", { status: 500 });
-
-  const body = await request.json();
-  const keys: string[] = body.keys ?? (body.key ? [body.key] : []);
-  const updates: Record<string, any> = body.updates ?? {};
-
-  if (!keys.length) {
-    return new Response("No keys provided", { status: 400 });
-  }
-
-  await Promise.all(
-    keys.map(async (pendingKey) => {
-      const obj = await bucket.get(pendingKey);
-      if (!obj) return;
-
-      const originalMeta = obj.customMetadata ?? {};
-      const overrideMeta = updates[pendingKey] ?? {};
-
-      const finalMeta = {
-        ...originalMeta,
-        ...overrideMeta,
-      };
-
-      const world = finalMeta.world || "hulettcraft";
-      const season = finalMeta.season
-        ? `season-${finalMeta.season}`
-        : "season-unknown";
-
-      const filename = pendingKey.split("/").pop();
-      if (!filename) return;
-
-      const approvedKey = `Screenshots/${world}/${season}/${filename}`;
-
-      await bucket.put(approvedKey, obj.body, {
-        httpMetadata: obj.httpMetadata,
-        customMetadata: finalMeta,
-      });
-
-      await bucket.delete(pendingKey);
-    })
-  );
-
-  return new Response("OK");
-};
+import { getBucket } from "../../../lib/runtime";
+import {
+  adminMutation,
+  api,
+  isRecord,
+  json,
+  readJson,
+} from "../../../lib/http";
+import { mergeMetadata, pendingKeys } from "../../../lib/gallery";
+import { isWorld, normalizedSeason } from "../../../lib/galleryKeys";
+import { validateImage, MAX_IMAGE_BYTES } from "../../../lib/uploads";
+export const POST: APIRoute = ({ request, locals }) =>
+  api(async () => {
+    await adminMutation(request, locals);
+    const bucket = getBucket(locals),
+      body = await readJson(request),
+      keys = pendingKeys(body);
+    const updates = body.updates ?? {};
+    if (
+      !isRecord(updates) ||
+      Object.keys(updates).some((k) => !keys.includes(k))
+    )
+      return new Response("Invalid metadata updates", { status: 400 });
+    const results = [];
+    for (const key of keys) {
+      try {
+        const obj = await bucket.get(key);
+        if (!obj) throw new Error("Pending image not found; refresh the queue");
+        if (obj.size > MAX_IMAGE_BYTES)
+          throw new Error("Pending image exceeds the upload limit");
+        const meta = mergeMetadata(
+          obj.customMetadata ?? {},
+          updates[key] ?? {},
+        );
+        const world = meta.world || "hulettcraft";
+        if (!isWorld(world)) throw new Error("Invalid world metadata");
+        const season = normalizedSeason(meta.season, world);
+        const bytes = await new Response(
+          obj.body as unknown as BodyInit,
+        ).arrayBuffer();
+        const image = await validateImage(
+          new File([bytes], key.split("/").pop()!),
+        );
+        // Preserve the pending filename; the conditional write prevents overwrites.
+        const publishedKey =
+          "Screenshots/" +
+          world +
+          "/season-" +
+          season +
+          "/" +
+          key.split("/").pop();
+        const saved = await bucket.put(publishedKey, image.bytes, {
+          httpMetadata: { contentType: image.type },
+          customMetadata: { ...meta, world, season },
+          onlyIf: { etagDoesNotMatch: "*" },
+        });
+        if (!saved)
+          throw new Error(
+            "Published filename already exists; pending image was retained",
+          );
+        await bucket.delete(key);
+        results.push({ key, ok: true, publishedKey });
+      } catch (error) {
+        results.push({
+          key,
+          ok: false,
+          message:
+            error instanceof Response
+              ? await error.text()
+              : error instanceof Error
+                ? error.message
+                : "Approval failed; refresh before retrying",
+        });
+      }
+    }
+    return json({ results }, results.every((r) => r.ok) ? 200 : 207);
+  });

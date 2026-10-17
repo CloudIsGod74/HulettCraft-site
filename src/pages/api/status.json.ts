@@ -1,15 +1,13 @@
+import { getServerStatuses, statusHeaders } from "../../lib/serverStatus";
+// Preserve the original string-valued API contract, now using real checks.
 export async function GET() {
-  const status = {
-    hulettcraft: "online",
-    creative: "online",
-    modded: "offline",
-    hytale: "online"
-  };
-
-  return new Response(JSON.stringify(status), {
-    headers: {
-      "Content-Type": "application/json",
-      "Cache-Control": "no-store"
-    }
-  });
+  const statuses = await getServerStatuses();
+  return new Response(
+    JSON.stringify(
+      Object.fromEntries(
+        Object.entries(statuses).map(([key, value]) => [key, value.state]),
+      ),
+    ),
+    { headers: statusHeaders },
+  );
 }

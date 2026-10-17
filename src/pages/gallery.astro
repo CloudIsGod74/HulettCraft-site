@@ -1,66 +1,58 @@
 ---
 import BaseLayout from "../layouts/BaseLayout.astro";
-import { HULETTCRAFT } from "../config/hulettcraft.ts";
-
-const seasons = Object.keys(HULETTCRAFT.seasons)
-  .map(Number)
-  .sort((a, b) => b - a);
 ---
-<BaseLayout>
 
+<BaseLayout>
   <section class="hero">
     <h1>Gallery</h1>
     <p>
-      A visual history of HulettCraft — worlds built, explored,
-      and remembered.
+      A visual history of HulettCraft — worlds built, explored, and remembered.
     </p>
   </section>
 
   <section class="server-grid">
-
     <div class="card card-link" data-server="hulettcraft">
-  	<a href="/gallery/hulettcraft" class="card-overlay" aria-label="HulettCraft SMP"></a>
+      <a
+        href="/gallery/hulettcraft"
+        class="card-overlay"
+        aria-label="HulettCraft SMP"></a>
       <h3>HulettCraft</h3>
       <p style="color: var(--muted);">
-        Our long-running survival worlds, community builds,
-        and shared history.
+        Our long-running survival worlds, community builds, and shared history.
       </p>
       <div class="card-actions">
-        <a href="/gallery/hulettcraft" class="status-link">
-          View gallery →
-        </a>
+        <a href="/gallery/hulettcraft" class="status-link"> View gallery → </a>
       </div>
     </div>
 
     <div class="card card-link" data-server="modded">
-	<a href="/gallery/modded" class="card-overlay" aria-label="Seasonal/Modded"></a>
+      <a
+        href="/gallery/modded"
+        class="card-overlay"
+        aria-label="Seasonal/Modded"></a>
       <h3>Modded</h3>
       <p style="color: var(--muted);">
-        Seasonal, experimental, and retired modded worlds
-        across different eras.
+        Seasonal, experimental, and retired modded worlds across different eras.
       </p>
       <div class="card-actions">
-        <a href="/gallery/modded" class="status-link">
-          View gallery →
-        </a>
+        <a href="/gallery/modded" class="status-link"> View gallery → </a>
       </div>
     </div>
 
     <div class="card card-link" data-server="hytale">
-	<a href="/gallery/hytale" class="card-overlay" aria-label="Hytale (Beta)"></a>
+      <a href="/gallery/hytale" class="card-overlay" aria-label="Hytale (Beta)"
+      ></a>
       <h3>Hytale</h3>
       <p style="color: var(--muted);">
         Early exploration, builds, and moments from the Hytale beta.
       </p>
       <div class="card-actions">
-        <a href="/gallery/hytale" class="status-link">
-          View gallery →
-        </a>
+        <a href="/gallery/hytale" class="status-link"> View gallery → </a>
       </div>
     </div>
   </section>
 
-  </section>
+  <section>
     <p
       style="
         margin-top: 1rem;
@@ -70,12 +62,7 @@ const seasons = Object.keys(HULETTCRAFT.seasons)
       "
     >
       If you have images you'd like to submit, upload for approval
-      <a
-        href="/gallery/upload"
-        style="color: var(--text);"
-      >
-        here</a>.
+      <a href="/gallery/upload" style="color: var(--text);"> here</a>.
     </p>
   </section>
-
 </BaseLayout>

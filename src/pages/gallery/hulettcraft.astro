@@ -1,133 +1,81 @@
 ---
 import BaseLayout from "../../layouts/BaseLayout.astro";
 import { HULETTCRAFT } from "../../config/hulettcraft";
-
-// seasons are keyed by season-number
-const seasons = Object.keys(HULETTCRAFT.seasons)
-  .map(Number)
-  .sort((a, b) => b - a);
-
-const current = HULETTCRAFT.currentSeason;
+import { getBucket } from "../../lib/runtime";
+import { seasonPreviews } from "../../lib/seasonPreviews";
+import { listGallery } from "../../lib/gallery";
+let error = false,
+  unassigned = false;
+let seasons = Object.entries(HULETTCRAFT.seasons)
+  .map(([num, s]) => ({
+    season: Number(num),
+    ...s,
+    previews: [] as string[],
+    count: 0,
+  }))
+  .sort((a, b) => b.season - a.season);
+try {
+  const bucket = getBucket(Astro.locals);
+  seasons = await seasonPreviews(bucket);
+  unassigned = (await listGallery(bucket, "hulettcraft", "unknown")).length > 0;
+} catch {
+  error = true;
+}
 ---
 
 <BaseLayout>
-
-  <!-- Hero -->
   <section class="hero">
-    <h1>HulettCraft</h1>
-    <p>
-      A visual history of HulettCraft — worlds built, explored,
-      and remembered across seasons.
+    <h1>HulettCraft</h1><p>
+      A visual history of HulettCraft — worlds built, explored, and remembered
+      across seasons.
     </p>
   </section>
-
+  {
+    error && (
+      <p role="alert" class="center">
+        Screenshot previews are temporarily unavailable. You can still browse
+        the seasons below.
+      </p>
+    )
+  }
   <section class="server-grid">
-
-    {seasons.map(seasonNum => {
-      const season = HULETTCRAFT.seasons[seasonNum];
-      const isCurrent = seasonNum === current;
-
-      // 🔑 pull previews from the SAME images array the season page uses
-      const previews = season.images?.slice(0, 3) ?? [];
-
-      return (
-        <div class="card card-link" data-season={seasonNum}>
+    {
+      seasons.map((season) => (
+        <div class="card card-link">
           <a
-            href={`/gallery/hulettcraft/season-${seasonNum}`}
+            href={"/gallery/hulettcraft/season-" + season.season}
             class="card-overlay"
-            aria-label={`Season ${seasonNum}`}
-          ></a>
-
+            aria-label={season.title}
+          />
           <h3>
             {season.title}
-            {isCurrent && (
-              <span class="season-badge current">Current</span>
+            {season.season === HULETTCRAFT.currentSeason && (
+              <span class="season-badge current"> Current</span>
             )}
           </h3>
-
-          <p style="color: var(--muted);">
-            {season.tagline}
-          </p>
-
-          {season.images?.length && (
+          <p class="muted">{season.tagline}</p>
+          {season.previews.length > 0 && (
             <div class="preview-strip">
-              {season.images.slice(0, 3).map((src, i) => (
+              {season.previews.map((src, i) => (
                 <img
                   src={src}
-                  alt={`${season.title} preview ${i + 1}`}
+                  alt={season.title + " preview " + (i + 1)}
                   loading="lazy"
                 />
               ))}
             </div>
           )}
         </div>
-      );
-    })}
-
- </section>
-
-<!-- Web Map -->
-<section style="padding: 3rem 2rem; max-width: 1200px; margin: 0 auto;">
-  <h2 style="text-align: center; margin-bottom: 1.5rem;">
-    Current World Map
-  </h2>
-
-  <div
-    style="
-      position: relative;
-      width: 100%;
-      padding-top: 56.25%;
-      border-radius: 16px;
-      overflow: hidden;
-      border: 1px solid var(--border);
-      background: #020617;
-    "
-  >
-    <a
-      href="http://map.hulettcraft.com:8123"
-      target="_blank"
-      rel="noopener"
-      aria-label="Open interactive world map"
-      style="
-        position: absolute;
-        inset: 0;
-        display: block;
-      "
-
-      class="map-link"
-    >
-   <img
-    src={`/api/gallery/image?key=${encodeURIComponent(
-      "Screenshots/Season_8_Map.JPG"
-    )}`}
-    alt="HulettCraft World Map — click to open interactive map"
-    loading="lazy"
-    style="
-          width: 100%;
-          height: 100%;
-          object-fit: cover;
-          display: block;
-          border-radius: 16px;
-          cursor: pointer;
-        "
-      />
-    </a>
-  </div>
-
-  <p
-    style="
-      margin-top: 1rem;
-      text-align: center;
-      color: var(--muted);
-      font-size: 0.9rem;
-    "
-  >
-    Click the map above to open the interactive version.
-  </p>
-
-
-
-</section>
-
-
+      ))
+    }
+  </section>
+  {
+    unassigned && (
+      <p class="center">
+        <a href="/gallery/hulettcraft/season-unknown">
+          View screenshots with an unassigned season
+        </a>
+      </p>
+    )
+  }
 </BaseLayout>
