@@ -1,36 +1,45 @@
 import test from "node:test";
-import { icon, chunk } from "./fixtures/serverIcon";
+import { icon, chunk, creeperIcon } from "./fixtures/serverIcon";
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import { createFaviconService, FAVICON_KV_KEY } from "../src/lib/favicon";
-import { parseServerIcon } from "../src/lib/serverIcon";
+import { parseServerIcon, validateServerPng } from "../src/lib/serverIcon";
 import { faviconUrl, FAVICON_INTERVAL_MS } from "../src/config/favicon";
 import { GET } from "../src/pages/api/favicon.png";
 
+const pngResponse = (bytes: Uint8Array) =>
+  new Response(new Uint8Array(bytes), {
+    headers: { "Content-Type": "image/png" },
+  });
 const request = (version = 1, headers?: HeadersInit) =>
   new Request(`https://hulettcraft.com/api/favicon.png?v=${version}`, {
     headers,
   });
 function setup() {
   let time = 1_000_000,
-    calls = 0;
+    calls = 0,
+    writes = 0;
   let answer: () => Promise<Response> = async () =>
-    Response.json({ online: true, icon: icon().uri });
+    pngResponse(creeperIcon().bytes);
   const values = new Map<string, string>();
   const store = {
     get: async (key: string) => values.get(key) ?? null,
     put: async (key: string, value: string) => {
+      writes++;
       values.set(key, value);
     },
   };
   const fetcher: typeof fetch = async (url, options) => {
-    calls++;
+    assert.equal(options?.redirect, "manual");
+    assert.equal(new Headers(options?.headers).get("Accept"), "image/png");
+    assert.ok(options?.signal);
+    if (String(url) === "https://api.mcstatus.io/v2/icon/")
+      return pngResponse(icon(1).bytes);
     assert.equal(
       String(url),
-      "https://api.mcstatus.io/v2/status/java/play.hulettcraft.com",
+      "https://api.mcstatus.io/v2/icon/play.hulettcraft.com",
     );
-    assert.equal(options?.redirect, "error");
-    assert.ok(options?.signal);
+    calls++;
     return answer();
   };
   const options = { now: () => time, fetcher };
@@ -40,6 +49,7 @@ function setup() {
     store,
     values,
     calls: () => calls,
+    writes: () => writes,
     advance: () => {
       time += FAVICON_INTERVAL_MS;
     },
@@ -53,6 +63,12 @@ test("favicon validates a fully decodable 64x64 PNG and rejects corrupt/impostor
   assert.deepEqual(
     await parseServerIcon(icon().uri),
     new Uint8Array(icon().bytes),
+  );
+  const padded = new Uint8Array(creeperIcon().bytes.length + 8);
+  padded.set(creeperIcon().bytes, 8);
+  assert.deepEqual(
+    await validateServerPng(padded.subarray(8)),
+    new Uint8Array(creeperIcon().bytes),
   );
   const broken = icon().bytes;
   broken[50] ^= 255;
@@ -90,9 +106,15 @@ test("valid icon is served, cached independently of browser query, and revalidat
   const s = setup();
   const response = await s.service(request(), s.store);
   assert.equal(response.status, 200);
+  assert.equal(response.headers.get("Location"), null);
+  assert.equal(response.headers.get("X-Favicon-Source"), "mcstatus");
+  assert.notDeepEqual(creeperIcon().bytes, readFileSync("public/favicon.ico"));
   assert.equal(response.headers.get("Content-Type"), "image/png");
   assert.match(response.headers.get("Cache-Control")!, /max-age=300/);
-  assert.deepEqual(Buffer.from(await response.arrayBuffer()), icon().bytes);
+  assert.deepEqual(
+    Buffer.from(await response.arrayBuffer()),
+    creeperIcon().bytes,
+  );
   assert.equal(s.values.size, 1);
   const cached = await s.service(
     request(999, { "If-None-Match": response.headers.get("ETag")! }),
@@ -101,7 +123,7 @@ test("valid icon is served, cached independently of browser query, and revalidat
   assert.equal(cached.status, 304);
   assert.equal(s.calls(), 1);
   s.advance();
-  s.answer(async () => Response.json({ online: true, icon: icon(100).uri }));
+  s.answer(async () => pngResponse(icon(100).bytes));
   const updated = await s.service(request(1000), s.store);
   assert.notEqual(updated.headers.get("ETag"), response.headers.get("ETag"));
   assert.deepEqual(Buffer.from(await updated.arrayBuffer()), icon(100).bytes);
@@ -113,12 +135,21 @@ test("offline, invalid, oversized, HTTP error and network failure preserve last 
   await s.service(request(), s.store);
   const saved = s.values.get(FAVICON_KV_KEY);
   const failures = [
-    async () => Response.json({ online: false, icon: icon(20).uri }),
+    async () => pngResponse(icon(1).bytes), // Provider default, despite HTTP 200.
     async () =>
       Response.json({ online: true, icon: "data:image/png;base64,bad" }),
     async () => Response.json({ online: "true", icon: icon(20).uri }),
-    async () => new Response("not JSON"),
-    async () => new Response("x".repeat(256 * 1024 + 1)),
+    async () =>
+      new Response("<html>upstream error</html>", {
+        headers: { "Content-Type": "text/html" },
+      }),
+    async () => pngResponse(new Uint8Array([137, 80, 78, 71])),
+    async () => pngResponse(new Uint8Array(64 * 1024 + 1)),
+    async () =>
+      new Response(null, {
+        status: 302,
+        headers: { Location: "https://untrusted.test/icon.png" },
+      }),
     async () => new Response("bad gateway", { status: 502 }),
     async () => {
       throw new Error("timeout");
@@ -129,7 +160,13 @@ test("offline, invalid, oversized, HTTP error and network failure preserve last 
     s.answer(failure);
     const response = await s.service(request(), s.store);
     assert.equal(response.status, 200);
-    assert.deepEqual(Buffer.from(await response.arrayBuffer()), icon().bytes);
+    assert.equal(response.headers.get("Location"), null);
+    assert.equal(response.headers.get("X-Favicon-Source"), "last-known-good");
+    assert.ok(response.headers.get("X-Favicon-Failure"));
+    assert.deepEqual(
+      Buffer.from(await response.arrayBuffer()),
+      creeperIcon().bytes,
+    );
     assert.equal(s.values.get(FAVICON_KV_KEY), saved);
     const count = s.calls();
     await s.service(request(42), s.store);
@@ -150,7 +187,10 @@ test("cold starts restore last good icon from KV, including during an outage", a
     throw new Error("offline");
   });
   const response = await createFaviconService(s.options)(request(), s.store);
-  assert.deepEqual(Buffer.from(await response.arrayBuffer()), icon().bytes);
+  assert.deepEqual(
+    Buffer.from(await response.arrayBuffer()),
+    creeperIcon().bytes,
+  );
 });
 
 test("edge cache retains last good icon without KV and coalesces concurrent requests", async () => {
@@ -175,7 +215,10 @@ test("edge cache retains last good icon without KV and coalesces concurrent requ
   const response = await createFaviconService({ ...s.options, cache })(
     request(900),
   );
-  assert.deepEqual(Buffer.from(await response.arrayBuffer()), icon().bytes);
+  assert.deepEqual(
+    Buffer.from(await response.arrayBuffer()),
+    creeperIcon().bytes,
+  );
 });
 
 test("no valid saved icon redirects to local fallback, throttles retries, then recovers", async () => {
@@ -184,6 +227,7 @@ test("no valid saved icon redirects to local fallback, throttles retries, then r
   s.answer(async () => Response.json({ online: false }));
   const response = await s.service(request(), s.store);
   assert.equal(response.status, 302);
+  assert.equal(response.headers.get("X-Favicon-Source"), "local-fallback");
   assert.equal(response.headers.get("Location"), "/favicon.ico");
   assert.deepEqual(
     [...readFileSync("public/favicon.ico").subarray(0, 8)],
@@ -192,7 +236,7 @@ test("no valid saved icon redirects to local fallback, throttles retries, then r
   await s.service(request(2), s.store);
   assert.equal(s.calls(), 1);
   s.advance();
-  s.answer(async () => Response.json({ online: true, icon: icon().uri }));
+  s.answer(async () => pngResponse(creeperIcon().bytes));
   assert.equal((await s.service(request(3), s.store)).status, 200);
 });
 
@@ -218,4 +262,80 @@ test("favicon URL changes each five minutes and endpoint is exported for Pages",
   assert.equal(faviconUrl(0), faviconUrl(FAVICON_INTERVAL_MS - 1));
   assert.notEqual(faviconUrl(0), faviconUrl(FAVICON_INTERVAL_MS));
   assert.equal(typeof GET, "function");
+});
+
+test("HTTP 200 provider default is rejected before any last-good icon exists", async () => {
+  const s = setup();
+  s.answer(async () => pngResponse(icon(1).bytes));
+  const response = await s.service(request(), s.store);
+  assert.equal(response.status, 302);
+  assert.equal(response.headers.get("Location"), "/favicon.ico");
+  assert.equal(response.headers.get("X-Favicon-Failure"), "provider-default");
+  assert.equal(s.values.size, 0);
+});
+
+test("default comparison failure cannot silently store an unverified icon", async () => {
+  const service = createFaviconService({
+    fetcher: async (url) => {
+      if (String(url).endsWith("/v2/icon/"))
+        throw new Error("default comparison unavailable");
+      return pngResponse(creeperIcon().bytes);
+    },
+  });
+  const response = await service(request());
+  assert.equal(response.status, 302);
+  assert.equal(response.headers.get("X-Favicon-Failure"), "network");
+});
+
+test("saved icon and ETag stay unchanged until a successful query returns different bytes", async () => {
+  const s = setup();
+  const first = await s.service(request(), s.store);
+  const original = s.values.get(FAVICON_KV_KEY);
+  const etag = first.headers.get("ETag")!;
+  for (let check = 0; check < 3; check++) {
+    s.advance();
+    const same = await s.service(
+      request(check + 2, { "If-None-Match": etag }),
+      s.store,
+    );
+    assert.equal(same.status, 304);
+    assert.equal(same.headers.get("ETag"), etag);
+    assert.equal(s.values.get(FAVICON_KV_KEY), original);
+    assert.equal(s.writes(), 1);
+  }
+  assert.equal(s.calls(), 4);
+  s.advance();
+  s.answer(async () => {
+    throw new Error("temporary outage");
+  });
+  const outage = await s.service(request(), s.store);
+  assert.equal(outage.status, 200);
+  assert.equal(outage.headers.get("ETag"), etag);
+  assert.equal(s.writes(), 1);
+  s.advance();
+  s.answer(async () => pngResponse(icon(200).bytes));
+  const changed = await s.service(request(), s.store);
+  assert.notEqual(changed.headers.get("ETag"), etag);
+  assert.deepEqual(Buffer.from(await changed.arrayBuffer()), icon(200).bytes);
+  assert.equal(s.writes(), 2);
+});
+
+test("an unchanged in-memory icon still retries saving after a failed KV write", async () => {
+  const s = setup();
+  let failed = false;
+  const store = {
+    ...s.store,
+    put: async (key: string, value: string) => {
+      if (!failed) {
+        failed = true;
+        throw new Error("temporary write failure");
+      }
+      return s.store.put(key, value);
+    },
+  };
+  await s.service(request(), store);
+  assert.equal(s.values.size, 0);
+  s.advance();
+  await s.service(request(), store);
+  assert.equal(s.values.size, 1);
 });
