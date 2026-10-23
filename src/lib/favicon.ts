@@ -74,6 +74,7 @@ export function createFaviconService({
   }
   async function refresh(key: Request, store?: IconStore): Promise<Snapshot> {
     let previous = memory;
+    let persistedIcon: string | undefined;
     if (!previous && cache) {
       try {
         previous = await readSnapshot(
@@ -89,6 +90,7 @@ export function createFaviconService({
     if (store) {
       try {
         const saved = await readSnapshot(await store.get(FAVICON_KV_KEY));
+        persistedIcon = saved?.icon ?? undefined;
         if (
           saved?.icon &&
           (!previous?.icon || saved.checkedAt > previous.checkedAt)
@@ -163,7 +165,7 @@ export function createFaviconService({
       ...(failure ? { failure } : {}),
     };
     memory = snapshot;
-    if (success && store) {
+    if (success && store && icon !== persistedIcon) {
       try {
         await store.put(FAVICON_KV_KEY, JSON.stringify(snapshot));
       } catch {

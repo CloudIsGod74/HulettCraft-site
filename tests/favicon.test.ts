@@ -17,13 +17,15 @@ const request = (version = 1, headers?: HeadersInit) =>
   });
 function setup() {
   let time = 1_000_000,
-    calls = 0;
+    calls = 0,
+    writes = 0;
   let answer: () => Promise<Response> = async () =>
     pngResponse(creeperIcon().bytes);
   const values = new Map<string, string>();
   const store = {
     get: async (key: string) => values.get(key) ?? null,
     put: async (key: string, value: string) => {
+      writes++;
       values.set(key, value);
     },
   };
@@ -47,6 +49,7 @@ function setup() {
     store,
     values,
     calls: () => calls,
+    writes: () => writes,
     advance: () => {
       time += FAVICON_INTERVAL_MS;
     },
@@ -282,4 +285,57 @@ test("default comparison failure cannot silently store an unverified icon", asyn
   const response = await service(request());
   assert.equal(response.status, 302);
   assert.equal(response.headers.get("X-Favicon-Failure"), "network");
+});
+
+test("saved icon and ETag stay unchanged until a successful query returns different bytes", async () => {
+  const s = setup();
+  const first = await s.service(request(), s.store);
+  const original = s.values.get(FAVICON_KV_KEY);
+  const etag = first.headers.get("ETag")!;
+  for (let check = 0; check < 3; check++) {
+    s.advance();
+    const same = await s.service(
+      request(check + 2, { "If-None-Match": etag }),
+      s.store,
+    );
+    assert.equal(same.status, 304);
+    assert.equal(same.headers.get("ETag"), etag);
+    assert.equal(s.values.get(FAVICON_KV_KEY), original);
+    assert.equal(s.writes(), 1);
+  }
+  assert.equal(s.calls(), 4);
+  s.advance();
+  s.answer(async () => {
+    throw new Error("temporary outage");
+  });
+  const outage = await s.service(request(), s.store);
+  assert.equal(outage.status, 200);
+  assert.equal(outage.headers.get("ETag"), etag);
+  assert.equal(s.writes(), 1);
+  s.advance();
+  s.answer(async () => pngResponse(icon(200).bytes));
+  const changed = await s.service(request(), s.store);
+  assert.notEqual(changed.headers.get("ETag"), etag);
+  assert.deepEqual(Buffer.from(await changed.arrayBuffer()), icon(200).bytes);
+  assert.equal(s.writes(), 2);
+});
+
+test("an unchanged in-memory icon still retries saving after a failed KV write", async () => {
+  const s = setup();
+  let failed = false;
+  const store = {
+    ...s.store,
+    put: async (key: string, value: string) => {
+      if (!failed) {
+        failed = true;
+        throw new Error("temporary write failure");
+      }
+      return s.store.put(key, value);
+    },
+  };
+  await s.service(request(), store);
+  assert.equal(s.values.size, 0);
+  s.advance();
+  await s.service(request(), store);
+  assert.equal(s.values.size, 1);
 });

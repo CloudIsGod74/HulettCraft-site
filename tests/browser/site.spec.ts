@@ -1,10 +1,15 @@
 import { test, expect } from "@playwright/test";
 import { createSession } from "../../src/lib/adminSession";
 import { png } from "../helpers";
+import { creeperIcon, icon } from "../fixtures/serverIcon";
 const secret = "browser-test-only-secret-never-use-in-production";
 test.beforeEach(async ({ page }) => {
   await page.route("**/api/favicon.png?*", (route) =>
-    route.fulfill({ contentType: "image/png", body: Buffer.from(png) }),
+    route.fulfill({
+      contentType: "image/png",
+      headers: { "X-Favicon-Source": "mcstatus" },
+      body: creeperIcon().bytes,
+    }),
   );
   await page.route("**/api/server-status.json", (route) =>
     route.fulfill({
@@ -301,27 +306,59 @@ test("bulk upload preserves edited fields through rerenders and safely displays 
   ).toBe(true);
 });
 
-test("favicon refreshes in open tabs and when returning to a cached page", async ({
+test("favicon stays unchanged through repeat queries, offline responses and fallback redirects", async ({
   page,
 }) => {
   await page.clock.install({ time: new Date("2026-10-17T12:00:01Z") });
+  let mode = "good",
+    calls = 0;
+  await page.route("**/api/favicon.png?*", async (route) => {
+    calls++;
+    if (mode === "fallback")
+      return route.fulfill({
+        status: 302,
+        headers: { Location: "/favicon.ico" },
+      });
+    if (mode === "offline") return route.abort("failed");
+    if (mode === "unchanged") return route.fulfill({ status: 304 });
+    if (mode === "invalid")
+      return route.fulfill({
+        contentType: "image/png",
+        headers: { "X-Favicon-Source": "mcstatus" },
+        body: Buffer.from("invalid PNG"),
+      });
+    return route.fulfill({
+      contentType: "image/png",
+      headers: { "X-Favicon-Source": "mcstatus" },
+      body: mode === "changed" ? icon(200).bytes : creeperIcon().bytes,
+    });
+  });
   await page.goto("/");
   const link = page.locator("link[data-server-favicon]");
-  const initial = await link.getAttribute("href");
-  expect(initial).toMatch(/^\/api\/favicon\.png\?source=icon-v2&v=\d+$/);
-  await page.clock.fastForward(5 * 60 * 1000);
-  await expect(link).not.toHaveAttribute("href", initial!);
-  const updated = await link.getAttribute("href");
-  await page.clock.setSystemTime(new Date("2026-10-17T12:20:01Z"));
+  await expect(link).toHaveAttribute("href", creeperIcon().uri);
+  const initialCalls = calls;
+  for (const next of ["good", "unchanged", "offline", "fallback", "invalid"]) {
+    mode = next;
+    const before = calls;
+    await page.clock.fastForward(5 * 60 * 1000);
+    await expect.poll(() => calls).toBeGreaterThan(before);
+    // Wait until the fetch/decoding attempt has completed before checking retention.
+    await page.waitForTimeout(50);
+    await expect(link).toHaveAttribute("href", creeperIcon().uri);
+  }
+  expect(calls).toBeGreaterThan(initialCalls);
+  mode = "changed";
+  await page.clock.setSystemTime(new Date("2026-10-17T13:00:01Z"));
   await page.evaluate(() =>
     window.dispatchEvent(
       new PageTransitionEvent("pageshow", { persisted: true }),
     ),
   );
-  await expect(link).not.toHaveAttribute("href", updated!);
-  const resumed = await link.getAttribute("href");
+  await expect(link).toHaveAttribute("href", icon(200).uri);
+  const count = calls;
   await page.evaluate(() => window.dispatchEvent(new Event("focus")));
-  await expect(link).toHaveAttribute("href", resumed!);
+  await expect(link).toHaveAttribute("href", icon(200).uri);
+  expect(calls).toBe(count);
 });
 
 test("compiled Pages favicon endpoint reads local KV and honors conditional requests", async ({
