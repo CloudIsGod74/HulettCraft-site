@@ -1,16 +1,17 @@
 ---
+import PageHero from "../components/PageHero.astro";
 import BaseLayout from "../layouts/BaseLayout.astro";
 ---
-<BaseLayout>
 
+<BaseLayout>
   <!-- Hero -->
-  <section class="hero">
+  <PageHero>
     <h1>Welcome to HulettCraft</h1>
     <p>
-      A long-running survival community built around creativity,
-      collaboration, and shared worlds.
+      A long-running survival community built around creativity, collaboration,
+      and shared worlds.
     </p>
-  </section>
+  </PageHero>
 
   <!-- About -->
   <section class="hero" style="padding-top: 1rem;">
@@ -24,14 +25,13 @@ import BaseLayout from "../layouts/BaseLayout.astro";
     >
       HulettCraft is a multi-server community focused on vanilla survival,
       creative collaboration, and evolving seasonal experiences. We value
-      long-term worlds, respectful play, and player-driven projects —
-      with an eye toward the future through our active Hytale beta.
+      long-term worlds, respectful play, and player-driven projects — with an
+      eye toward the future through our active Hytale beta.
     </p>
   </section>
 
   <!-- Pillars -->
   <section class="server-grid">
-
     <div class="card">
       <h3>Long-Term Worlds</h3>
       <p style="color: var(--muted);">
@@ -43,8 +43,8 @@ import BaseLayout from "../layouts/BaseLayout.astro";
     <div class="card">
       <h3>Community First</h3>
       <p style="color: var(--muted);">
-        Light governance, shared responsibility, and collaboration define
-        how we play together.
+        Light governance, shared responsibility, and collaboration define how we
+        play together.
       </p>
     </div>
 
@@ -55,7 +55,6 @@ import BaseLayout from "../layouts/BaseLayout.astro";
         HulettCraft supports many playstyles.
       </p>
     </div>
-
   </section>
 
   <!-- Screenshots -->
@@ -104,9 +103,7 @@ import BaseLayout from "../layouts/BaseLayout.astro";
       color: var(--muted);
     "
   >
-    <p style="font-size: 1.1rem;">
-      Ready to explore?
-    </p>
+    <p style="font-size: 1.1rem;">Ready to explore?</p>
 
     <p>
       <a href="/worlds" style="color: var(--text); margin-right: 1rem;">
@@ -117,5 +114,4 @@ import BaseLayout from "../layouts/BaseLayout.astro";
       </a>
     </p>
   </section>
-
 </BaseLayout>

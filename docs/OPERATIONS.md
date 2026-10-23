@@ -8,14 +8,14 @@ Before any approved deployment, check the existing production and preview settin
 
 ## Cloudflare configuration
 
-| Binding/variable     | Purpose                            | Requirement                                                                                            |
-| -------------------- | ---------------------------------- | ------------------------------------------------------------------------------------------------------ |
-| HULETTCRAFT_BUCKET   | Existing R2 screenshot bucket      | Required for gallery and upload operations. Preserve the existing production bucket.                   |
-| SESSION              | Cloudflare KV                      | Existing adapter session binding; also stores revocations for newly issued admin sessions.             |
-| ADMIN_SESSION_SECRET | HMAC signing secret                | Required. Store as a Cloudflare secret; use a random value of at least 32 characters. Never commit it. |
-| GITHUB_CLIENT_ID     | Existing GitHub OAuth application  | Required for actual admin login.                                                                       |
-| GITHUB_CLIENT_SECRET | OAuth application secret           | Required for the callback.                                                                             |
-| UPLOAD_RATE_LIMITER  | Optional native rate-limit binding | Enforces upload throttling if supported by the hosting configuration. See below.                       |
+| Binding/variable     | Purpose                            | Requirement                                                                                                        |
+| -------------------- | ---------------------------------- | ------------------------------------------------------------------------------------------------------------------ |
+| HULETTCRAFT_BUCKET   | Existing R2 screenshot bucket      | Required for gallery and upload operations. Preserve the existing production bucket.                               |
+| SESSION              | Cloudflare KV                      | Existing adapter session binding; also stores session revocations, the last good favicon and the community roster. |
+| ADMIN_SESSION_SECRET | HMAC signing secret                | Required. Store as a Cloudflare secret; use a random value of at least 32 characters. Never commit it.             |
+| GITHUB_CLIENT_ID     | Existing GitHub OAuth application  | Required for actual admin login.                                                                                   |
+| GITHUB_CLIENT_SECRET | OAuth application secret           | Required for the callback.                                                                                         |
+| UPLOAD_RATE_LIMITER  | Optional native rate-limit binding | Enforces upload throttling if supported by the hosting configuration. See below.                                   |
 
 The OAuth callback remains /api/admin/auth/callback on the existing website. Preserve the application and callback configuration. Login uses a short-lived secure state cookie. Session cookies are HttpOnly, Secure, SameSite=Lax, and expire after seven days on both the browser and server.
 
@@ -107,3 +107,7 @@ Tests use a clearly synthetic green Creeper PNG and a separate provider-default 
 Before an approved deployment, inspect the live response without following redirects (`curl -D - --max-redirs 0 -o favicon.png https://hulettcraft.com/api/favicon.png`), compare a successful HTTP 200 PNG with the direct server-icon endpoint, and inspect `X-Favicon-Source`/`X-Favicon-Failure`. Verify the existing SESSION binding, logs and cache rules, then confirm updates and outage retention on an authorized preview. A synthetic fixture is not proof of the current production icon.
 
 Review commits use Cloudflare's documented `[CF-Pages-Skip]` prefix to prevent automatic Pages preview deployment while leaving GitHub Actions enabled. No Cloudflare settings are changed. Remove that prefix from a future approved deployment commit as appropriate.
+
+## Community directory
+
+The authenticated `/admin/roster` editor stores its validated roster in the existing `SESSION` KV key `public:community-roster:v1` without expiration. It uses the existing administrator allowlist and exact-Origin write protection. See [Community operations](COMMUNITY.md) for editing, propagation/concurrent-edit limitations, preview namespace isolation and the future Discord plan. No roster migration or new Cloudflare binding is required when `SESSION` already exists.

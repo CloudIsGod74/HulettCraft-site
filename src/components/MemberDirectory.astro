@@ -1,0 +1,99 @@
+---
+import {
+  activeMembers,
+  memberLinks,
+  type CommunityMember,
+} from "../config/community";
+interface Props {
+  members?: CommunityMember[];
+  unavailable?: boolean;
+}
+const members = activeMembers(Astro.props.members);
+---
+
+<section
+  class="community-members"
+  aria-labelledby="members-heading"
+  id="members"
+>
+  <div class="community-section-heading">
+    <div>
+      <p class="eyebrow">The people behind the builds</p>
+      <h2 id="members-heading">Meet the members</h2>
+    </div>
+    {
+      members.length > 0 && (
+        <span class="member-count">
+          {members.length} active {members.length === 1 ? "member" : "members"}
+        </span>
+      )
+    }
+  </div>
+  <p class="muted">
+    Builders, explorers, redstone tinkerers, and familiar faces. Every active
+    member has a place here, with public links for those who want to share more.
+  </p>
+  {
+    Astro.props.unavailable ? (
+      <p role="status">
+        The member directory is temporarily unavailable. Please check back soon.
+      </p>
+    ) : members.length ? (
+      <div class="member-grid">
+        {members.map((member) => (
+          <article class="card member-card">
+            <div class="member-identity">
+              <span class="member-avatar" aria-hidden="true">
+                {member.displayName.slice(0, 2).toUpperCase()}
+              </span>
+              <div>
+                <h3>{member.displayName}</h3>
+                <span class="muted member-username">{member.username}</span>
+              </div>
+            </div>
+            {member.bio && <p class="muted">{member.bio}</p>}
+            {memberLinks(member).length > 0 && (
+              <ul
+                class="member-socials"
+                aria-label={`${member.displayName}'s public links`}
+              >
+                {memberLinks(member).map((link) => (
+                  <li>
+                    <a
+                      href={link.url}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                    >
+                      {link.label}
+                      <span aria-hidden="true"> ↗</span>
+                      <span class="sr-only"> (opens in a new tab)</span>
+                    </a>
+                  </li>
+                ))}
+              </ul>
+            )}
+          </article>
+        ))}
+      </div>
+    ) : (
+      <div class="member-empty">
+        <span class="member-avatar" aria-hidden="true">
+          HC
+        </span>
+        <div>
+          <>
+            <h3>Our member directory is taking shape</h3>
+            <p>
+              Profiles and public links will appear here as the active roster is
+              confirmed. In the meantime, explore the worlds and see what the
+              community has been building.
+            </p>
+            <a href="/gallery">
+              Explore community builds <span aria-hidden="true">→</span>
+            </a>
+          </>
+        </div>
+      </div>
+    )
+  }
+</section>

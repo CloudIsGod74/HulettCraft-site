@@ -1,4 +1,5 @@
 ---
+import PageHero from "../../../components/PageHero.astro";
 import BaseLayout from "../../../layouts/BaseLayout.astro";
 import GalleryGrid from "../../../components/GalleryGrid.astro";
 import { HULETTCRAFT } from "../../../config/hulettcraft";
@@ -22,7 +23,7 @@ if (season)
 ---
 
 <BaseLayout>
-  <section class="hero">
+  <PageHero>
     <h1>
       {
         season
@@ -43,7 +44,7 @@ if (season)
             : "Choose a season from the gallery.")
       }
     </p>
-  </section>
+  </PageHero>
   <section class="gallery-panel">
     {
       error ? (

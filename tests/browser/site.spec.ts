@@ -74,6 +74,39 @@ test("world pages render and contain no live-map navigation, embeds, or horizont
     path: test.info().outputPath("desktop-worlds.png"),
     fullPage: true,
   });
+  await page.route("**/api/server-status.json", (route) =>
+    route.fulfill({
+      json: {
+        hulettcraft: {
+          state: "online",
+          players: { online: 3, max: 20 },
+          version: "1.21.4",
+        },
+        creative: { state: "offline" },
+        modded: { state: "offline" },
+        hytale: { state: "unavailable" },
+      },
+    }),
+  );
+  await page.goto("/status");
+  await expect(
+    page.locator('[data-status-server="hulettcraft"]'),
+  ).toContainText("3/20");
+  await page.screenshot({
+    path: test.info().outputPath("desktop-status.png"),
+    fullPage: true,
+  });
+  await page.setViewportSize({ width: 375, height: 900 });
+  await page.screenshot({
+    path: test.info().outputPath("mobile-status.png"),
+    fullPage: true,
+  });
+  await page.setViewportSize({ width: 1440, height: 900 });
+  await page.goto("/");
+  await page.screenshot({
+    path: test.info().outputPath("desktop-home.png"),
+    fullPage: true,
+  });
   await page.goto("/gallery/hulettcraft/season-8");
   await page.screenshot({
     path: test.info().outputPath("desktop-gallery.png"),
@@ -131,6 +164,20 @@ test("status pages share results and render external values as text", async ({
   page,
 }) => {
   await page.goto("/status");
+  await expect(
+    page.getByRole("link", { name: "Status", exact: true }),
+  ).toHaveAttribute("aria-current", "page");
+  await page.context().grantPermissions(["clipboard-read", "clipboard-write"]);
+  await page
+    .getByRole("button", { name: "play.hulettcraft.com", exact: true })
+    .click();
+  await expect(
+    page.getByRole("button", { name: "Copied!", exact: true }),
+  ).toBeVisible();
+  expect(await page.evaluate(() => navigator.clipboard.readText())).toBe(
+    "play.hulettcraft.com",
+  );
+  await expect(page).toHaveURL(/\/status$/);
   await expect(
     page.locator('[data-status-server="hulettcraft"]'),
   ).toContainText("3/20");
@@ -379,4 +426,209 @@ test("compiled Pages favicon endpoint reads local KV and honors conditional requ
     headers: { "If-None-Match": response.headers().etag },
   });
   expect(conditional.status()).toBe(304);
+});
+
+test("screenshot banners rotate automatically, pause, retain a good image on failure and honor reduced motion", async ({
+  page,
+}) => {
+  await page.clock.install();
+  await page.goto("/community");
+  const hero = page.locator("[data-hero-slideshow]");
+  await expect(hero).toHaveAttribute("data-hero-index", "0");
+  const images = JSON.parse((await hero.getAttribute("data-hero-images"))!);
+  await page.route("**" + images[1].src.replace(/ /g, "%20"), (route) =>
+    route.abort(),
+  );
+  await page.clock.fastForward(8100);
+  await page.waitForTimeout(100);
+  await expect(hero).toHaveAttribute("data-hero-index", "0");
+  await page.clock.fastForward(8100);
+  await expect(hero).toHaveAttribute("data-hero-index", "2");
+  await page
+    .getByRole("button", { name: "Pause photos in banner slideshow" })
+    .click();
+  await page.clock.fastForward(20_000);
+  await expect(hero).toHaveAttribute("data-hero-index", "2");
+  await page.goto("/status");
+  await expect(hero).toHaveAttribute("data-hero-paused", "true");
+  await page.emulateMedia({ reducedMotion: "reduce" });
+  await page.reload();
+  await page.clock.fastForward(20_000);
+  await expect(hero).toHaveAttribute("data-hero-index", "0");
+  await expect(
+    page.getByRole("button", { name: "Play photos in banner slideshow" }),
+  ).toBeVisible();
+});
+
+test("Community provides a usable directory empty state and working ways to participate", async ({
+  page,
+}) => {
+  await page.goto("/community");
+  await expect(
+    page.getByRole("heading", { name: "Meet the members" }),
+  ).toBeVisible();
+  await expect(
+    page.getByText("Our member directory is taking shape"),
+  ).toBeVisible();
+  await expect(page.locator(".member-card")).toHaveCount(0);
+  await expect(
+    page.getByRole("link", { name: /Submit a screenshot/ }),
+  ).toHaveAttribute("href", "/gallery/upload");
+  await page.screenshot({
+    path: test.info().outputPath("community-desktop.png"),
+    fullPage: true,
+  });
+  await page.setViewportSize({ width: 375, height: 900 });
+  expect(
+    await page.evaluate(
+      () => document.documentElement.scrollWidth <= innerWidth + 1,
+    ),
+  ).toBe(true);
+  await page.screenshot({
+    path: test.info().outputPath("community-mobile.png"),
+    fullPage: true,
+  });
+});
+
+test("roster editor redirects guests and protects API reads and writes", async ({
+  page,
+  request,
+}) => {
+  await page.goto("/admin/roster");
+  await expect(page).toHaveURL(/\/admin\/login$/);
+  expect((await request.get("/api/admin/roster")).status()).toBe(401);
+  expect(
+    (
+      await request.post("/api/admin/roster", {
+        data: { revision: "unpublished", members: [] },
+      })
+    ).status(),
+  ).toBe(401);
+});
+
+test("administrator edits persist in local KV, publish safely and retain changes after failure", async ({
+  page,
+  context,
+}) => {
+  await context.addCookies([
+    {
+      name: "admin_session",
+      value: await createSession("cloudisgod74", secret),
+      url: "http://127.0.0.1:4321",
+    },
+  ]);
+  await page.goto("/admin/pending");
+  await page.getByRole("link", { name: "Manage member roster" }).click();
+  await expect(page.locator("#roster-form")).toBeVisible();
+  await page.getByRole("button", { name: "Add member", exact: true }).click();
+  await page.getByLabel("Minecraft username").fill("RosterBuilder");
+  await page.getByLabel("Display name").fill("Roster <img src=x>");
+  await page
+    .getByLabel("Short bio (optional)")
+    .fill("A synthetic local test profile.");
+  await page.getByRole("button", { name: "Add social link" }).click();
+  await page.getByLabel("Link label").fill("Website");
+  await page
+    .getByLabel("HTTPS address")
+    .fill("https://example.com/roster-builder");
+  await page.setViewportSize({ width: 375, height: 900 });
+  expect(
+    await page.evaluate(
+      () => document.documentElement.scrollWidth <= innerWidth + 1,
+    ),
+  ).toBe(true);
+  await page.evaluate(() => {
+    (document.activeElement as HTMLElement)?.blur();
+    window.scrollTo(0, 0);
+  });
+  await page.screenshot({
+    path: test.info().outputPath("roster-editor-mobile.png"),
+    fullPage: true,
+  });
+  await page.setViewportSize({ width: 1440, height: 1000 });
+  await page.evaluate(() => window.scrollTo(0, 0));
+  await page.screenshot({
+    path: test.info().outputPath("roster-editor-desktop.png"),
+    fullPage: true,
+  });
+  // A rejected save must not clear the edits or falsely report success.
+  await page.route("**/api/admin/roster", (route) =>
+    route.request().method() === "POST"
+      ? route.fulfill({
+          status: 409,
+          body: "The roster changed. Review the latest version.",
+        })
+      : route.continue(),
+  );
+  await page.getByRole("button", { name: "Save roster" }).click();
+  await expect(page.locator("#roster-result")).toContainText(
+    "Your edits are still here",
+  );
+  await expect(page.getByLabel("Minecraft username")).toHaveValue(
+    "RosterBuilder",
+  );
+  await expect(page.getByRole("button", { name: "Save roster" })).toBeEnabled();
+  await page.unroute("**/api/admin/roster");
+  await page.getByRole("button", { name: "Save roster" }).click();
+  await expect(page.locator("#roster-result")).toContainText("Roster saved.");
+  await page.reload();
+  await expect(page.getByLabel("Display name")).toHaveValue(
+    "Roster <img src=x>",
+  );
+  await page.goto("/community");
+  await expect(page.locator(".member-card")).toHaveCount(1);
+  await expect(page.locator(".member-card h3")).toHaveText(
+    "Roster <img src=x>",
+  );
+  await expect(page.locator(".member-card img")).toHaveCount(0);
+  await expect(
+    page.locator(".member-card").getByRole("link", { name: /Website/ }),
+  ).toHaveAttribute("href", "https://example.com/roster-builder");
+  await page.screenshot({
+    path: test.info().outputPath("community-with-member.png"),
+    fullPage: true,
+  });
+  await page.goto("/admin/roster");
+  await page.getByLabel("Show in directory").uncheck();
+  await page.getByRole("button", { name: "Save roster" }).click();
+  await expect(page.locator("#roster-result")).toContainText("Roster saved.");
+  await page.goto("/community");
+  await expect(page.locator(".member-card")).toHaveCount(0);
+  expect(await page.content()).not.toContain("RosterBuilder");
+  await page.goto("/admin/roster");
+  await expect(page.getByLabel("Minecraft username")).toHaveValue(
+    "RosterBuilder",
+  );
+  await expect(page.getByLabel("Show in directory")).not.toBeChecked();
+  await page
+    .getByRole("button", { name: "Remove member", exact: true })
+    .click();
+  page.once("dialog", (dialog) => dialog.accept());
+  await page.getByRole("button", { name: "Save roster" }).click();
+  await expect(page.locator("#roster-result")).toContainText("Roster saved.");
+  await page.reload();
+  await expect(page.locator("#roster-count")).toHaveText(
+    "0 members · 0 visible",
+  );
+});
+
+test("roster storage load failures disable editing instead of presenting an empty roster", async ({
+  page,
+  context,
+}) => {
+  await context.addCookies([
+    {
+      name: "admin_session",
+      value: await createSession("cloudisgod74", secret),
+      url: "http://127.0.0.1:4321",
+    },
+  ]);
+  await page.route("**/api/admin/roster", (route) =>
+    route.fulfill({ status: 503, body: "Member storage is unavailable." }),
+  );
+  await page.goto("/admin/roster");
+  await expect(page.locator("#roster-result")).toContainText(
+    "Editing is disabled until the saved roster can be loaded.",
+  );
+  await expect(page.locator("#roster-form")).toBeHidden();
 });

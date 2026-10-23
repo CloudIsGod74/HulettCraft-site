@@ -9,6 +9,10 @@ if (!admin) return Astro.redirect("/admin/login");
 
 <BaseLayout>
   <h1>Bulk Upload Screenshots</h1>
+  <p>
+    <a href="/admin/roster">Manage member roster</a> · <a href="/admin/pending"
+      >Pending screenshots</a>
+  </p>
   <p class="subtitle">Admin-only direct upload (skips approval)</p>
 
   <input

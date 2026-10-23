@@ -1,0 +1,112 @@
+---
+import BaseLayout from "../../layouts/BaseLayout.astro";
+import PageHero from "../../components/PageHero.astro";
+import { requireAdmin } from "../../lib/requireAdmin";
+Astro.response.headers.set("Cache-Control", "private, no-store");
+if (!(await requireAdmin(Astro.request, Astro.locals)))
+  return Astro.redirect("/admin/login");
+---
+
+<BaseLayout title="Member roster | HulettCraft Admin">
+  <PageHero>
+    <h1>Member roster</h1>
+    <p>
+      The people behind the builds. Add everyone on the confirmed active roster;
+      social links are optional.
+    </p>
+  </PageHero>
+  <nav class="admin-roster-nav" aria-label="Administrator tools">
+    <a href="/admin/pending">Pending screenshots</a>
+    <a href="/admin/bulk-upload">Bulk upload</a>
+    <a href="/community#members" target="_blank" rel="noopener noreferrer"
+      >View member directory (new tab)</a
+    >
+  </nav>
+  <p class="muted">
+    Active members appear on the Community page. Turn off “Show in directory” to
+    keep a record while hiding the profile. Changes publish when you save and
+    may take about a minute to appear. Please use one editor at a time.
+  </p>
+  <noscript><p role="alert">Enable JavaScript to edit the roster.</p></noscript>
+  <p id="roster-result" role="status" aria-live="polite">Loading roster…</p>
+  <form id="roster-form" hidden>
+    <fieldset id="roster-controls" class="roster-controls">
+      <legend class="sr-only">Edit community members</legend>
+      <div class="roster-toolbar">
+        <span id="roster-count"></span>
+        <button type="button" id="add-member">Add member</button>
+      </div>
+      <div id="roster-members"></div>
+      <div class="roster-toolbar roster-save">
+        <p id="roster-dirty" class="muted">No unsaved changes.</p>
+        <button type="submit" id="save-roster" disabled>Save roster</button>
+      </div>
+    </fieldset>
+  </form>
+  <template id="roster-member-template">
+    <fieldset class="roster-member">
+      <legend>Member</legend>
+      <div class="roster-member-fields">
+        <label
+          >Minecraft username<input
+            data-field="username"
+            required
+            minlength="3"
+            maxlength="16"
+            pattern="[a-zA-Z0-9_]{3,16}"
+            autocomplete="off"
+          /></label
+        >
+        <label
+          >Display name<input
+            data-field="displayName"
+            required
+            maxlength="80"
+          /></label
+        >
+        <label class="roster-check"
+          ><input type="checkbox" data-field="active" /> Show in directory</label
+        >
+        <label class="roster-bio"
+          >Short bio (optional)<textarea
+            data-field="bio"
+            maxlength="500"
+            rows="3"></textarea></label
+        >
+      </div>
+      <div class="roster-links"></div>
+      <div class="roster-toolbar">
+        <button type="button" data-action="add-link">Add social link</button>
+        <button type="button" data-action="remove-member" class="roster-remove"
+          >Remove member</button
+        >
+      </div>
+    </fieldset>
+  </template>
+  <template id="roster-link-template">
+    <div class="roster-link">
+      <label
+        >Link label<input
+          data-field="label"
+          required
+          maxlength="40"
+          placeholder="YouTube, Twitch, Website…"
+        /></label
+      >
+      <label
+        >HTTPS address<input
+          data-field="url"
+          type="url"
+          required
+          maxlength="2048"
+          pattern="https://.*"
+          placeholder="https://"
+        /></label
+      >
+      <button type="button" data-action="remove-link">Remove link</button>
+    </div>
+  </template>
+  <script>
+    import "../../scripts/rosterEditor";
+  </script>
+</BaseLayout>

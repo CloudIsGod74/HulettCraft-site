@@ -1,4 +1,5 @@
 ---
+import PageHero from "../../components/PageHero.astro";
 import BaseLayout from "../../layouts/BaseLayout.astro";
 import { requireAdmin } from "../../lib/requireAdmin";
 import { listPending, type GalleryItem } from "../../lib/gallery";
@@ -16,7 +17,7 @@ try {
 ---
 
 <BaseLayout>
-  <section class="hero">
+  <PageHero>
     <h1>Pending Screenshots</h1>
     <p>Awaiting admin approval</p><form
       method="POST"
@@ -24,7 +25,7 @@ try {
     >
       <button type="submit">Log out</button>
     </form>
-  </section>
+  </PageHero>
 
   <!-- Bulk actions -->
   <section class="bulk-actions">
@@ -40,6 +41,7 @@ try {
     </div>
 
     <div class="bulk-right">
+      <a href="/admin/roster" class="btn bulk-upload">Manage member roster</a>
       <a href="/admin/bulk-upload" class="btn bulk-upload">
         Bulk Upload Screenshots
       </a>
@@ -127,6 +129,8 @@ try {
     }
 
     .bulk-right {
+      gap: 0.75rem;
+      flex-wrap: wrap;
       display: flex;
       align-items: center;
     }
