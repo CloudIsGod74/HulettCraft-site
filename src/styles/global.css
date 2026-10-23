@@ -1379,7 +1379,9 @@ img {
   padding-top: 1.75rem;
 }
 .join-submit button,
-.application-review button {
+.application-review button,
+.application-email button {
+  width: auto;
   border: 1px solid var(--accent-muted);
   border-radius: 8px;
   background: var(--accent);
@@ -1393,7 +1395,8 @@ img {
   margin-top: 1.5rem;
 }
 .join-submit button:disabled,
-.application-review button:disabled {
+.application-review button:disabled,
+.application-email button:disabled {
   opacity: 0.55;
   cursor: default;
 }
@@ -1464,6 +1467,7 @@ img {
   overflow-wrap: anywhere;
   margin-bottom: 0;
 }
+.application-email,
 .application-attachment,
 .application-review {
   margin-top: 2rem;
