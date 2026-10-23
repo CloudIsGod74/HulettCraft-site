@@ -18,9 +18,25 @@ const images = bannerImages(Astro.url.pathname);
     />
   </div>
   <div class="hero-copy"><slot /></div>
-  <button type="button" class="hero-pause" data-hero-pause hidden
-    >Pause photos</button
+  <button
+    type="button"
+    class="hero-pause"
+    data-hero-pause
+    aria-label="Pause photos in banner slideshow"
+    title="Pause photos"
+    hidden
   >
+    <svg
+      width="18"
+      height="18"
+      viewBox="0 0 24 24"
+      fill="currentColor"
+      aria-hidden="true"
+      focusable="false"
+    >
+      <path data-hero-symbol d="M6 5h4v14H6zM14 5h4v14h-4z"></path>
+    </svg>
+  </button>
 </section>
 <script>
   import "../scripts/heroSlideshow";

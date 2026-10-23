@@ -27,7 +27,13 @@ for (const hero of document.querySelectorAll<HTMLElement>(
   hero.dataset.heroIndex = "0";
   control.hidden = false;
   function updateControl() {
-    control!.textContent = paused ? "Play photos" : "Pause photos";
+    control!
+      .querySelector("[data-hero-symbol]")
+      ?.setAttribute(
+        "d",
+        paused ? "M8 5v14l11-7z" : "M6 5h4v14H6zM14 5h4v14h-4z",
+      );
+    control!.title = paused ? "Play photos" : "Pause photos";
     control!.setAttribute(
       "aria-label",
       paused

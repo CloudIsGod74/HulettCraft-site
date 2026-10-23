@@ -309,13 +309,16 @@ nav a:hover {
   position: absolute;
   right: 1rem;
   bottom: 0.75rem;
-  padding: 0.3rem 0.65rem;
-  min-height: 32px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 44px;
+  height: 44px;
+  padding: 0.5rem;
   border: 1px solid rgba(161, 181, 187, 0.4);
   border-radius: 6px;
   background: rgba(8, 16, 30, 0.85);
   color: var(--text);
-  font-size: 0.75rem;
   cursor: pointer;
 }
 .hero-pause:hover {

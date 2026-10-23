@@ -437,6 +437,13 @@ test("screenshot banners rotate automatically, pause, retain a good image on fai
   await page.goto("/community");
   const hero = page.locator("[data-hero-slideshow]");
   await expect(hero).toHaveAttribute("data-hero-index", "0");
+  const control = page.getByRole("button", {
+    name: "Pause photos in banner slideshow",
+  });
+  await expect(control).toHaveAttribute("title", "Pause photos");
+  await expect(control.locator("svg")).toHaveAttribute("aria-hidden", "true");
+  expect((await control.textContent())?.trim()).toBe("");
+  const pauseSymbol = await control.locator("path").getAttribute("d");
   const images = JSON.parse((await hero.getAttribute("data-hero-images"))!);
   await page.route("**" + images[1].src.replace(/ /g, "%20"), (route) =>
     route.abort(),
@@ -449,6 +456,11 @@ test("screenshot banners rotate automatically, pause, retain a good image on fai
   await page
     .getByRole("button", { name: "Pause photos in banner slideshow" })
     .click();
+  const play = page.getByRole("button", {
+    name: "Play photos in banner slideshow",
+  });
+  await expect(play).toHaveAttribute("title", "Play photos");
+  expect(await play.locator("path").getAttribute("d")).not.toBe(pauseSymbol);
   await page.clock.fastForward(20_000);
   await expect(hero).toHaveAttribute("data-hero-index", "2");
   await page.goto("/status");
@@ -831,4 +843,27 @@ test("application review pages and attachments reject visitors without admin log
   );
   expect(response.status()).toBe(401);
   expect(response.headers()["cache-control"]).toContain("private, no-store");
+});
+
+test("Join stays out of desktop and mobile navigation while Community links to the application", async ({
+  page,
+}) => {
+  await page.goto("/community");
+  const nav = page.getByRole("navigation", { name: "Main navigation" });
+  await expect(nav.locator('a[href="/join"]')).toHaveCount(0);
+  const join = page.getByRole("link", {
+    name: "Request to join →",
+    exact: true,
+  });
+  await expect(join).toHaveAttribute("href", "/join");
+  await page.setViewportSize({ width: 375, height: 900 });
+  await page.getByRole("button", { name: "Toggle navigation" }).click();
+  await expect(nav).toBeVisible();
+  await expect(nav.locator('a[href="/join"]')).toHaveCount(0);
+  await page.getByRole("button", { name: "Toggle navigation" }).click();
+  await join.click();
+  await expect(page).toHaveURL(/\/join$/);
+  await expect(
+    page.getByRole("heading", { name: "A place for your next chapter." }),
+  ).toBeVisible();
 });

@@ -1,6 +1,6 @@
 # HulettCraft SMP join applications
 
-`/join` is a private introduction form for HulettCraft SMP (Minecraft Java), reachable through Join in the main navigation, the front page, and Community. It does not accept applications for Creative, Modded or Hytale.
+`/join` is a private introduction form for HulettCraft SMP (Minecraft Java), linked from Community and the front page. The primary navigation stays focused on the existing sections. It does not accept applications for Creative, Modded or Hytale.
 
 Required: Minecraft Java username, Discord username, proudest Minecraft achievement, preferred building/activities, desired server/community, preferred interactions, engagement preference, and acknowledgement of private administrative review. Followed creators/communities, griefing experience, and a screenshot are optional. No age, real name, email, address, or Discord authentication is collected. Handles are self-reported; an administrator must verify who they are speaking to before granting access.
 
