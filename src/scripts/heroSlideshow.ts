@@ -5,8 +5,24 @@ for (const hero of document.querySelectorAll<HTMLElement>(
   "[data-hero-slideshow]",
 )) {
   const photos = hero.querySelector<HTMLElement>(".hero-photos");
+  const controls = hero.querySelector<HTMLElement>("[data-hero-controls]");
   const control = hero.querySelector<HTMLButtonElement>("[data-hero-pause]");
-  if (!photos || !control) continue;
+  const previous = hero.querySelector<HTMLButtonElement>(
+    "[data-hero-previous]",
+  );
+  const next = hero.querySelector<HTMLButtonElement>("[data-hero-next]");
+  const counter = hero.querySelector<HTMLElement>("[data-hero-counter]");
+  const message = hero.querySelector<HTMLElement>("[data-hero-message]");
+  if (
+    !photos ||
+    !controls ||
+    !control ||
+    !previous ||
+    !next ||
+    !counter ||
+    !message
+  )
+    continue;
   let images: BannerImage[];
   try {
     images = JSON.parse(hero.dataset.heroImages ?? "[]");
@@ -23,9 +39,13 @@ for (const hero of document.querySelectorAll<HTMLElement>(
   let index = 0;
   let candidateIndex = 0;
   let timer: number | undefined;
+  let cleanupTimer: number | undefined;
   let loading = false;
+  let pageActive = true;
+  let currentPhoto = photos.querySelector("img");
   hero.dataset.heroIndex = "0";
-  control.hidden = false;
+  controls.hidden = false;
+  hero.classList.add("hero-controls-ready");
   function updateControl() {
     control!
       .querySelector("[data-hero-symbol]")
@@ -40,48 +60,13 @@ for (const hero of document.querySelectorAll<HTMLElement>(
         ? "Play photos in banner slideshow"
         : "Pause photos in banner slideshow",
     );
+    previous!.disabled = loading;
+    next!.disabled = loading;
+    counter!.textContent = `${index + 1} / ${images.length}`;
     hero.dataset.heroPaused = String(paused);
   }
-  function stop() {
-    window.clearTimeout(timer);
-    timer = undefined;
-  }
-  function schedule() {
-    stop();
-    if (!paused && !document.hidden)
-      timer = window.setTimeout(() => void advance(), BANNER_INTERVAL_MS);
-  }
-  async function advance() {
-    if (paused || document.hidden || loading) return;
-    loading = true;
-    const nextIndex = (candidateIndex + 1) % images.length;
-    candidateIndex = nextIndex;
-    const next = new Image();
-    next.className = "hero-photo hero-photo-enter";
-    next.alt = "";
-    next.decoding = "async";
-    next.style.objectPosition = images[nextIndex].position;
-    next.src = images[nextIndex].src;
-    try {
-      // Leave the current screenshot in place until its replacement has decoded.
-      await next.decode();
-      if (paused || document.hidden) return;
-      photos!.append(next);
-      index = nextIndex;
-      hero.dataset.heroIndex = String(index);
-      window.setTimeout(() => {
-        for (const old of photos!.querySelectorAll("img"))
-          if (old !== next) old.remove();
-      }, 900);
-    } catch {
-      /* Keep the current screenshot when another image is unavailable. */
-    } finally {
-      loading = false;
-      schedule();
-    }
-  }
-  control.addEventListener("click", () => {
-    paused = !paused;
+  function setPaused(value: boolean) {
+    paused = value;
     try {
       sessionStorage.setItem(pauseKey, String(paused));
     } catch {
@@ -89,15 +74,107 @@ for (const hero of document.querySelectorAll<HTMLElement>(
     }
     updateControl();
     schedule();
-  });
+  }
+  function stop() {
+    window.clearTimeout(timer);
+    timer = undefined;
+  }
+  function schedule() {
+    stop();
+    if (!paused && !document.hidden && pageActive && !loading)
+      timer = window.setTimeout(() => void advance(), BANNER_INTERVAL_MS);
+  }
+  async function decode(image: HTMLImageElement) {
+    let timeout: number | undefined;
+    try {
+      await Promise.race([
+        image.decode(),
+        new Promise<never>((_, reject) => {
+          timeout = window.setTimeout(
+            () => reject(new Error("Image timed out")),
+            8000,
+          );
+        }),
+      ]);
+    } finally {
+      window.clearTimeout(timeout);
+    }
+  }
+  async function advance(direction = 1, manual = false) {
+    if (document.hidden || !pageActive || loading || (!manual && paused))
+      return;
+    // A visitor's selection stays put until they explicitly choose Play.
+    if (manual) {
+      setPaused(true);
+      candidateIndex = index;
+    }
+    loading = true;
+    stop();
+    updateControl();
+    try {
+      // Manual navigation skips broken pictures; automatic rotation tries one per tick.
+      const attempts = manual ? images.length - 1 : 1;
+      for (let attempt = 0; attempt < attempts; attempt++) {
+        if (document.hidden || !pageActive || (!manual && paused)) return;
+        const nextIndex =
+          (candidateIndex + direction + images.length) % images.length;
+        candidateIndex = nextIndex;
+        const image = new Image();
+        image.className = "hero-photo hero-photo-enter";
+        image.alt = "";
+        image.decoding = "async";
+        image.style.objectPosition = images[nextIndex].position;
+        image.src = images[nextIndex].src;
+        try {
+          // Leave the current screenshot in place until its replacement has decoded.
+          await decode(image);
+        } catch {
+          continue;
+        }
+        if (document.hidden || !pageActive || (!manual && paused)) return;
+        // Fast repeated taps must not let an old fade's cleanup remove a newer photo.
+        window.clearTimeout(cleanupTimer);
+        for (const old of photos!.querySelectorAll("img"))
+          if (old !== currentPhoto) old.remove();
+        photos!.append(image);
+        currentPhoto = image;
+        index = nextIndex;
+        hero.dataset.heroIndex = String(index);
+        cleanupTimer = window.setTimeout(() => {
+          for (const old of photos!.querySelectorAll("img"))
+            if (old !== image) old.remove();
+        }, 900);
+        if (manual)
+          message!.textContent = `Banner photo ${index + 1} of ${images.length}.${paused ? " Automatic rotation paused." : ""}`;
+        return;
+      }
+      if (manual)
+        message!.textContent =
+          "Another banner photo could not be loaded. Keeping the current photo.";
+    } finally {
+      if (manual) candidateIndex = index;
+      loading = false;
+      updateControl();
+      schedule();
+    }
+  }
+  control.addEventListener("click", () => setPaused(!paused));
+  previous.addEventListener("click", () => void advance(-1, true));
+  next.addEventListener("click", () => void advance(1, true));
   document.addEventListener("visibilitychange", schedule);
   preference.addEventListener("change", () => {
     if (preference.matches) paused = true;
     updateControl();
     schedule();
   });
-  window.addEventListener("pagehide", stop);
-  window.addEventListener("pageshow", schedule);
+  window.addEventListener("pagehide", () => {
+    pageActive = false;
+    stop();
+  });
+  window.addEventListener("pageshow", () => {
+    pageActive = true;
+    schedule();
+  });
   updateControl();
   schedule();
 }

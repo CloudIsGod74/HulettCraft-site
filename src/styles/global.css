@@ -305,10 +305,25 @@ nav a:hover {
 .hero-copy {
   position: relative;
 }
-.hero-pause {
-  position: absolute;
-  right: 1rem;
-  bottom: 0.75rem;
+.page-hero.hero-controls-ready {
+  padding-bottom: 1rem;
+}
+.hero-controls {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 0.5rem;
+  margin-top: 1.25rem;
+}
+.hero-counter {
+  margin-right: 0.25rem;
+  color: var(--muted);
+  font-size: 0.8rem;
+  font-variant-numeric: tabular-nums;
+}
+.hero-controls button {
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -321,10 +336,14 @@ nav a:hover {
   color: var(--text);
   cursor: pointer;
 }
-.hero-pause:hover {
+.hero-controls button:hover {
   border-color: var(--accent);
 }
-.hero-pause[hidden] {
+.hero-controls button:disabled {
+  opacity: 0.55;
+  cursor: wait;
+}
+.hero-controls[hidden] {
   display: none;
 }
 .hero p {

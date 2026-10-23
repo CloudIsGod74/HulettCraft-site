@@ -533,6 +533,81 @@ test("screenshot banners rotate automatically, pause, retain a good image on fai
   ).toBeVisible();
 });
 
+test.describe("manual title banners on touchscreens", () => {
+  test.use({
+    viewport: { width: 375, height: 812 },
+    isMobile: true,
+    hasTouch: true,
+  });
+  test("arrows wrap, pause automatic rotation, retain valid photos and work with reduced motion", async ({
+    page,
+  }) => {
+    await page.clock.install();
+    await page.goto("/community");
+    const hero = page.locator("[data-hero-slideshow]");
+    const previous = hero.getByRole("button", {
+      name: "Previous banner photo",
+    });
+    const next = hero.getByRole("button", { name: "Next banner photo" });
+    const images = JSON.parse((await hero.getAttribute("data-hero-images"))!);
+    await next.tap();
+    await expect(hero).toHaveAttribute("data-hero-index", "1");
+    await expect(hero).toHaveAttribute("data-hero-paused", "true");
+    await previous.tap();
+    await expect(hero).toHaveAttribute("data-hero-index", "0");
+    await previous.focus();
+    await page.keyboard.press("Enter");
+    await expect(hero).toHaveAttribute("data-hero-index", "2");
+    await page.clock.fastForward(1000); // Finish fades after several rapid changes.
+    await expect(hero.locator(".hero-photo")).toHaveCount(1);
+    await expect(hero.locator(".hero-photo")).toHaveAttribute(
+      "src",
+      images[2].src,
+    );
+    await page.clock.fastForward(20_000);
+    await expect(hero).toHaveAttribute("data-hero-index", "2");
+    await page.screenshot({
+      path: test.info().outputPath("manual-banner-mobile.png"),
+      fullPage: true,
+    });
+    await hero
+      .getByRole("button", { name: "Play photos in banner slideshow" })
+      .tap();
+    await page.clock.fastForward(8100);
+    await expect(hero).toHaveAttribute("data-hero-index", "0");
+    await hero
+      .getByRole("button", { name: "Pause photos in banner slideshow" })
+      .tap();
+    await page.emulateMedia({ reducedMotion: "reduce" });
+    await page.reload();
+    const failed = "**" + images[1].src.replace(/ /g, "%20");
+    await page.route(failed, (route) => route.abort());
+    await next.tap(); // Skip the unavailable next photo and show the other one.
+    await expect(hero).toHaveAttribute("data-hero-index", "2");
+    await expect(hero).toHaveAttribute("data-hero-paused", "true");
+    await page.reload();
+    await page.route("**" + images[2].src.replace(/ /g, "%20"), (route) =>
+      route.abort(),
+    );
+    await next.tap(); // Both alternatives are unavailable: preserve the current photo.
+    await expect(hero.locator("[data-hero-message]")).toContainText(
+      "Keeping the current photo",
+    );
+    await expect(hero).toHaveAttribute("data-hero-index", "0");
+    await expect(next).toBeEnabled();
+    await expect(hero.locator(".hero-photo")).toHaveAttribute(
+      "src",
+      images[0].src,
+    );
+    await page.goto("/hytale"); // The same controls work for the two-photo Hytale playlist.
+    await expect(hero).toHaveAttribute("data-hero-paused", "true");
+    await previous.tap();
+    await expect(hero).toHaveAttribute("data-hero-index", "1");
+    await next.tap();
+    await expect(hero).toHaveAttribute("data-hero-index", "0");
+  });
+});
+
 test("Community provides a usable directory empty state and working ways to participate", async ({
   page,
 }) => {
@@ -1161,6 +1236,7 @@ test("compiled Pages archive API serves two distinct public photos and the home 
     const frames = page.locator(".spotlight-frame");
     await expect(frames).toHaveCount(2);
     await expect(page.locator(".spotlight-controls")).toBeHidden();
+    await expect(page.locator(".hero-controls")).toBeHidden();
     for (const frame of await frames.all())
       await expect(frame).toHaveAttribute("href", "/gallery/hulettcraft");
   } finally {
