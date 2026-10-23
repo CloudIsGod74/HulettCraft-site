@@ -1,6 +1,7 @@
 ---
 import PageHero from "../components/PageHero.astro";
 import BaseLayout from "../layouts/BaseLayout.astro";
+import ArchiveSpotlight from "../components/ArchiveSpotlight.astro";
 ---
 
 <BaseLayout>
@@ -57,43 +58,7 @@ import BaseLayout from "../layouts/BaseLayout.astro";
     </div>
   </section>
 
-  <!-- Screenshots -->
-  <section
-    style="
-      padding: 3rem 2rem;
-      max-width: 1200px;
-      margin: 0 auto;
-    "
-  >
-    <h2 style="text-align: center; margin-bottom: 2rem;">
-      A Look Inside the Worlds
-    </h2>
-
-    <div
-      style="
-        display: grid;
-        grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
-        gap: 1.5rem;
-      "
-    >
-      <!-- Replace filenames if needed -->
-      <img
-        src="/images/home/HCS4.jpg"
-        alt="HulettCraft world screenshot"
-        style="width: 100%; border-radius: 16px;"
-      />
-      <img
-        src="/images/home/HulettcraftS7.jpg"
-        alt="HulettCraft build screenshot"
-        style="width: 100%; border-radius: 16px;"
-      />
-      <img
-        src="/images/home/S6 Shops.jpg"
-        alt="HulettCraft landscape screenshot"
-        style="width: 100%; border-radius: 16px;"
-      />
-    </div>
-  </section>
+  <ArchiveSpotlight />
 
   <!-- CTA -->
   <section

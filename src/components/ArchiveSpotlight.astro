@@ -1,0 +1,61 @@
+---
+import { LOCAL_ARCHIVE } from "../config/spotlight";
+---
+
+<section
+  class="archive-spotlight"
+  data-archive-spotlight
+  aria-labelledby="spotlight-heading"
+>
+  <div class="spotlight-heading">
+    <div>
+      <p class="eyebrow">Snapshots through the seasons</p>
+      <h2 id="spotlight-heading">A look inside the worlds</h2>
+      <p class="muted">
+        Familiar places, forgotten corners, and something new each time.
+      </p>
+    </div>
+    <a href="/gallery">Explore the archive →</a>
+  </div>
+  <div class="spotlight-grid">
+    {
+      LOCAL_ARCHIVE.slice(0, 2).map((photo) => (
+        <figure class="spotlight-card">
+          <a class="spotlight-frame" href={photo.href}>
+            <img
+              src={photo.src}
+              alt={photo.caption}
+              width="640"
+              height="360"
+              loading="lazy"
+              decoding="async"
+            />
+          </a>
+          <figcaption>
+            <p class="eyebrow" data-photo-collection>
+              {photo.collection}
+            </p>
+            <p class="spotlight-caption" data-photo-caption>
+              {photo.caption}
+            </p>
+            <p class="muted spotlight-credit" data-photo-credit hidden />
+          </figcaption>
+        </figure>
+      ))
+    }
+  </div>
+  <div class="spotlight-controls" hidden>
+    <p class="muted" data-spotlight-message role="status" aria-live="polite">
+      Random moments from the screenshot archive.
+    </p>
+    <div>
+      <button type="button" data-spotlight-pause>Pause slideshow</button>
+      <button type="button" data-spotlight-shuffle
+        >Shuffle screenshots <span aria-hidden="true">↻</span></button
+      >
+    </div>
+  </div>
+  <script>
+    import "../scripts/archiveSpotlight";
+  </script>
+</section>
