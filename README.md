@@ -33,9 +33,12 @@ Browser tests build the site and run the compiled Pages output with local Wrangl
 - src/config/hulettcraft.ts: season titles, descriptions, and current season.
 - src/config/servers.ts: existing game-server addresses and status-provider targets.
 - /admin/roster: authenticated community member editor; [roster operations and future Discord sync](docs/COMMUNITY.md).
+- /join and /admin/applications: private HulettCraft SMP applications and administrator review; [application operations](docs/APPLICATIONS.md).
 - public/images: existing static photographs/screenshots, retained in place.
 - tests: API/security tests with memory-only storage and browser tests with local Cloudflare emulation.
 
 HulettCraft season galleries read Screenshots/hulettcraft/season-N/. Hytale and Modded galleries read their corresponding world prefixes and group approved screenshots by season. The existing static Hytale photographs remain visible. See [operations and deployment](docs/OPERATIONS.md) and the [future platform migration](docs/MIGRATION.md).
+
+The home page displays two matching frames with random screenshots from the approved archive, automatic rotation and manual shuffle. See [front-page screenshots](docs/HOME_SCREENSHOTS.md) for selection and cache behavior.
 
 Public live maps have been removed. External map services, map screenshots in R2, DNS, Minecraft plugins, and game servers were not changed.

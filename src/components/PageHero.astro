@@ -18,9 +18,62 @@ const images = bannerImages(Astro.url.pathname);
     />
   </div>
   <div class="hero-copy"><slot /></div>
-  <button type="button" class="hero-pause" data-hero-pause hidden
-    >Pause photos</button
-  >
+  <div class="hero-controls" data-hero-controls hidden>
+    <button
+      type="button"
+      data-hero-previous
+      aria-label="Previous banner photo"
+      title="Previous photo"
+    >
+      <svg
+        width="20"
+        height="20"
+        viewBox="0 0 24 24"
+        fill="none"
+        stroke="currentColor"
+        stroke-width="2"
+        aria-hidden="true"
+        focusable="false"><path d="m14 6-6 6 6 6"></path></svg
+      >
+    </button>
+    <button
+      type="button"
+      class="hero-pause"
+      data-hero-pause
+      aria-label="Pause photos in banner slideshow"
+      title="Pause photos"
+    >
+      <svg
+        width="18"
+        height="18"
+        viewBox="0 0 24 24"
+        fill="currentColor"
+        aria-hidden="true"
+        focusable="false"
+      >
+        <path data-hero-symbol d="M6 5h4v14H6zM14 5h4v14h-4z"></path>
+      </svg>
+    </button>
+    <button
+      type="button"
+      data-hero-next
+      aria-label="Next banner photo"
+      title="Next photo"
+    >
+      <svg
+        width="20"
+        height="20"
+        viewBox="0 0 24 24"
+        fill="none"
+        stroke="currentColor"
+        stroke-width="2"
+        aria-hidden="true"
+        focusable="false"><path d="m10 6 6 6-6 6"></path></svg
+      >
+    </button>
+    <span class="sr-only" data-hero-message role="status" aria-live="polite"
+    ></span>
+  </div>
 </section>
 <script>
   import "../scripts/heroSlideshow";

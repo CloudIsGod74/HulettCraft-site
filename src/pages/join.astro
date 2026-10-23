@@ -1,0 +1,216 @@
+---
+import BaseLayout from "../layouts/BaseLayout.astro";
+import PageHero from "../components/PageHero.astro";
+import {
+  APPLICATION_QUESTIONS,
+  ENGAGEMENT_OPTIONS,
+} from "../config/applications";
+Astro.response.headers.set("Cache-Control", "no-store");
+const available = !!Astro.locals.runtime?.env?.SESSION;
+Astro.response.headers.set(
+  "X-Application-Storage",
+  available ? "bound" : "missing",
+);
+---
+
+<BaseLayout title="Request to join HulettCraft SMP">
+  <PageHero>
+    <h1>A place for your next chapter.</h1>
+    <p>
+      Request to join HulettCraft SMP. Tell us a little about yourself, how you
+      play, and the community you’d like to be part of.
+    </p>
+  </PageHero>
+  <div class="join-intro">
+    <div>
+      <p class="eyebrow">HulettCraft SMP · Minecraft Java</p><h2>
+        Let’s get to know you.
+      </h2><p class="muted">
+        A few sentences for each answer is plenty. We’re interested in the
+        things you enjoy and how you like sharing a world.
+      </p>
+    </div>
+    <aside class="card">
+      <h3>What happens next?</h3><p class="muted">
+        HulettCraft administrators will review your application and may contact
+        you on Discord. Applying doesn’t grant server access automatically.
+      </p><p class="muted">
+        Your answers and optional screenshot stay private to the admin team and
+        won’t appear in the gallery or member directory. Application answers are
+        also emailed to support@hulettcraft.com for review; screenshots are
+        viewed only in the private admin portal.
+      </p>
+    </aside>
+  </div>
+  {
+    !available && (
+      <p role="alert">
+        Applications are temporarily unavailable. You can still fill out the
+        form, but please try sending it later.
+      </p>
+    )
+  }
+  <section
+    class="application-receipt card"
+    id="join-success"
+    hidden
+    tabindex="-1"
+    aria-labelledby="received-heading"
+  >
+    <p class="eyebrow">Application received</p><h2 id="received-heading">
+      Thanks for introducing yourself.
+    </h2><p>
+      The admin team will review your application and may contact you using the
+      Discord name you provided. You don’t need to send it again.
+    </p><a href="/community">Explore the community →</a>
+  </section>
+  <form
+    class="join-form"
+    id="join-form"
+    method="POST"
+    action="/api/join"
+    enctype="multipart/form-data"
+    autocomplete="off"
+  >
+    <fieldset class="join-controls">
+      <legend class="sr-only">HulettCraft SMP application</legend>
+      <section class="join-section" aria-labelledby="player-heading">
+        <p class="eyebrow">01 · Your player details</p><h2 id="player-heading">
+          Who should we look out for?
+        </h2>
+        <div class="join-player-fields">
+          <label for="minecraft"
+            >Minecraft Java username <span class="muted">(required)</span><input
+              id="minecraft"
+              name="minecraft"
+              required
+              minlength="3"
+              maxlength="16"
+              pattern="[a-zA-Z0-9_]{3,16}"
+              spellcheck="false"
+              aria-describedby="minecraft-help"
+            /><small id="minecraft-help"
+              >Your in-game username, using letters, numbers and underscores.</small
+            ></label
+          >
+          <label for="discord"
+            >Discord username <span class="muted">(required)</span><input
+              id="discord"
+              name="discord"
+              required
+              maxlength="100"
+              spellcheck="false"
+              aria-describedby="discord-help"
+            /><small id="discord-help"
+              >Use the username someone can find you by, rather than only your
+              server nickname.</small
+            ></label
+          >
+        </div>
+      </section>
+      <section class="join-section" aria-labelledby="play-heading">
+        <p class="eyebrow">02 · Your place in the world</p><h2
+          id="play-heading"
+        >
+          What makes Minecraft yours?
+        </h2>
+        {
+          APPLICATION_QUESTIONS.filter((question) => question.required).map(
+            (question) => (
+              <label for={question.id}>
+                {question.label}
+                <span class="muted join-required">Required</span>
+                <>
+                  <textarea
+                    id={question.id}
+                    name={question.id}
+                    required
+                    rows="4"
+                    maxlength={question.max}
+                    aria-describedby={question.id + "-help"}
+                  />
+                  <small id={question.id + "-help"}>{question.help}</small>
+                </>
+              </label>
+            ),
+          )
+        }
+        <label for="engagement"
+          >How engaged would you like to be with other players? <span
+            class="muted">(required)</span
+          ><select id="engagement" name="engagement" required
+            ><option value="">Choose what sounds right for you</option>{
+              ENGAGEMENT_OPTIONS.map((option) => (
+                <option value={option.value}>{option.label}</option>
+              ))
+            }</select
+          ></label
+        >
+      </section>
+      <section class="join-section" aria-labelledby="extras-heading">
+        <p class="eyebrow">03 · A little more about you</p><h2
+          id="extras-heading"
+        >
+          Anything else you’d like to share?
+        </h2><p class="muted">Everything in this section is optional.</p>
+        {
+          APPLICATION_QUESTIONS.filter((question) => !question.required).map(
+            (question) => (
+              <label for={question.id}>
+                {question.label}
+                <textarea
+                  id={question.id}
+                  name={question.id}
+                  rows="3"
+                  maxlength={question.max}
+                  aria-describedby={question.id + "-help"}
+                />
+                <small id={question.id + "-help"}>{question.help}</small>
+              </label>
+            ),
+          )
+        }
+        <label for="screenshot"
+          >A screenshot you’d like us to see<input
+            type="file"
+            name="screenshot"
+            id="screenshot"
+            accept="image/png,image/jpeg,image/gif,image/webp"
+            aria-describedby="screenshot-help"
+          /><small id="screenshot-help"
+            >PNG, JPEG, GIF or WebP, up to 5 MiB. This attachment is for your
+            private application, so choose a screenshot you’re comfortable
+            sharing with the admin team.</small
+          ></label
+        >
+      </section>
+      <label class="join-trap" aria-hidden="true"
+        >Leave this field empty<input
+          type="text"
+          name="website"
+          tabindex="-1"
+          autocomplete="off"
+        /></label
+      >
+      <div class="join-submit">
+        <label class="join-check"
+          ><input
+            type="checkbox"
+            name="acknowledgement"
+            value="yes"
+            required
+          /><span
+            >I understand that HulettCraft administrators will privately review
+            my answers and any screenshot, and may contact me on Discord about
+            joining.</span
+          ></label
+        >
+        <button type="submit">Send application</button>
+      </div>
+    </fieldset>
+    <p id="join-result" role="alert" tabindex="-1"></p>
+  </form>
+  <script>
+    import "../scripts/joinApplication";
+  </script>
+</BaseLayout>

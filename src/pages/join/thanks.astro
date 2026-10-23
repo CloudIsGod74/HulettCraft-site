@@ -1,0 +1,20 @@
+---
+import BaseLayout from "../../layouts/BaseLayout.astro";
+import PageHero from "../../components/PageHero.astro";
+Astro.response.headers.set("Cache-Control", "no-store");
+---
+
+<BaseLayout title="Application received | HulettCraft">
+  <PageHero
+    ><h1>Thanks for introducing yourself.</h1><p>
+      Your application has been received for the admin team to review.
+    </p></PageHero
+  >
+  <section class="card application-receipt">
+    <h2>What happens next?</h2><p>
+      HulettCraft administrators will review your answers and may contact you
+      using the Discord name you provided. Applying doesn’t grant server access
+      automatically.
+    </p><a href="/community">Explore the community →</a>
+  </section>
+</BaseLayout>

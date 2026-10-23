@@ -29,6 +29,27 @@ await writeFile(
   directory + "/.dev.vars",
   "ADMIN_SESSION_SECRET=browser-test-only-secret-never-use-in-production\nGITHUB_CLIENT_ID=browser-test-client\n",
 );
+// A second local Pages instance intentionally has no KV binding. This catches
+// form lockouts that the normal, correctly configured test environment misses.
+const unavailable = directory + "/unavailable";
+await mkdir(unavailable, { recursive: true });
+await writeFile(
+  unavailable + "/package.json",
+  JSON.stringify({ private: true, type: "module" }),
+);
+await writeFile(
+  unavailable + "/wrangler.jsonc",
+  JSON.stringify({
+    name: "hulettcraft-browser-unavailable",
+    compatibility_date: "2026-01-01",
+    pages_build_output_dir: "../dist",
+    kv_namespaces: [],
+  }),
+);
+await writeFile(
+  unavailable + "/.dev.vars",
+  "APPLICATION_EMAIL_ENABLED=false\n",
+);
 const proxy = await getPlatformProxy<Env>({
   configPath: directory + "/wrangler.jsonc",
   persist: { path: state },

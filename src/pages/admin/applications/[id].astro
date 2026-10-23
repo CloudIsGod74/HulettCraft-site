@@ -1,0 +1,203 @@
+---
+import BaseLayout from "../../../layouts/BaseLayout.astro";
+import { requireAdmin } from "../../../lib/requireAdmin";
+import {
+  emailConfiguration,
+  readApplicationEmail,
+} from "../../../lib/applicationEmail";
+import {
+  readApplication,
+  type JoinApplication,
+} from "../../../lib/applications";
+import {
+  APPLICATION_QUESTIONS,
+  APPLICATION_STATUSES,
+  ENGAGEMENT_OPTIONS,
+} from "../../../config/applications";
+Astro.response.headers.set("Cache-Control", "private, no-store");
+if (!(await requireAdmin(Astro.request, Astro.locals)))
+  return Astro.redirect("/admin/login");
+let application: JoinApplication | undefined;
+let emailState = "unrecorded";
+let emailEnabled = false;
+try {
+  application = await readApplication(Astro.locals, Astro.params.id ?? "");
+} catch (error) {
+  Astro.response.status = error instanceof Response ? error.status : 503;
+}
+if (application) {
+  try {
+    emailState = await readApplicationEmail(Astro.locals, application.id);
+  } catch {
+    emailState = "unavailable";
+  }
+  try {
+    emailEnabled = !!emailConfiguration(Astro.locals);
+  } catch {
+    /* Configuration errors are shown as unavailable delivery. */
+  }
+}
+---
+
+<BaseLayout title="Review application | HulettCraft Admin">
+  <nav class="admin-roster-nav" aria-label="Administrator tools">
+    <a href="/admin/applications">← Join applications</a><a href="/admin/roster"
+      >Member roster</a
+    >
+  </nav>
+  {
+    !application ? (
+      <>
+        <>
+          <h1>Application unavailable</h1>
+          <p role="alert">
+            This application could not be loaded. It may have been removed.
+            Return to the list or try again later.
+          </p>
+        </>
+      </>
+    ) : (
+      <>
+        <header class="application-detail-heading">
+          <>
+            <p class="eyebrow">Private · HulettCraft SMP application</p>
+            <h1>{application.minecraft}</h1>
+            <p class="muted">
+              Submitted{" "}
+              {new Date(application.createdAt).toLocaleString("en-US", {
+                timeZone: "America/Chicago",
+                dateStyle: "medium",
+                timeStyle: "short",
+              })}{" "}
+              Central
+            </p>
+            <p>
+              Discord: <strong>{application.discord}</strong>
+            </p>
+          </>
+        </header>
+        <section
+          class="card application-email"
+          aria-labelledby="application-email-heading"
+        >
+          <h2 id="application-email-heading">Application email</h2>
+          <p id="application-email-result" role="status" aria-live="polite">
+            {emailState === "sent"
+              ? "Email service accepted this application for support@hulettcraft.com. Inbox delivery is not confirmed here."
+              : emailEnabled
+                ? "Email delivery has not been confirmed. The application is safely saved here; you can retry sending it to support@hulettcraft.com."
+                : "Email is not configured or enabled in this environment. The application is safely saved here."}
+          </p>
+          {emailState !== "sent" && (
+            <button
+              type="button"
+              id="retry-application-email"
+              data-id={application.id}
+              disabled={!emailEnabled}
+            >
+              Retry application email
+            </button>
+          )}
+        </section>
+        <section class="application-answers" aria-label="Application answers">
+          {APPLICATION_QUESTIONS.map((question) => (
+            <article class="card">
+              <h2>{question.label}</h2>
+              <p class="application-answer">
+                {application!.answers[question.id] || "Not provided"}
+              </p>
+            </article>
+          ))}
+          <article class="card">
+            <>
+              <h2>How engaged would you like to be with other players?</h2>
+              <p>
+                {
+                  ENGAGEMENT_OPTIONS.find(
+                    (option) => option.value === application!.engagement,
+                  )?.label
+                }
+              </p>
+            </>
+          </article>
+        </section>
+        {application.screenshot && (
+          <section class="application-attachment card">
+            <h2>Private screenshot</h2>
+            <a
+              href={"/api/admin/applications/" + application.id + "/screenshot"}
+              target="_blank"
+              rel="noopener noreferrer"
+            >
+              <img
+                src={
+                  "/api/admin/applications/" + application.id + "/screenshot"
+                }
+                alt={"Screenshot attached by " + application.minecraft}
+                loading="lazy"
+              />
+              <span>Open full screenshot (new tab) →</span>
+            </a>
+          </section>
+        )}
+        <section
+          class="card application-review"
+          aria-labelledby="review-heading"
+        >
+          <>
+            <h2 id="review-heading">Administrator review</h2>
+            <p class="muted">
+              This records the review only. Contact the applicant on Discord and
+              handle server access separately. Accepting does not add them to
+              the public roster.
+            </p>
+          </>
+          <noscript>
+            <p>Enable JavaScript to save a review or delete an application.</p>
+          </noscript>
+          <form
+            id="application-review"
+            data-id={application.id}
+            data-revision={application.revision}
+          >
+            <label for="application-status">
+              Review status
+              <select id="application-status" name="status">
+                {APPLICATION_STATUSES.map((status) => (
+                  <option
+                    value={status.value}
+                    selected={application!.status === status.value}
+                  >
+                    {status.label}
+                  </option>
+                ))}
+              </select>
+            </label>
+            <label for="application-note">
+              Private admin notes
+              <textarea
+                id="application-note"
+                name="note"
+                rows="4"
+                maxlength="3000"
+                set:text={application.note}
+              />
+            </label>
+            <div class="application-review-actions">
+              <>
+                <button type="submit">Save review</button>
+                <button type="button" id="delete-application">
+                  Delete application and screenshot
+                </button>
+              </>
+            </div>
+            <p id="review-result" role="status" aria-live="polite" />
+          </form>
+        </section>
+      </>
+    )
+  }
+  <script>
+    import "../../../scripts/applicationReview";
+  </script>
+</BaseLayout>

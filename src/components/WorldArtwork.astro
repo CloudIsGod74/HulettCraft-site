@@ -1,0 +1,143 @@
+---
+interface Props {
+  kind: "creative" | "modded";
+}
+const { kind } = Astro.props;
+const creative = kind === "creative";
+const id = `world-art-${kind}`;
+---
+
+<!-- Original decorative illustrations, rather than photographs of these servers. -->
+<svg viewBox="0 0 600 270" fill="none" aria-hidden="true" focusable="false">
+  <defs>
+    <linearGradient
+      id={`${id}-sky`}
+      x2="600"
+      y2="270"
+      gradientUnits="userSpaceOnUse"
+    >
+      <stop stop-color={creative ? "#162b59" : "#172a42"}></stop>
+      <stop offset="1" stop-color={creative ? "#292044" : "#35273a"}></stop>
+    </linearGradient>
+    <radialGradient id={`${id}-glow`}>
+      <stop stop-color={creative ? "#8ba9ff" : "#e9ab6e"} stop-opacity=".25"
+      ></stop>
+      <stop offset="1" stop-color="#080e19" stop-opacity="0"></stop>
+    </radialGradient>
+    <pattern
+      id={`${id}-grid`}
+      width="48"
+      height="24"
+      patternUnits="userSpaceOnUse"
+    >
+      <path d="m0 12 24-12 24 12-24 12Z" stroke="#b4cfff" stroke-opacity=".07"
+      ></path>
+    </pattern>
+    <g id={`${id}-cube`}>
+      <path d="m0 0 32-16L64 0 32 16Z" fill={creative ? "#a7bbff" : "#e2b38a"}
+      ></path>
+      <path d="m0 0 32 16v36L0 36Z" fill={creative ? "#6383dc" : "#b67b5b"}
+      ></path>
+      <path d="m32 16 32-16v36L32 52Z" fill={creative ? "#3d5495" : "#6e4c4e"}
+      ></path>
+      <path d="m0 0 32 16L64 0M32 16v36" stroke="#e0ebff" stroke-opacity=".2"
+      ></path>
+    </g>
+  </defs>
+  <path fill={`url(#${id}-sky)`} d="M0 0h600v270H0z"></path>
+  <ellipse cx="310" cy="125" rx="270" ry="180" fill={`url(#${id}-glow)`}
+  ></ellipse>
+  <path d="M0 160 300 40l300 120v110H0Z" fill={`url(#${id}-grid)`}></path>
+  <g fill="#c3d9ff" opacity=".45">
+    <path
+      d="M80 61h3v3h-3zM490 48h3v3h-3zM442 98h2v2h-2zM132 119h2v2h-2zM520 151h3v3h-3z"
+    ></path>
+    <path d="M173 40v12m-6-6h12M427 41v10m-5-5h10" stroke="#c3d9ff"></path>
+  </g>
+  {
+    creative ? (
+      <>
+        <path d="m144 203 161-79 157 79-157 80Z" fill="#0b162a" opacity=".6" />
+        <path d="m158 175 146-73 146 73-146 73Z" fill="#6c82b3" />
+        <path d="m158 175 146 73v22l-146-72Z" fill="#2a4168" />
+        <path d="m304 248 146-73v23l-146 72Z" fill="#1d3050" />
+        <path
+          d="m174 175 130-65 130 65-130 65Z"
+          fill={`url(#${id}-grid)`}
+          stroke="#abc4ff"
+          stroke-opacity=".3"
+        />
+        <use href={`#${id}-cube`} x="209" y="148" />
+        <use href={`#${id}-cube`} x="273" y="148" />
+        <use href={`#${id}-cube`} x="337" y="148" />
+        <use href={`#${id}-cube`} x="241" y="96" />
+        <use href={`#${id}-cube`} x="305" y="96" />
+        <use href={`#${id}-cube`} x="273" y="44" />
+        <path
+          d="m130 91 25-13 25 13-25 13Zm0 0v28l25 13 25-13V91m-25 13v28M420 85l20-10 20 10-20 10Zm0 0v24l20 10 20-10V85m-20 10v24"
+          stroke="#a8bcff"
+          stroke-opacity=".65"
+        />
+        <path
+          d="m128 220 25-12m298 10 25-12"
+          stroke="#c6b2ff"
+          stroke-width="3"
+        />
+      </>
+    ) : (
+      <>
+        <path
+          d="m0 257 112-70 80 39 89-60 116 63 94-61 109 54v48H0Z"
+          fill="#101e31"
+        />
+        <path d="m147 215 155-79 158 79-158 79Z" fill="#0b162a" />
+        <path d="m163 192 139-69 139 69-139 70Z" fill="#40516a" />
+        <path
+          d="m163 192 139 70v18l-139-70ZM302 262l139-70v18l-139 70Z"
+          fill="#26364d"
+        />
+        <path
+          d="m193 192 109-54 109 54-109 55Z"
+          fill={`url(#${id}-grid)`}
+          stroke="#b6c8e5"
+          stroke-opacity=".2"
+        />
+        <path
+          d="m248 184 54 27 54-27V72l-54-27-54 27Z"
+          fill="#2a354c"
+          stroke="#9d7d70"
+          stroke-width="3"
+        />
+        <path
+          d="m262 79 40-20 40 20v97l-40 20-40-20Z"
+          fill="#1b2e48"
+          stroke="#e0a578"
+          stroke-width="5"
+        />
+        <path
+          d="m273 87 29-15 29 15v80l-29 15-29-15Z"
+          fill="#72b9ed"
+          fill-opacity=".16"
+          stroke="#8ecaff"
+          stroke-width="2"
+        />
+        <path
+          d="m278 105 48-24m-48 49 48-24m-48 49 48-24"
+          stroke="#addcff"
+          stroke-opacity=".5"
+        />
+        <use href={`#${id}-cube`} x="179" y="167" />
+        <use href={`#${id}-cube`} x="365" y="167" />
+        <path
+          d="m208 173 31 15 17-8m119-3-18 9-13-7M214 189v13l43 22m137-35v13l-43 22"
+          stroke="#f4bc7f"
+          stroke-width="2"
+        />
+        <path
+          d="M300 28h5v5h-5zM226 102h4v4h-4zM374 119h4v4h-4z"
+          fill="#f8ca8b"
+        />
+      </>
+    )
+  }
+</svg>
