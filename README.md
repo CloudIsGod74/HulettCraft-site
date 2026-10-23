@@ -38,4 +38,6 @@ Browser tests build the site and run the compiled Pages output with local Wrangl
 
 HulettCraft season galleries read Screenshots/hulettcraft/season-N/. Hytale and Modded galleries read their corresponding world prefixes and group approved screenshots by season. The existing static Hytale photographs remain visible. See [operations and deployment](docs/OPERATIONS.md) and the [future platform migration](docs/MIGRATION.md).
 
+The home page displays two matching frames with random screenshots from the approved archive, automatic rotation and manual shuffle. See [front-page screenshots](docs/HOME_SCREENSHOTS.md) for selection and cache behavior.
+
 Public live maps have been removed. External map services, map screenshots in R2, DNS, Minecraft plugins, and game servers were not changed.

@@ -2,6 +2,7 @@ import { test, expect } from "@playwright/test";
 import { createSession } from "../../src/lib/adminSession";
 import { png } from "../helpers";
 import { creeperIcon, icon } from "../fixtures/serverIcon";
+import { LOCAL_ARCHIVE } from "../../src/config/spotlight";
 const secret = "browser-test-only-secret-never-use-in-production";
 test.beforeEach(async ({ page }) => {
   await page.route("**/api/favicon.png?*", (route) =>
@@ -631,4 +632,181 @@ test("roster storage load failures disable editing instead of presenting an empt
     "Editing is disabled until the saved roster can be loaded.",
   );
   await expect(page.locator("#roster-form")).toBeHidden();
+});
+
+test("home archive has matching frames, rotates distinct pairs, shuffles manually and retains photos on failures", async ({
+  page,
+}) => {
+  await page.clock.install();
+  let calls = 0,
+    mode = "good";
+  const queries: string[][] = [];
+  await page.route("**/api/gallery/spotlight.json?*", (route) => {
+    calls++;
+    queries.push(new URL(route.request().url()).searchParams.getAll("exclude"));
+    if (mode === "unavailable")
+      return route.fulfill({ status: 503, body: "Unavailable" });
+    if (mode === "invalid")
+      return route.fulfill({
+        json: {
+          photos: [
+            { ...LOCAL_ARCHIVE[0], src: "https://attacker.test/unsafe.png" },
+          ],
+        },
+      });
+    if (mode === "broken-image")
+      return route.fulfill({
+        json: { photos: [LOCAL_ARCHIVE[6], LOCAL_ARCHIVE[0]] },
+      });
+    return route.fulfill({
+      json: {
+        photos:
+          calls === 1 ? LOCAL_ARCHIVE.slice(2, 4) : LOCAL_ARCHIVE.slice(4, 6),
+      },
+    });
+  });
+  await page.goto("/");
+  expect(calls).toBe(0); // The archive is below the fold; don't fetch unused photos.
+  const spotlight = page.locator("[data-archive-spotlight]");
+  const images = spotlight.locator(".spotlight-frame img");
+  const sources = () =>
+    images.evaluateAll((nodes) =>
+      nodes.map((node) => node.getAttribute("src")),
+    );
+  await spotlight.scrollIntoViewIfNeeded();
+  await expect(spotlight).toHaveAttribute("data-spotlight-loaded", "true");
+  expect(await sources()).toEqual(
+    LOCAL_ARCHIVE.slice(2, 4).map((photo) => photo.src),
+  );
+  const frames = await spotlight
+    .locator(".spotlight-frame")
+    .evaluateAll((nodes) =>
+      nodes.map((node) => ({
+        width: node.getBoundingClientRect().width,
+        height: node.getBoundingClientRect().height,
+      })),
+    );
+  expect(frames[0].width).toBeCloseTo(frames[1].width, 1);
+  expect(frames[0].height).toBeCloseTo(frames[1].height, 1);
+  expect(frames[0].width / frames[0].height).toBeCloseTo(16 / 9, 1);
+  await page.clock.fastForward(12_100);
+  await expect
+    .poll(() => sources())
+    .toEqual(LOCAL_ARCHIVE.slice(4, 6).map((photo) => photo.src));
+  expect(queries[1]).toEqual(
+    LOCAL_ARCHIVE.slice(2, 4).map((photo) => photo.src),
+  );
+  await spotlight.getByRole("button", { name: "Pause slideshow" }).click();
+  const before = calls;
+  await page.clock.fastForward(30_000);
+  expect(calls).toBe(before);
+  const retained = await sources();
+  for (mode of ["unavailable", "invalid", "broken-image"]) {
+    if (mode === "broken-image")
+      await page.route("**/images/gallery/hytale/hytaleserver.jpg", (route) =>
+        route.fulfill({ contentType: "image/png", body: "corrupt image" }),
+      );
+    await spotlight
+      .getByRole("button", { name: /Shuffle screenshots/ })
+      .click();
+    await expect(spotlight.locator("[data-spotlight-message]")).toContainText(
+      "Keeping the current photos",
+    );
+    await expect(
+      spotlight.getByRole("button", { name: /Shuffle screenshots/ }),
+    ).toBeEnabled();
+    expect(await sources()).toEqual(retained);
+  }
+  mode = "good";
+  await spotlight.getByRole("button", { name: /Shuffle screenshots/ }).click();
+  await expect(spotlight.locator("[data-spotlight-message]")).toHaveText(
+    "New screenshots from the archive.",
+  );
+  await page.evaluate(() => window.scrollTo(0, 0));
+  await page.screenshot({
+    path: test.info().outputPath("home-archive-desktop.png"),
+    fullPage: true,
+  });
+  await page.setViewportSize({ width: 375, height: 900 });
+  expect(
+    await page.evaluate(
+      () => document.documentElement.scrollWidth <= innerWidth + 1,
+    ),
+  ).toBe(true);
+  await page.screenshot({
+    path: test.info().outputPath("home-archive-mobile.png"),
+    fullPage: true,
+  });
+  await page.reload();
+  await expect(spotlight).toHaveAttribute("data-spotlight-paused", "true");
+});
+
+test("reduced motion keeps the home archive still while allowing manual shuffle and explicit play", async ({
+  page,
+}) => {
+  await page.clock.install();
+  await page.emulateMedia({ reducedMotion: "reduce" });
+  let calls = 0;
+  await page.route("**/api/gallery/spotlight.json?*", (route) => {
+    calls++;
+    return route.fulfill({
+      json: {
+        photos:
+          calls === 1 ? LOCAL_ARCHIVE.slice(2, 4) : LOCAL_ARCHIVE.slice(4, 6),
+      },
+    });
+  });
+  await page.goto("/");
+  const spotlight = page.locator("[data-archive-spotlight]");
+  await spotlight.scrollIntoViewIfNeeded();
+  await expect(spotlight).toHaveAttribute("data-spotlight-loaded", "true");
+  await expect(spotlight).toHaveAttribute("data-spotlight-paused", "true");
+  await page.clock.fastForward(60_000);
+  expect(calls).toBe(1);
+  await spotlight.getByRole("button", { name: /Shuffle screenshots/ }).click();
+  await expect(spotlight.locator("[data-spotlight-message]")).toHaveText(
+    "New screenshots from the archive.",
+  );
+  expect(calls).toBe(2);
+  await spotlight.getByRole("button", { name: "Play slideshow" }).click();
+  await page.clock.fastForward(12_100);
+  await expect.poll(() => calls).toBe(3);
+  await page.evaluate(() => window.scrollTo(0, 0));
+  await page.waitForTimeout(100);
+  const hiddenCalls = calls;
+  await page.clock.fastForward(60_000);
+  expect(calls).toBe(hiddenCalls);
+});
+
+test("compiled Pages archive API serves two distinct public photos and the home frames work without JavaScript", async ({
+  request,
+  browser,
+}) => {
+  const response = await request.get("/api/gallery/spotlight.json");
+  expect(response.status()).toBe(200);
+  expect(response.headers()["cache-control"]).toContain("no-store");
+  const { photos } = await response.json();
+  expect(photos).toHaveLength(2);
+  expect(new Set(photos.map((photo: { src: string }) => photo.src)).size).toBe(
+    2,
+  );
+  for (const photo of photos) {
+    expect(photo.src).not.toContain("/api/admin/");
+    expect(photo.src).not.toContain("Need%20Approval");
+    const image = await request.get(photo.src);
+    expect(image.status()).toBe(200);
+    expect(image.headers()["content-type"]).toMatch(/^image\//);
+  }
+  const context = await browser.newContext({ javaScriptEnabled: false });
+  try {
+    const page = await context.newPage();
+    await page.goto("http://127.0.0.1:4321/");
+    const frames = page.locator(".spotlight-frame");
+    await expect(frames).toHaveCount(2);
+    await expect(page.locator(".spotlight-controls")).toBeHidden();
+    for (const frame of await frames.all())
+      await expect(frame).toHaveAttribute("href", "/gallery/hulettcraft");
+  } finally {
+    await context.close();
+  }
 });
