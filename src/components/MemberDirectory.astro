@@ -6,6 +6,7 @@ import {
 } from "../config/community";
 interface Props {
   members?: CommunityMember[];
+  unavailable?: boolean;
 }
 const members = activeMembers(Astro.props.members);
 ---
@@ -33,7 +34,11 @@ const members = activeMembers(Astro.props.members);
     member has a place here, with public links for those who want to share more.
   </p>
   {
-    members.length ? (
+    Astro.props.unavailable ? (
+      <p role="status">
+        The member directory is temporarily unavailable. Please check back soon.
+      </p>
+    ) : members.length ? (
       <div class="member-grid">
         {members.map((member) => (
           <article class="card member-card">

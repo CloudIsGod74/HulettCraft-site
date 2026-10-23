@@ -5,7 +5,7 @@ export interface CommunityMember {
   bio?: string;
   links?: { label: string; url: string }[];
 }
-// Add the confirmed active roster here. Social links are optional.
+// Initial roster before the first admin save. Social links are optional.
 // This is a curated directory, not the currently-online player list.
 export const COMMUNITY_MEMBERS: CommunityMember[] = [];
 

@@ -2,6 +2,16 @@
 import PageHero from "../components/PageHero.astro";
 import BaseLayout from "../layouts/BaseLayout.astro";
 import MemberDirectory from "../components/MemberDirectory.astro";
+import { readRoster } from "../lib/communityRoster";
+import type { CommunityMember } from "../config/community";
+Astro.response.headers.set("Cache-Control", "no-store");
+let members: CommunityMember[] = [],
+  rosterUnavailable = false;
+try {
+  members = (await readRoster(Astro.locals)).members;
+} catch {
+  rosterUnavailable = true;
+}
 ---
 
 <BaseLayout title="Community | HulettCraft">
@@ -37,7 +47,7 @@ import MemberDirectory from "../components/MemberDirectory.astro";
     </aside>
   </section>
 
-  <MemberDirectory />
+  <MemberDirectory members={members} unavailable={rosterUnavailable} />
 
   <section class="community-take-part" aria-labelledby="take-part-heading">
     <p class="eyebrow">Find your place</p>

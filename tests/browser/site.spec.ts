@@ -489,3 +489,146 @@ test("Community provides a usable directory empty state and working ways to part
     fullPage: true,
   });
 });
+
+test("roster editor redirects guests and protects API reads and writes", async ({
+  page,
+  request,
+}) => {
+  await page.goto("/admin/roster");
+  await expect(page).toHaveURL(/\/admin\/login$/);
+  expect((await request.get("/api/admin/roster")).status()).toBe(401);
+  expect(
+    (
+      await request.post("/api/admin/roster", {
+        data: { revision: "unpublished", members: [] },
+      })
+    ).status(),
+  ).toBe(401);
+});
+
+test("administrator edits persist in local KV, publish safely and retain changes after failure", async ({
+  page,
+  context,
+}) => {
+  await context.addCookies([
+    {
+      name: "admin_session",
+      value: await createSession("cloudisgod74", secret),
+      url: "http://127.0.0.1:4321",
+    },
+  ]);
+  await page.goto("/admin/pending");
+  await page.getByRole("link", { name: "Manage member roster" }).click();
+  await expect(page.locator("#roster-form")).toBeVisible();
+  await page.getByRole("button", { name: "Add member", exact: true }).click();
+  await page.getByLabel("Minecraft username").fill("RosterBuilder");
+  await page.getByLabel("Display name").fill("Roster <img src=x>");
+  await page
+    .getByLabel("Short bio (optional)")
+    .fill("A synthetic local test profile.");
+  await page.getByRole("button", { name: "Add social link" }).click();
+  await page.getByLabel("Link label").fill("Website");
+  await page
+    .getByLabel("HTTPS address")
+    .fill("https://example.com/roster-builder");
+  await page.setViewportSize({ width: 375, height: 900 });
+  expect(
+    await page.evaluate(
+      () => document.documentElement.scrollWidth <= innerWidth + 1,
+    ),
+  ).toBe(true);
+  await page.evaluate(() => {
+    (document.activeElement as HTMLElement)?.blur();
+    window.scrollTo(0, 0);
+  });
+  await page.screenshot({
+    path: test.info().outputPath("roster-editor-mobile.png"),
+    fullPage: true,
+  });
+  await page.setViewportSize({ width: 1440, height: 1000 });
+  await page.evaluate(() => window.scrollTo(0, 0));
+  await page.screenshot({
+    path: test.info().outputPath("roster-editor-desktop.png"),
+    fullPage: true,
+  });
+  // A rejected save must not clear the edits or falsely report success.
+  await page.route("**/api/admin/roster", (route) =>
+    route.request().method() === "POST"
+      ? route.fulfill({
+          status: 409,
+          body: "The roster changed. Review the latest version.",
+        })
+      : route.continue(),
+  );
+  await page.getByRole("button", { name: "Save roster" }).click();
+  await expect(page.locator("#roster-result")).toContainText(
+    "Your edits are still here",
+  );
+  await expect(page.getByLabel("Minecraft username")).toHaveValue(
+    "RosterBuilder",
+  );
+  await expect(page.getByRole("button", { name: "Save roster" })).toBeEnabled();
+  await page.unroute("**/api/admin/roster");
+  await page.getByRole("button", { name: "Save roster" }).click();
+  await expect(page.locator("#roster-result")).toContainText("Roster saved.");
+  await page.reload();
+  await expect(page.getByLabel("Display name")).toHaveValue(
+    "Roster <img src=x>",
+  );
+  await page.goto("/community");
+  await expect(page.locator(".member-card")).toHaveCount(1);
+  await expect(page.locator(".member-card h3")).toHaveText(
+    "Roster <img src=x>",
+  );
+  await expect(page.locator(".member-card img")).toHaveCount(0);
+  await expect(
+    page.locator(".member-card").getByRole("link", { name: /Website/ }),
+  ).toHaveAttribute("href", "https://example.com/roster-builder");
+  await page.screenshot({
+    path: test.info().outputPath("community-with-member.png"),
+    fullPage: true,
+  });
+  await page.goto("/admin/roster");
+  await page.getByLabel("Show in directory").uncheck();
+  await page.getByRole("button", { name: "Save roster" }).click();
+  await expect(page.locator("#roster-result")).toContainText("Roster saved.");
+  await page.goto("/community");
+  await expect(page.locator(".member-card")).toHaveCount(0);
+  expect(await page.content()).not.toContain("RosterBuilder");
+  await page.goto("/admin/roster");
+  await expect(page.getByLabel("Minecraft username")).toHaveValue(
+    "RosterBuilder",
+  );
+  await expect(page.getByLabel("Show in directory")).not.toBeChecked();
+  await page
+    .getByRole("button", { name: "Remove member", exact: true })
+    .click();
+  page.once("dialog", (dialog) => dialog.accept());
+  await page.getByRole("button", { name: "Save roster" }).click();
+  await expect(page.locator("#roster-result")).toContainText("Roster saved.");
+  await page.reload();
+  await expect(page.locator("#roster-count")).toHaveText(
+    "0 members · 0 visible",
+  );
+});
+
+test("roster storage load failures disable editing instead of presenting an empty roster", async ({
+  page,
+  context,
+}) => {
+  await context.addCookies([
+    {
+      name: "admin_session",
+      value: await createSession("cloudisgod74", secret),
+      url: "http://127.0.0.1:4321",
+    },
+  ]);
+  await page.route("**/api/admin/roster", (route) =>
+    route.fulfill({ status: 503, body: "Member storage is unavailable." }),
+  );
+  await page.goto("/admin/roster");
+  await expect(page.locator("#roster-result")).toContainText(
+    "Editing is disabled until the saved roster can be loaded.",
+  );
+  await expect(page.locator("#roster-form")).toBeHidden();
+});
