@@ -1336,3 +1336,120 @@ img {
     align-items: start;
   }
 }
+
+/* Home archive: matching frames preserve each full screenshot. */
+.archive-spotlight {
+  padding: 3rem 0;
+}
+.spotlight-heading {
+  display: flex;
+  justify-content: space-between;
+  align-items: end;
+  gap: 1.5rem;
+  flex-wrap: wrap;
+  margin-bottom: 1.5rem;
+}
+.spotlight-heading h2 {
+  margin: 0;
+  font-size: clamp(1.6rem, 3vw, 2rem);
+  letter-spacing: -0.025em;
+}
+.spotlight-heading p:last-child {
+  margin-bottom: 0;
+}
+.spotlight-heading > a {
+  color: var(--accent);
+  text-underline-offset: 0.2em;
+}
+.spotlight-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 1.5rem;
+}
+.spotlight-card {
+  margin: 0;
+  min-width: 0;
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  overflow: hidden;
+  background: var(--panel);
+}
+.spotlight-card[hidden] {
+  display: none;
+}
+.spotlight-frame {
+  display: block;
+  aspect-ratio: 16 / 9;
+  background: #050c16;
+}
+.spotlight-frame img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+}
+.spotlight-frame:focus-visible {
+  outline-offset: -4px;
+}
+.spotlight-card figcaption {
+  padding: 1.25rem;
+}
+.spotlight-card .eyebrow {
+  margin-bottom: 0.5rem;
+}
+.spotlight-caption {
+  margin: 0;
+  min-height: 3.2em;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  overflow-wrap: anywhere;
+}
+.spotlight-credit {
+  margin: 0.6rem 0 0;
+  font-size: 0.8rem;
+  overflow-wrap: anywhere;
+}
+.spotlight-controls {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 1rem;
+  margin-top: 1.25rem;
+}
+.spotlight-controls[hidden] {
+  display: none;
+}
+.spotlight-controls > p {
+  margin: 0;
+  font-size: 0.85rem;
+  flex: 1 1 240px;
+}
+.spotlight-controls > div {
+  display: flex;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+}
+.spotlight-controls button {
+  padding: 0.65rem 1rem;
+  border: 1px solid var(--accent-muted);
+  border-radius: 7px;
+  background: var(--accent-soft);
+  color: var(--text);
+  font: inherit;
+  cursor: pointer;
+}
+.spotlight-controls button:hover {
+  border-color: var(--accent);
+}
+.spotlight-controls button:disabled {
+  opacity: 0.55;
+  cursor: progress;
+}
+@media (max-width: 640px) {
+  .spotlight-grid {
+    grid-template-columns: 1fr;
+  }
+}
