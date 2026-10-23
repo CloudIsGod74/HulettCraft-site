@@ -55,8 +55,16 @@ export function pickPhotos(
   const previous = unique.filter((photo) => exclude.includes(photo.src));
   const result: SpotlightPhoto[] = [];
   while (result.length < 2 && (preferred.length || previous.length)) {
-    const pool = preferred.length ? preferred : previous;
-    result.push(pool.splice(Math.floor(random() * pool.length), 1)[0]);
+    const hasHytale = result.some((photo) => photo.href === "/gallery/hytale");
+    const eligible = (pool: SpotlightPhoto[]) =>
+      pool.filter((photo) => !hasHytale || photo.href !== "/gallery/hytale");
+    const available = eligible(preferred);
+    const pool = available.length ? available : eligible(previous);
+    if (!pool.length) break;
+    const photo = pool[Math.floor(random() * pool.length)];
+    result.push(photo);
+    const source = preferred.includes(photo) ? preferred : previous;
+    source.splice(source.indexOf(photo), 1);
   }
   return result;
 }

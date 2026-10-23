@@ -90,6 +90,41 @@ test("random picks are distinct, avoid the previous pair and can reach either en
   );
 });
 
+test("selection never pairs two Hytale images, even when Minecraft photos were in the previous pair", () => {
+  const hytale = LOCAL_ARCHIVE.filter(
+    (photo) => photo.href === "/gallery/hytale",
+  );
+  const minecraft = LOCAL_ARCHIVE.filter(
+    (photo) => photo.href !== "/gallery/hytale",
+  );
+  // Exercise either selection order, including a pool dominated by Hytale.
+  for (const pool of [
+    [...hytale, ...minecraft],
+    [...minecraft, ...hytale],
+  ]) {
+    for (const random of [() => 0, () => 0.999, () => 0.5]) {
+      const pair = pickPhotos(
+        pool,
+        minecraft.map((photo) => photo.src),
+        random,
+      );
+      assert.equal(pair.length, 2);
+      assert.equal(new Set(pair.map((photo) => photo.src)).size, 2);
+      assert.ok(pair.some((photo) => photo.href !== "/gallery/hytale"));
+    }
+  }
+  assert.equal(
+    pickPhotos(hytale).length,
+    1,
+    "a Hytale-only pool cannot fill both frames",
+  );
+  assert.equal(
+    pickPhotos(minecraft).length,
+    2,
+    "two Minecraft photos remain allowed",
+  );
+});
+
 test("cached archive avoids repeated R2 listings and refreshes new approvals after five minutes", async () => {
   const bucket = new MemoryBucket(),
     service = createSpotlightService(),

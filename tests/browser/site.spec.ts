@@ -889,6 +889,8 @@ test("home archive has matching frames, rotates distinct pairs, shuffles manuall
           ],
         },
       });
+    if (mode === "double-hytale")
+      return route.fulfill({ json: { photos: LOCAL_ARCHIVE.slice(5, 7) } });
     if (mode === "broken-image")
       return route.fulfill({
         json: { photos: [LOCAL_ARCHIVE[6], LOCAL_ARCHIVE[0]] },
@@ -936,7 +938,7 @@ test("home archive has matching frames, rotates distinct pairs, shuffles manuall
   await page.clock.fastForward(30_000);
   expect(calls).toBe(before);
   const retained = await sources();
-  for (mode of ["unavailable", "invalid", "broken-image"]) {
+  for (mode of ["unavailable", "invalid", "double-hytale", "broken-image"]) {
     if (mode === "broken-image")
       await page.route("**/images/gallery/hytale/hytaleserver.jpg", (route) =>
         route.fulfill({ contentType: "image/png", body: "corrupt image" }),
@@ -973,6 +975,64 @@ test("home archive has matching frames, rotates distinct pairs, shuffles manuall
     fullPage: true,
   });
   await page.reload();
+  await expect(spotlight).toHaveAttribute("data-spotlight-paused", "true");
+});
+
+test("photo-only home screenshots support previous/next history and fresh shuffle while paused", async ({
+  page,
+}) => {
+  await page.emulateMedia({ reducedMotion: "reduce" });
+  const pairs = [
+    LOCAL_ARCHIVE.slice(2, 4),
+    LOCAL_ARCHIVE.slice(4, 6),
+    [LOCAL_ARCHIVE[0], LOCAL_ARCHIVE[4]],
+    [LOCAL_ARCHIVE[2], LOCAL_ARCHIVE[5]],
+  ];
+  let calls = 0;
+  await page.route("**/api/gallery/spotlight.json?*", (route) =>
+    route.fulfill({ json: { photos: pairs[calls++] } }),
+  );
+  await page.goto("/");
+  const spotlight = page.locator("[data-archive-spotlight]");
+  const previous = spotlight.getByRole("button", {
+    name: "Previous screenshots",
+  });
+  const next = spotlight.getByRole("button", { name: "Next screenshots" });
+  const sources = () =>
+    spotlight
+      .locator(".spotlight-frame img")
+      .evaluateAll((nodes) => nodes.map((node) => node.getAttribute("src")));
+  const expectPair = async (photos: typeof LOCAL_ARCHIVE) => {
+    await expect.poll(sources).toEqual(photos.map((photo) => photo.src));
+    await expect(next).toBeEnabled();
+  };
+  await expect(previous).toBeDisabled();
+  await spotlight.scrollIntoViewIfNeeded();
+  await expectPair(pairs[0]);
+  await expect(spotlight.locator("figcaption")).toHaveCount(0);
+  for (const image of await spotlight.locator("img").all())
+    await expect(image).toHaveAttribute("alt", /\S/);
+  await expect(
+    spotlight.getByRole("button", { name: "Play slideshow" }),
+  ).toHaveText("");
+  await previous.click();
+  await expectPair(LOCAL_ARCHIVE.slice(0, 2));
+  await expect(previous).toBeDisabled();
+  await next.focus();
+  await page.keyboard.press("Enter");
+  await expectPair(pairs[0]);
+  expect(calls).toBe(1); // Revisit a pair without asking for a different selection.
+  await next.click();
+  await expectPair(pairs[1]);
+  expect(calls).toBe(2);
+  await previous.click();
+  await expectPair(pairs[0]);
+  await spotlight.getByRole("button", { name: /Shuffle screenshots/ }).click();
+  await expectPair(pairs[2]);
+  expect(calls).toBe(3);
+  await next.click(); // Shuffle replaced the old forward path with a new one.
+  await expectPair(pairs[3]);
+  expect(calls).toBe(4);
   await expect(spotlight).toHaveAttribute("data-spotlight-paused", "true");
 });
 
@@ -1022,6 +1082,10 @@ test("compiled Pages archive API serves two distinct public photos and the home 
   expect(response.headers()["cache-control"]).toContain("no-store");
   const { photos } = await response.json();
   expect(photos).toHaveLength(2);
+  expect(
+    photos.filter((photo: { href: string }) => photo.href === "/gallery/hytale")
+      .length,
+  ).toBeLessThanOrEqual(1);
   expect(new Set(photos.map((photo: { src: string }) => photo.src)).size).toBe(
     2,
   );

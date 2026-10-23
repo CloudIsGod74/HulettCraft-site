@@ -17,6 +17,10 @@ if (root) {
   const shuffle = root.querySelector<HTMLButtonElement>(
     "[data-spotlight-shuffle]",
   )!;
+  const previous = root.querySelector<HTMLButtonElement>(
+    "[data-spotlight-previous]",
+  )!;
+  const next = root.querySelector<HTMLButtonElement>("[data-spotlight-next]")!;
   const message = root.querySelector<HTMLElement>("[data-spotlight-message]")!;
   const motion = matchMedia("(prefers-reduced-motion: reduce)");
   const pauseKey = "hulettcraft:archive-paused";
@@ -29,6 +33,9 @@ if (root) {
   let current = cards.map(
     (card) => card.querySelector("img")!.getAttribute("src")!,
   );
+  // Keep descriptors, not decoded images or the full archive, for recent pairs.
+  const history: SpotlightPhoto[][] = [LOCAL_ARCHIVE.slice(0, 2)];
+  let historyIndex = 0;
   try {
     paused ||= sessionStorage.getItem(pauseKey) === "true";
   } catch {
@@ -65,7 +72,18 @@ if (root) {
     );
   }
   function updateControl() {
-    pause.textContent = paused ? "Play slideshow" : "Pause slideshow";
+    const label = paused ? "Play slideshow" : "Pause slideshow";
+    pause.setAttribute("aria-label", label);
+    pause.title = label;
+    pause
+      .querySelector("[data-spotlight-symbol]")!
+      .setAttribute(
+        "d",
+        paused ? "M8 5v14l11-7z" : "M6 5h4v14H6zM14 5h4v14h-4z",
+      );
+    previous.disabled = loading || historyIndex === 0;
+    next.disabled = loading;
+    shuffle.disabled = loading;
     root!.dataset.spotlightPaused = String(paused);
   }
   function stop() {
@@ -101,7 +119,11 @@ if (root) {
     }
     return img;
   }
-  async function advance(manual: boolean, initial = false) {
+  async function advance(
+    manual: boolean,
+    initial = false,
+    direction: "previous" | "next" | "random" = "next",
+  ) {
     if (
       loading ||
       !pageActive ||
@@ -109,6 +131,13 @@ if (root) {
       (!manual && !initial && (paused || !visible))
     )
       return;
+    const targetIndex =
+      direction === "previous"
+        ? historyIndex - 1
+        : direction === "next" && historyIndex < history.length - 1
+          ? historyIndex + 1
+          : undefined;
+    if (targetIndex !== undefined && targetIndex < 0) return;
     // Keep a focused gallery link pointing at the screenshot the visitor selected.
     if (!manual && root!.querySelector(".spotlight-frame:focus")) {
       schedule();
@@ -116,31 +145,39 @@ if (root) {
     }
     loading = true;
     stop();
-    shuffle.disabled = true;
+    updateControl();
     if (manual) message.textContent = "Finding more moments from the archive…";
     try {
-      const url = new URL("/api/gallery/spotlight.json", location.origin);
-      for (const src of current) url.searchParams.append("exclude", src);
-      const response = await fetch(url, {
-        cache: "no-store",
-        signal: AbortSignal.timeout(8000),
-      });
-      if (!response.ok || response.redirected)
-        throw new Error("Archive unavailable");
-      const data: unknown = await response.json();
-      if (
-        !data ||
-        typeof data !== "object" ||
-        !("photos" in data) ||
-        !Array.isArray(data.photos) ||
-        data.photos.length < 1 ||
-        data.photos.length > 2 ||
-        !data.photos.every(validPhoto)
-      )
-        throw new Error("Invalid photos");
-      const photos: SpotlightPhoto[] = data.photos;
-      if (new Set(photos.map((photo) => photo.src)).size !== photos.length)
-        throw new Error("Repeated photos");
+      let photos: SpotlightPhoto[];
+      if (targetIndex !== undefined) {
+        photos = history[targetIndex];
+      } else {
+        const url = new URL("/api/gallery/spotlight.json", location.origin);
+        for (const src of current) url.searchParams.append("exclude", src);
+        const response = await fetch(url, {
+          cache: "no-store",
+          signal: AbortSignal.timeout(8000),
+        });
+        if (!response.ok || response.redirected)
+          throw new Error("Archive unavailable");
+        const data: unknown = await response.json();
+        if (
+          !data ||
+          typeof data !== "object" ||
+          !("photos" in data) ||
+          !Array.isArray(data.photos) ||
+          data.photos.length < 1 ||
+          data.photos.length > 2 ||
+          !data.photos.every(validPhoto)
+        )
+          throw new Error("Invalid photos");
+        photos = data.photos;
+        if (
+          new Set(photos.map((photo) => photo.src)).size !== photos.length ||
+          photos.filter((photo) => photo.href === "/gallery/hytale").length > 1
+        )
+          throw new Error("Invalid photo pair");
+      }
       // Decode the full pair before swapping either card; errors preserve both.
       const images = await Promise.all(photos.map(decode));
       if (
@@ -155,25 +192,29 @@ if (root) {
         if (!photo) return;
         card.querySelector("img")!.replaceWith(images[index]);
         card.querySelector<HTMLAnchorElement>("a")!.href = photo.href;
-        card.querySelector("[data-photo-caption]")!.textContent = photo.caption;
-        card.querySelector("[data-photo-collection]")!.textContent =
-          photo.collection;
-        const credit = card.querySelector<HTMLElement>("[data-photo-credit]")!;
-        credit.textContent = photo.credit
-          ? "Screenshot by " + photo.credit
-          : "";
-        credit.hidden = !photo.credit;
       });
       current = photos.map((photo) => photo.src);
+      if (targetIndex !== undefined) historyIndex = targetIndex;
+      else {
+        // A fresh shuffle starts a new forward path. Keep at most 20 pairs.
+        history.splice(historyIndex + 1);
+        history.push(photos);
+        if (history.length > 20) history.shift();
+        historyIndex = history.length - 1;
+      }
       root!.dataset.spotlightLoaded = "true";
-      if (manual) message.textContent = "New screenshots from the archive.";
+      if (manual)
+        message.textContent =
+          targetIndex !== undefined
+            ? "Previously viewed screenshots."
+            : "New screenshots from the archive.";
     } catch {
       if (manual)
         message.textContent =
           "New screenshots couldn’t be loaded. Keeping the current photos; try shuffling again.";
     } finally {
       loading = false;
-      shuffle.disabled = false;
+      updateControl();
       schedule();
     }
   }
@@ -193,7 +234,12 @@ if (root) {
     updateControl();
     schedule();
   });
-  shuffle.addEventListener("click", () => void advance(true));
+  previous.addEventListener(
+    "click",
+    () => void advance(true, false, "previous"),
+  );
+  next.addEventListener("click", () => void advance(true));
+  shuffle.addEventListener("click", () => void advance(true, false, "random"));
   motion.addEventListener("change", () => {
     if (motion.matches) paused = true;
     updateControl();

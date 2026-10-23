@@ -31,15 +31,6 @@ import { LOCAL_ARCHIVE } from "../config/spotlight";
               decoding="async"
             />
           </a>
-          <figcaption>
-            <p class="eyebrow" data-photo-collection>
-              {photo.collection}
-            </p>
-            <p class="spotlight-caption" data-photo-caption>
-              {photo.caption}
-            </p>
-            <p class="muted spotlight-credit" data-photo-credit hidden />
-          </figcaption>
         </figure>
       ))
     }
@@ -49,7 +40,61 @@ import { LOCAL_ARCHIVE } from "../config/spotlight";
       Random moments from the screenshot archive.
     </p>
     <div>
-      <button type="button" data-spotlight-pause>Pause slideshow</button>
+      <button
+        type="button"
+        class="spotlight-icon"
+        data-spotlight-previous
+        aria-label="Previous screenshots"
+        title="Previous screenshots"
+        disabled
+      >
+        <svg
+          width="20"
+          height="20"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          stroke-width="2"
+          aria-hidden="true"
+          focusable="false"><path d="m14 6-6 6 6 6"></path></svg
+        >
+      </button>
+      <button
+        type="button"
+        class="spotlight-icon"
+        data-spotlight-pause
+        aria-label="Pause slideshow"
+        title="Pause slideshow"
+      >
+        <svg
+          width="18"
+          height="18"
+          viewBox="0 0 24 24"
+          fill="currentColor"
+          aria-hidden="true"
+          focusable="false"
+          ><path data-spotlight-symbol d="M6 5h4v14H6zM14 5h4v14h-4z"
+          ></path></svg
+        >
+      </button>
+      <button
+        type="button"
+        class="spotlight-icon"
+        data-spotlight-next
+        aria-label="Next screenshots"
+        title="Next screenshots"
+      >
+        <svg
+          width="20"
+          height="20"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          stroke-width="2"
+          aria-hidden="true"
+          focusable="false"><path d="m10 6 6 6-6 6"></path></svg
+        >
+      </button>
       <button type="button" data-spotlight-shuffle
         >Shuffle screenshots <span aria-hidden="true">↻</span></button
       >
