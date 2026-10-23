@@ -10,6 +10,7 @@ import {
   validateApplicant,
 } from "../../lib/applications";
 import { limitedForm, validateImage } from "../../lib/uploads";
+import { notifyApplication } from "../../lib/applicationEmail";
 
 export const POST: APIRoute = ({ request, locals }) =>
   api(async () => {
@@ -73,6 +74,7 @@ export const POST: APIRoute = ({ request, locals }) =>
       });
     const application = newApplication(applicant, screenshot);
     await saveApplication(locals, application);
+    await notifyApplication(locals, application);
     return request.headers.get("accept")?.includes("application/json")
       ? json({ received: true }, 201)
       : new Response(null, {

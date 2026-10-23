@@ -9,6 +9,7 @@ import {
   saveApplication,
 } from "../../../../lib/applications";
 import { requireAdmin } from "../../../../lib/requireAdmin";
+import { applicationEmailKey } from "../../../../lib/applicationEmail";
 
 export const GET: APIRoute = ({ request, locals, params }) =>
   api(async () => {
@@ -60,6 +61,9 @@ export const DELETE: APIRoute = ({ request, locals, params }) =>
         "This application changed. Reload before deleting it.",
         { status: 409 },
       );
+    await applicationStore(locals).delete(
+      applicationEmailKey(locals, application.id),
+    );
     await applicationStore(locals).delete(
       applicationKey(application.id, locals.applicationScope),
     );

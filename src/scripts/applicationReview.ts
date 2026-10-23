@@ -1,4 +1,30 @@
 export {};
+const retryEmail = document.querySelector<HTMLButtonElement>(
+  "#retry-application-email",
+);
+retryEmail?.addEventListener("click", async () => {
+  const result = document.querySelector<HTMLElement>(
+    "#application-email-result",
+  )!;
+  retryEmail.disabled = true;
+  result.textContent = "Sending application email…";
+  try {
+    const response = await fetch(
+      "/api/admin/applications/" + retryEmail.dataset.id + "/email",
+      { method: "POST" },
+    );
+    if (!response.ok) throw new Error(await response.text());
+    result.textContent =
+      "Email service accepted this application for support@hulettcraft.com. Check the mailbox to confirm delivery.";
+    retryEmail.hidden = true;
+  } catch (error) {
+    result.textContent =
+      error instanceof Error
+        ? error.message
+        : "Email could not be confirmed. The application is still saved.";
+    retryEmail.disabled = false;
+  }
+});
 const form = document.querySelector<HTMLFormElement>("#application-review");
 if (form) {
   const result = form.querySelector<HTMLElement>("#review-result")!;

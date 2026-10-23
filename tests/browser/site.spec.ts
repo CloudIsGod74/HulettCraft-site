@@ -939,6 +939,12 @@ test("private SMP applications retain failed submissions, save a screenshot, and
     }),
   ).toBeVisible();
   await expect(page.locator(".application-answers img")).toHaveCount(0);
+  await expect(page.locator("#application-email-result")).toContainText(
+    "Email is not configured or enabled in this environment",
+  );
+  await expect(
+    page.getByRole("button", { name: "Retry application email" }),
+  ).toBeDisabled();
   const id = (await page
     .locator("#application-review")
     .getAttribute("data-id"))!;

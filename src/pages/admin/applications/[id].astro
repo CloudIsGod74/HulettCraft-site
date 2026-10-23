@@ -2,6 +2,10 @@
 import BaseLayout from "../../../layouts/BaseLayout.astro";
 import { requireAdmin } from "../../../lib/requireAdmin";
 import {
+  emailConfiguration,
+  readApplicationEmail,
+} from "../../../lib/applicationEmail";
+import {
   readApplication,
   type JoinApplication,
 } from "../../../lib/applications";
@@ -14,10 +18,24 @@ Astro.response.headers.set("Cache-Control", "private, no-store");
 if (!(await requireAdmin(Astro.request, Astro.locals)))
   return Astro.redirect("/admin/login");
 let application: JoinApplication | undefined;
+let emailState = "unrecorded";
+let emailEnabled = false;
 try {
   application = await readApplication(Astro.locals, Astro.params.id ?? "");
 } catch (error) {
   Astro.response.status = error instanceof Response ? error.status : 503;
+}
+if (application) {
+  try {
+    emailState = await readApplicationEmail(Astro.locals, application.id);
+  } catch {
+    emailState = "unavailable";
+  }
+  try {
+    emailEnabled = !!emailConfiguration(Astro.locals);
+  } catch {
+    /* Configuration errors are shown as unavailable delivery. */
+  }
 }
 ---
 
@@ -58,6 +76,26 @@ try {
             </p>
           </>
         </header>
+        <section class="card" aria-labelledby="application-email-heading">
+          <h2 id="application-email-heading">Application email</h2>
+          <p id="application-email-result" role="status" aria-live="polite">
+            {emailState === "sent"
+              ? "Email service accepted this application for support@hulettcraft.com. Inbox delivery is not confirmed here."
+              : emailEnabled
+                ? "Email delivery has not been confirmed. The application is safely saved here; you can retry sending it to support@hulettcraft.com."
+                : "Email is not configured or enabled in this environment. The application is safely saved here."}
+          </p>
+          {emailState !== "sent" && (
+            <button
+              type="button"
+              id="retry-application-email"
+              data-id={application.id}
+              disabled={!emailEnabled}
+            >
+              Retry application email
+            </button>
+          )}
+        </section>
         <section class="application-answers" aria-label="Application answers">
           {APPLICATION_QUESTIONS.map((question) => (
             <article class="card">

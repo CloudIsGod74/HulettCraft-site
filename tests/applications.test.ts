@@ -9,6 +9,7 @@ import {
 } from "../src/pages/api/admin/applications/[id]";
 import { GET as screenshot } from "../src/pages/api/admin/applications/[id]/screenshot";
 import { GET as publicImage } from "../src/pages/api/gallery/image";
+import { applicationEmailKey } from "../src/lib/applicationEmail";
 import {
   APPLICATION_PREFIX,
   MAX_APPLICATION_IMAGE,
@@ -437,7 +438,10 @@ test("deleting an application removes its single private value and cannot target
     ).status,
     200,
   );
-  assert.deepEqual(kv.deleted, [applicationKey(application.id)]);
+  assert.deepEqual(kv.deleted, [
+    applicationEmailKey(env, application.id),
+    applicationKey(application.id),
+  ]);
   assert.equal(
     (await details(context(await request(path), env, { id: application.id })))
       .status,
