@@ -571,7 +571,7 @@ test.describe("manual title banners on touchscreens", () => {
         type: "touchEnd",
         touchPoints: [],
       });
-      // Let queued gesture processing finish before another input with the page clock frozen.
+      // Let queued gesture processing finish before the next gesture.
       await page.clock.runFor(50);
     };
     await hero.evaluate((element) => {
@@ -605,13 +605,6 @@ test.describe("manual title banners on touchscreens", () => {
     await swipe(18, 2); // A tap with some jitter must not select a different photo.
     await expect(hero).toHaveAttribute("data-hero-index", "0");
     await expect(hero).toHaveAttribute("data-hero-paused", "false");
-    await swipe(5, -110); // Real native touch input must still scroll the page vertically.
-    await expect
-      .poll(() => page.evaluate(() => window.scrollY))
-      .toBeGreaterThan(0);
-    await expect(hero).toHaveAttribute("data-hero-index", "0");
-    await expect(hero).toHaveAttribute("data-hero-paused", "false");
-    await page.evaluate(() => window.scrollTo(0, 0));
     await swipe(-110);
     await expect(hero).toHaveAttribute("data-hero-index", "1");
     await expect(hero).toHaveAttribute("data-hero-paused", "true");
@@ -680,6 +673,17 @@ test.describe("manual title banners on touchscreens", () => {
     await expect(hero).toHaveAttribute("data-hero-index", "1");
     await next.tap();
     await expect(hero).toHaveAttribute("data-hero-index", "0");
+    // Check native scrolling last: a tap during the resulting momentum scroll
+    // can be consumed by Chromium to stop the fling rather than click a button.
+    await hero
+      .getByRole("button", { name: "Play photos in banner slideshow" })
+      .tap();
+    await swipe(5, -110);
+    await expect
+      .poll(() => page.evaluate(() => window.scrollY))
+      .toBeGreaterThan(0);
+    await expect(hero).toHaveAttribute("data-hero-index", "0");
+    await expect(hero).toHaveAttribute("data-hero-paused", "false");
   });
 });
 
