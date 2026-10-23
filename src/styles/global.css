@@ -1548,7 +1548,7 @@ img {
 }
 .spotlight-controls {
   display: flex;
-  justify-content: space-between;
+  justify-content: flex-end;
   align-items: center;
   flex-wrap: wrap;
   gap: 1rem;
@@ -1556,11 +1556,6 @@ img {
 }
 .spotlight-controls[hidden] {
   display: none;
-}
-.spotlight-controls > p {
-  margin: 0;
-  font-size: 0.85rem;
-  flex: 1 1 240px;
 }
 .spotlight-controls > div {
   display: flex;

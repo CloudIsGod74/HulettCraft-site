@@ -574,6 +574,34 @@ test.describe("manual title banners on touchscreens", () => {
       // Let queued gesture processing finish before another input with the page clock frozen.
       await page.clock.runFor(50);
     };
+    await hero.evaluate((element) => {
+      const events: object[] = [];
+      for (const type of [
+        "pointerdown",
+        "pointerup",
+        "pointercancel",
+        "click",
+      ]) {
+        window.addEventListener(
+          type,
+          (event) => {
+            const target = event.target as Element;
+            const pointer = event as PointerEvent;
+            events.push({
+              type,
+              target: target.tagName,
+              button: target.closest("button")?.getAttribute("aria-label"),
+              x: pointer.clientX,
+              y: pointer.clientY,
+              index: element.dataset.heroIndex,
+              scroll: window.scrollY,
+            });
+            element.dataset.touchTrace = JSON.stringify(events.slice(-16));
+          },
+          { capture: true, passive: true },
+        );
+      }
+    });
     await swipe(18, 2); // A tap with some jitter must not select a different photo.
     await expect(hero).toHaveAttribute("data-hero-index", "0");
     await expect(hero).toHaveAttribute("data-hero-paused", "false");
@@ -590,7 +618,15 @@ test.describe("manual title banners on touchscreens", () => {
     await swipe(110);
     await expect(hero).toHaveAttribute("data-hero-index", "0");
     await next.tap();
-    await expect(hero).toHaveAttribute("data-hero-index", "1");
+    try {
+      await expect(hero).toHaveAttribute("data-hero-index", "1");
+    } catch (error) {
+      console.log(
+        "Banner input trace:",
+        await hero.getAttribute("data-touch-trace"),
+      );
+      throw error;
+    }
     await expect(hero).toHaveAttribute("data-hero-paused", "true");
     await previous.tap();
     await expect(hero).toHaveAttribute("data-hero-index", "0");
