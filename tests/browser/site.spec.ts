@@ -308,7 +308,7 @@ test("favicon refreshes in open tabs and when returning to a cached page", async
   await page.goto("/");
   const link = page.locator("link[data-server-favicon]");
   const initial = await link.getAttribute("href");
-  expect(initial).toMatch(/^\/api\/favicon\.png\?v=\d+$/);
+  expect(initial).toMatch(/^\/api\/favicon\.png\?source=icon-v2&v=\d+$/);
   await page.clock.fastForward(5 * 60 * 1000);
   await expect(link).not.toHaveAttribute("href", initial!);
   const updated = await link.getAttribute("href");
@@ -327,8 +327,12 @@ test("favicon refreshes in open tabs and when returning to a cached page", async
 test("compiled Pages favicon endpoint reads local KV and honors conditional requests", async ({
   request,
 }) => {
-  const response = await request.get("/api/favicon.png?v=runtime-test");
+  const response = await request.get("/api/favicon.png?v=runtime-test", {
+    maxRedirects: 0,
+  });
   expect(response.status()).toBe(200);
+  expect(response.headers().location).toBeUndefined();
+  expect(response.headers()["x-favicon-source"]).toBe("mcstatus");
   expect(response.headers()["content-type"]).toBe("image/png");
   expect(response.headers()["cache-control"]).toContain("max-age=300");
   const bytes = await response.body();

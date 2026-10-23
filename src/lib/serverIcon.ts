@@ -1,4 +1,4 @@
-const MAX_ICON_BYTES = 64 * 1024;
+export const MAX_ICON_BYTES = 64 * 1024;
 const SIGNATURE = [137, 80, 78, 71, 13, 10, 26, 10];
 
 export function crc32(bytes: Uint8Array): number {
@@ -16,8 +16,13 @@ export async function boundedBytes(
   response: Response,
   limit: number,
 ): Promise<Uint8Array<ArrayBuffer>> {
-  if (Number(response.headers.get("Content-Length")) > limit || !response.body)
+  if (
+    Number(response.headers.get("Content-Length")) > limit ||
+    !response.body
+  ) {
+    await response.body?.cancel();
     throw new Error("Missing or oversized response");
+  }
   const reader = response.body.getReader();
   const chunks: Uint8Array[] = [];
   let size = 0;
@@ -56,12 +61,29 @@ export async function parseServerIcon(
     const binary = atob(encoded);
     if (btoa(binary) !== encoded) return null;
     const bytes = Uint8Array.from(binary, (c) => c.charCodeAt(0));
+    return await validateServerPng(bytes);
+  } catch {
+    return null;
+  }
+}
+
+export function serverIconDataUri(bytes: Uint8Array): string {
+  return (
+    "data:image/png;base64," +
+    btoa(Array.from(bytes, (byte) => String.fromCharCode(byte)).join(""))
+  );
+}
+
+export async function validateServerPng(
+  bytes: Uint8Array<ArrayBuffer>,
+): Promise<Uint8Array<ArrayBuffer> | null> {
+  try {
     if (
       bytes.length > MAX_ICON_BYTES ||
       !SIGNATURE.every((n, i) => bytes[i] === n)
     )
       return null;
-    const view = new DataView(bytes.buffer);
+    const view = new DataView(bytes.buffer, bytes.byteOffset, bytes.byteLength);
     let offset = 8,
       depth = 0,
       color = 0,
