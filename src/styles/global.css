@@ -256,19 +256,6 @@ nav a:hover {
   background: #081527;
   box-shadow: 0 16px 48px rgba(0, 0, 0, 0.2);
 }
-.page-hero::before {
-  position: relative;
-  z-index: 1;
-  content: "";
-  display: block;
-  width: 8px;
-  height: 8px;
-  margin: 0 auto 1.25rem;
-  background: var(--accent);
-  box-shadow:
-    -14px 0 0 rgba(121, 185, 255, 0.35),
-    14px 0 0 rgba(121, 185, 255, 0.35);
-}
 .hero-photos,
 .hero-photo {
   position: absolute;
@@ -336,9 +323,13 @@ nav a:hover {
 }
 .hero-controls [data-hero-previous] {
   left: 0;
+  justify-content: flex-start;
+  padding-left: 0.25rem;
 }
 .hero-controls [data-hero-next] {
   right: 0;
+  justify-content: flex-end;
+  padding-right: 0.25rem;
 }
 .hero-controls .hero-pause {
   right: 0.25rem;

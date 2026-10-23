@@ -168,7 +168,8 @@ for (const hero of document.querySelectorAll<HTMLElement>(
     )
       return;
     swipe = { id: event.pointerId, x: event.clientX, y: event.clientY };
-    hero.setPointerCapture(event.pointerId);
+    // Touch pointers already capture their initial target; events bubble here.
+    // Leave capture to the browser so subsequent taps retain their native target.
   });
   hero.addEventListener("pointercancel", () => {
     swipe = undefined;
