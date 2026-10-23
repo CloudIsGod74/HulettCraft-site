@@ -1,16 +1,17 @@
 ---
+import PageHero from "../components/PageHero.astro";
 import BaseLayout from "../layouts/BaseLayout.astro";
 import ServerState from "../components/ServerState.astro";
 import { SERVERS } from "../config/servers";
 ---
 
 <BaseLayout>
-  <section class="hero">
+  <PageHero>
     <h1>Worlds of HulettCraft</h1><p>
       Each world has its own story. Explore active worlds below, then dive
       deeper into their history, screenshots, and seasons.
     </p>
-  </section>
+  </PageHero>
   <section class="server-grid">
     {
       SERVERS.map((server) => (

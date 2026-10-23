@@ -1,4 +1,5 @@
 ---
+import PageHero from "../../components/PageHero.astro";
 import BaseLayout from "../../layouts/BaseLayout.astro";
 import { HULETTCRAFT } from "../../config/hulettcraft";
 import { getBucket } from "../../lib/runtime";
@@ -24,12 +25,12 @@ try {
 ---
 
 <BaseLayout>
-  <section class="hero">
+  <PageHero>
     <h1>HulettCraft</h1><p>
       A visual history of HulettCraft — worlds built, explored, and remembered
       across seasons.
     </p>
-  </section>
+  </PageHero>
   {
     error && (
       <p role="alert" class="center">

@@ -427,3 +427,65 @@ test("compiled Pages favicon endpoint reads local KV and honors conditional requ
   });
   expect(conditional.status()).toBe(304);
 });
+
+test("screenshot banners rotate automatically, pause, retain a good image on failure and honor reduced motion", async ({
+  page,
+}) => {
+  await page.clock.install();
+  await page.goto("/community");
+  const hero = page.locator("[data-hero-slideshow]");
+  await expect(hero).toHaveAttribute("data-hero-index", "0");
+  const images = JSON.parse((await hero.getAttribute("data-hero-images"))!);
+  await page.route("**" + images[1].src.replace(/ /g, "%20"), (route) =>
+    route.abort(),
+  );
+  await page.clock.fastForward(8100);
+  await page.waitForTimeout(100);
+  await expect(hero).toHaveAttribute("data-hero-index", "0");
+  await page.clock.fastForward(8100);
+  await expect(hero).toHaveAttribute("data-hero-index", "2");
+  await page
+    .getByRole("button", { name: "Pause banner screenshot slideshow" })
+    .click();
+  await page.clock.fastForward(20_000);
+  await expect(hero).toHaveAttribute("data-hero-index", "2");
+  await page.goto("/status");
+  await expect(hero).toHaveAttribute("data-hero-paused", "true");
+  await page.emulateMedia({ reducedMotion: "reduce" });
+  await page.reload();
+  await page.clock.fastForward(20_000);
+  await expect(hero).toHaveAttribute("data-hero-index", "0");
+  await expect(
+    page.getByRole("button", { name: "Play banner screenshot slideshow" }),
+  ).toBeVisible();
+});
+
+test("Community provides a usable directory empty state and working ways to participate", async ({
+  page,
+}) => {
+  await page.goto("/community");
+  await expect(
+    page.getByRole("heading", { name: "Meet the members" }),
+  ).toBeVisible();
+  await expect(
+    page.getByText("Our member directory is taking shape"),
+  ).toBeVisible();
+  await expect(page.locator(".member-card")).toHaveCount(0);
+  await expect(
+    page.getByRole("link", { name: /Submit a screenshot/ }),
+  ).toHaveAttribute("href", "/gallery/upload");
+  await page.screenshot({
+    path: test.info().outputPath("community-desktop.png"),
+    fullPage: true,
+  });
+  await page.setViewportSize({ width: 375, height: 900 });
+  expect(
+    await page.evaluate(
+      () => document.documentElement.scrollWidth <= innerWidth + 1,
+    ),
+  ).toBe(true);
+  await page.screenshot({
+    path: test.info().outputPath("community-mobile.png"),
+    fullPage: true,
+  });
+});

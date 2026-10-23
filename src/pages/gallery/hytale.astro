@@ -1,14 +1,15 @@
 ---
+import PageHero from "../../components/PageHero.astro";
 import BaseLayout from "../../layouts/BaseLayout.astro";
 import WorldGallery from "../../components/WorldGallery.astro";
 ---
 
 <BaseLayout>
-  <section class="hero">
+  <PageHero>
     <h1>Hytale</h1><p>
       Early exploration, builds, and moments from the Hytale beta.
     </p>
-  </section>
+  </PageHero>
   <WorldGallery world="hytale" />
   <section class="gallery-panel">
     <h2>From the early days</h2><div class="season-grid">

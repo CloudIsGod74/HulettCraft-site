@@ -244,25 +244,21 @@ nav a:hover {
   text-align: center;
 }
 
-/* Shared opening banner uses an existing community screenshot, cached across pages. */
-.site-main > .hero:first-child {
+/* Shared screenshot banner; the overlay keeps text readable as photos change. */
+.page-hero {
   position: relative;
   isolation: isolate;
   margin-bottom: 2rem;
   padding: clamp(2.5rem, 6vw, 4.5rem) 1.5rem;
   border: 1px solid rgba(100, 217, 154, 0.22);
   border-radius: 20px;
-  background:
-    linear-gradient(
-      100deg,
-      rgba(8, 22, 25, 0.96),
-      rgba(8, 22, 25, 0.82) 55%,
-      rgba(8, 22, 25, 0.65)
-    ),
-    url("/images/home/HulettcraftS7.jpg") center 55% / cover;
+  overflow: hidden;
+  background: #081619;
   box-shadow: 0 16px 48px rgba(0, 0, 0, 0.2);
 }
-.site-main > .hero:first-child::before {
+.page-hero::before {
+  position: relative;
+  z-index: 1;
   content: "";
   display: block;
   width: 8px;
@@ -272,6 +268,61 @@ nav a:hover {
   box-shadow:
     -14px 0 0 rgba(100, 217, 154, 0.35),
     14px 0 0 rgba(100, 217, 154, 0.35);
+}
+.hero-photos,
+.hero-photo {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+}
+.hero-photo {
+  object-fit: cover;
+}
+.hero-photos::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    100deg,
+    rgba(8, 22, 25, 0.96),
+    rgba(8, 22, 25, 0.82) 55%,
+    rgba(8, 22, 25, 0.65)
+  );
+}
+.hero-photo-enter {
+  animation: hero-photo-reveal 0.8s ease both;
+}
+@keyframes hero-photo-reveal {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+.hero-copy {
+  position: relative;
+}
+.hero-pause {
+  position: absolute;
+  right: 1rem;
+  bottom: 0.75rem;
+  padding: 0.3rem 0.65rem;
+  min-height: 32px;
+  border: 1px solid rgba(161, 181, 187, 0.4);
+  border-radius: 6px;
+  background: rgba(8, 17, 23, 0.85);
+  color: var(--text);
+  font-size: 0.75rem;
+  cursor: pointer;
+}
+.hero-pause:hover {
+  border-color: var(--accent);
+}
+.hero-pause[hidden] {
+  display: none;
 }
 .hero p {
   max-width: 640px;
@@ -760,5 +811,163 @@ img {
   *::after {
     animation: none !important;
     transition: none !important;
+  }
+}
+
+/* Community introductions and the curated member directory. */
+.eyebrow {
+  margin: 0 0 0.75rem;
+  color: var(--accent);
+  font-size: 0.75rem;
+  font-weight: 650;
+  letter-spacing: 0.13em;
+  text-transform: uppercase;
+}
+.community-intro {
+  display: grid;
+  grid-template-columns: 1.15fr 1fr;
+  gap: clamp(1.5rem, 5vw, 4rem);
+  align-items: start;
+  padding: 1.5rem 0 3.5rem;
+}
+.community-intro h2,
+.community-members h2,
+.community-take-part h2 {
+  margin-top: 0;
+  line-height: 1.25;
+  letter-spacing: -0.025em;
+  font-size: clamp(1.5rem, 3vw, 2rem);
+}
+.community-connect h2 {
+  font-size: 1.35rem;
+}
+.community-connect p {
+  flex-grow: 0;
+}
+.community-intro a,
+.member-empty a {
+  color: var(--accent);
+  text-underline-offset: 0.25em;
+}
+.community-members {
+  padding: 2.5rem 0;
+  border-top: 1px solid var(--border);
+  border-bottom: 1px solid var(--border);
+  scroll-margin-top: 6rem;
+}
+.community-section-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  flex-wrap: wrap;
+}
+.member-count {
+  font-size: 0.85rem;
+  color: var(--muted);
+}
+.member-grid,
+.community-action-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 260px), 1fr));
+  gap: 1.5rem;
+  margin-top: 2rem;
+}
+.member-identity {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  min-width: 0;
+}
+.member-identity h3 {
+  margin: 0;
+  overflow-wrap: anywhere;
+}
+.member-username {
+  font-size: 0.85rem;
+  overflow-wrap: anywhere;
+}
+.member-avatar {
+  display: grid;
+  place-items: center;
+  width: 56px;
+  height: 56px;
+  flex-shrink: 0;
+  border-radius: 12px;
+  background: var(--accent-soft);
+  border: 1px solid var(--accent-muted);
+  color: var(--accent);
+  font-weight: 700;
+}
+.member-socials {
+  display: flex;
+  gap: 0.6rem;
+  flex-wrap: wrap;
+  padding: 0;
+  margin-bottom: 0;
+  list-style: none;
+}
+.member-socials a {
+  display: inline-block;
+  padding: 0.35rem 0.65rem;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  color: var(--text);
+  font-size: 0.85rem;
+  text-underline-offset: 0.15em;
+}
+.member-socials a:hover {
+  border-color: var(--accent);
+}
+.member-empty {
+  display: flex;
+  align-items: flex-start;
+  gap: 1.25rem;
+  padding: clamp(1rem, 3vw, 2rem);
+  margin-top: 2rem;
+  background: rgba(100, 217, 154, 0.035);
+  border: 1px dashed var(--accent-muted);
+  border-radius: 14px;
+}
+.member-empty h3 {
+  margin: 0;
+}
+.member-empty p {
+  max-width: 650px;
+  color: var(--muted);
+}
+.community-take-part {
+  padding-top: 3.5rem;
+}
+.community-action {
+  color: var(--text);
+  text-decoration: none;
+}
+.community-action-number {
+  color: var(--accent);
+  font-size: 0.85rem;
+  margin-bottom: 1rem;
+}
+.community-action > span:last-child {
+  color: var(--accent);
+  font-size: 0.9rem;
+}
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+  border: 0;
+}
+@media (max-width: 640px) {
+  .community-intro {
+    grid-template-columns: 1fr;
+  }
+  .member-empty {
+    flex-direction: column;
   }
 }

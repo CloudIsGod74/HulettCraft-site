@@ -1,13 +1,14 @@
 ---
+import PageHero from "../../components/PageHero.astro";
 import BaseLayout from "../../layouts/BaseLayout.astro";
 import WorldGallery from "../../components/WorldGallery.astro";
 ---
 
 <BaseLayout>
-  <section class="hero">
+  <PageHero>
     <h1>Modded</h1><p>
       Seasonal, experimental, and retired modded worlds across different eras.
     </p>
-  </section>
+  </PageHero>
   <WorldGallery world="modded" />
 </BaseLayout>

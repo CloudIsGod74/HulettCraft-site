@@ -1,15 +1,16 @@
 ---
+import PageHero from "../components/PageHero.astro";
 import BaseLayout from "../layouts/BaseLayout.astro";
 import ServerState from "../components/ServerState.astro";
 import { SERVERS } from "../config/servers";
 ---
 
 <BaseLayout>
-  <section class="hero">
+  <PageHero>
     <h1>Network Status</h1><p>
       Live operational status for HulettCraft services
     </p>
-  </section>
+  </PageHero>
   <section class="server-grid">
     {
       SERVERS.map((server) => (

@@ -1,44 +1,72 @@
 ---
+import PageHero from "../components/PageHero.astro";
 import BaseLayout from "../layouts/BaseLayout.astro";
+import MemberDirectory from "../components/MemberDirectory.astro";
 ---
 
-<BaseLayout>
-  <section class="hero">
-    <h1>Community</h1>
+<BaseLayout title="Community | HulettCraft">
+  <PageHero>
+    <h1>Built together.</h1>
     <p>
-      HulettCraft is shaped by the people who play here — builders, explorers,
-      and collaborators across many seasons.
+      A community of builders, explorers, and friends. Different playstyles,
+      shared worlds, and stories that last.
     </p>
+  </PageHero>
+
+  <section class="community-intro" aria-labelledby="community-heading">
+    <div>
+      <p class="eyebrow">Life on HulettCraft</p>
+      <h2 id="community-heading">More than a collection of worlds.</h2>
+      <p class="muted">
+        The farms, shops, ambitious builds, and little discoveries are only part
+        of the story. HulettCraft is shaped by the people who keep coming back,
+        helping each other, and making a place their own.
+      </p>
+      <a class="community-text-link" href="#members"
+        >Meet the community <span aria-hidden="true">↓</span></a
+      >
+    </div>
+    <aside class="card community-connect" aria-labelledby="connect-heading">
+      <p class="eyebrow">Keep in touch</p>
+      <h2 id="connect-heading">The conversation continues on Discord.</h2>
+      <p class="muted">
+        Share a build, catch an announcement, or find someone for your next
+        project.
+      </p>
+      <p>Ask a community administrator for the current Discord invitation.</p>
+    </aside>
   </section>
 
-  <section class="content">
-    <h2>How We Connect</h2>
-    <p>
-      Our Discord server is the heart of the community. It’s where announcements
-      are shared, builds are shown off, and ideas take shape.
-    </p>
+  <MemberDirectory />
 
-    <p class="muted">
-      Ask a community administrator for the current Discord invitation.
-    </p>
-
-    <h2 style="margin-top: 3rem;">What to Expect</h2>
-    <ul>
-      <li>Long-running survival worlds with seasonal resets</li>
-      <li>Collaborative building and shared projects</li>
-      <li>Optional quality-of-life tools and client mods</li>
-      <li>Respectful, low-drama community culture</li>
-    </ul>
-
-    <h2 style="margin-top: 3rem;">Get Involved</h2>
-    <p>
-      Whether you’re new or returning, the best way to get involved is to jump
-      into Discord, explore the worlds, and start building.
-    </p>
-
-    <p class="muted">
-      Community screenshots, world archives, and historical content are curated
-      to preserve the history of HulettCraft.
-    </p>
+  <section class="community-take-part" aria-labelledby="take-part-heading">
+    <p class="eyebrow">Find your place</p>
+    <h2 id="take-part-heading">There's more than one way to be part of it.</h2>
+    <div class="community-action-grid">
+      <a class="card community-action" href="/worlds"
+        ><span class="community-action-number" aria-hidden="true">01</span><h3>
+          Find your world
+        </h3><p class="muted">
+          From long-running survival to creative experiments, find somewhere to
+          make your mark.
+        </p><span>Explore the worlds →</span></a
+      >
+      <a class="card community-action" href="/gallery"
+        ><span class="community-action-number" aria-hidden="true">02</span><h3>
+          Explore our history
+        </h3><p class="muted">
+          Wander through screenshots, past seasons, and the projects players
+          have built together.
+        </p><span>Browse the gallery →</span></a
+      >
+      <a class="card community-action" href="/gallery/upload"
+        ><span class="community-action-number" aria-hidden="true">03</span><h3>
+          Share a moment
+        </h3><p class="muted">
+          A megabase, a small detail, or a memory with friends. Help tell the
+          story of the worlds.
+        </p><span>Submit a screenshot →</span></a
+      >
+    </div>
   </section>
 </BaseLayout>

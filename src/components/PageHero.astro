@@ -1,0 +1,27 @@
+---
+import { bannerImages } from "../config/banners";
+const images = bannerImages(Astro.url.pathname);
+---
+
+<section
+  class="hero page-hero"
+  data-hero-slideshow
+  data-hero-images={JSON.stringify(images)}
+>
+  <div class="hero-photos" aria-hidden="true">
+    <img
+      class="hero-photo"
+      src={images[0].src}
+      style={`object-position: ${images[0].position}`}
+      alt=""
+      decoding="async"
+    />
+  </div>
+  <div class="hero-copy"><slot /></div>
+  <button type="button" class="hero-pause" data-hero-pause hidden
+    >Pause photos</button
+  >
+</section>
+<script>
+  import "../scripts/heroSlideshow";
+</script>
