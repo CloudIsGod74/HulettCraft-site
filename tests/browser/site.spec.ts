@@ -35,6 +35,7 @@ test.beforeEach(async ({ page }) => {
 test("world pages render and contain no live-map navigation, embeds, or horizontal overflow", async ({
   page,
 }) => {
+  test.setTimeout(60_000); // Multiple page loads and full-page screenshots on CI.
   const errors: string[] = [];
   page.on("pageerror", (error) => errors.push(error.message));
   for (const width of [375, 768, 1440]) {
