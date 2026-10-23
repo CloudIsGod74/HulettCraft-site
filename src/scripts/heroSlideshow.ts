@@ -31,8 +31,8 @@ for (const hero of document.querySelectorAll<HTMLElement>(
     control!.setAttribute(
       "aria-label",
       paused
-        ? "Play banner screenshot slideshow"
-        : "Pause banner screenshot slideshow",
+        ? "Play photos in banner slideshow"
+        : "Pause photos in banner slideshow",
     );
     hero.dataset.heroPaused = String(paused);
   }

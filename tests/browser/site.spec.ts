@@ -445,7 +445,7 @@ test("screenshot banners rotate automatically, pause, retain a good image on fai
   await page.clock.fastForward(8100);
   await expect(hero).toHaveAttribute("data-hero-index", "2");
   await page
-    .getByRole("button", { name: "Pause banner screenshot slideshow" })
+    .getByRole("button", { name: "Pause photos in banner slideshow" })
     .click();
   await page.clock.fastForward(20_000);
   await expect(hero).toHaveAttribute("data-hero-index", "2");
@@ -456,7 +456,7 @@ test("screenshot banners rotate automatically, pause, retain a good image on fai
   await page.clock.fastForward(20_000);
   await expect(hero).toHaveAttribute("data-hero-index", "0");
   await expect(
-    page.getByRole("button", { name: "Play banner screenshot slideshow" }),
+    page.getByRole("button", { name: "Play photos in banner slideshow" }),
   ).toBeVisible();
 });
 
