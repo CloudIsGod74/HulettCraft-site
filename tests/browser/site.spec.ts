@@ -539,7 +539,7 @@ test.describe("manual title banners on touchscreens", () => {
     isMobile: true,
     hasTouch: true,
   });
-  test("arrows wrap, pause automatic rotation, retain valid photos and work with reduced motion", async ({
+  test("swipes and faint arrows wrap, pause rotation, preserve vertical scrolling and retain valid photos", async ({
     page,
   }) => {
     await page.clock.install();
@@ -550,6 +550,43 @@ test.describe("manual title banners on touchscreens", () => {
     });
     const next = hero.getByRole("button", { name: "Next banner photo" });
     const images = JSON.parse((await hero.getAttribute("data-hero-images"))!);
+    const touch = await page.context().newCDPSession(page);
+    const swipe = async (dx: number, dy = 0) => {
+      await hero.scrollIntoViewIfNeeded();
+      const box = (await hero.boundingBox())!;
+      const x = box.x + box.width * (dx < 0 ? 0.75 : 0.25);
+      const y = box.y + box.height * 0.65;
+      await touch.send("Input.dispatchTouchEvent", {
+        type: "touchStart",
+        touchPoints: [{ x, y }],
+      });
+      for (let step = 1; step <= 5; step++) {
+        await touch.send("Input.dispatchTouchEvent", {
+          type: "touchMove",
+          touchPoints: [{ x: x + (dx * step) / 5, y: y + (dy * step) / 5 }],
+        });
+        await page.waitForTimeout(30);
+      }
+      await touch.send("Input.dispatchTouchEvent", {
+        type: "touchEnd",
+        touchPoints: [],
+      });
+    };
+    await swipe(18, 2); // A tap with some jitter must not select a different photo.
+    await expect(hero).toHaveAttribute("data-hero-index", "0");
+    await expect(hero).toHaveAttribute("data-hero-paused", "false");
+    await swipe(5, -110); // Real native touch input must still scroll the page vertically.
+    await expect
+      .poll(() => page.evaluate(() => window.scrollY))
+      .toBeGreaterThan(0);
+    await expect(hero).toHaveAttribute("data-hero-index", "0");
+    await expect(hero).toHaveAttribute("data-hero-paused", "false");
+    await page.evaluate(() => window.scrollTo(0, 0));
+    await swipe(-110);
+    await expect(hero).toHaveAttribute("data-hero-index", "1");
+    await expect(hero).toHaveAttribute("data-hero-paused", "true");
+    await swipe(110);
+    await expect(hero).toHaveAttribute("data-hero-index", "0");
     await next.tap();
     await expect(hero).toHaveAttribute("data-hero-index", "1");
     await expect(hero).toHaveAttribute("data-hero-paused", "true");
@@ -566,9 +603,9 @@ test.describe("manual title banners on touchscreens", () => {
     );
     await page.clock.fastForward(20_000);
     await expect(hero).toHaveAttribute("data-hero-index", "2");
-    await page.screenshot({
+    await previous.evaluate((button) => button.blur());
+    await hero.screenshot({
       path: test.info().outputPath("manual-banner-mobile.png"),
-      fullPage: true,
     });
     await hero
       .getByRole("button", { name: "Play photos in banner slideshow" })

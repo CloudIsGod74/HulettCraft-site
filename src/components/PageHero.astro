@@ -19,9 +19,6 @@ const images = bannerImages(Astro.url.pathname);
   </div>
   <div class="hero-copy"><slot /></div>
   <div class="hero-controls" data-hero-controls hidden>
-    <span class="hero-counter" data-hero-counter aria-hidden="true"
-      >1 / {images.length}</span
-    >
     <button
       type="button"
       data-hero-previous

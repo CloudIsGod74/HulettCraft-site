@@ -305,39 +305,59 @@ nav a:hover {
 .hero-copy {
   position: relative;
 }
-.page-hero.hero-controls-ready {
-  padding-bottom: 1rem;
+.page-hero.hero-swipe-ready {
+  touch-action: pan-y pinch-zoom;
 }
 .hero-controls {
-  position: relative;
-  z-index: 1;
-  display: flex;
-  align-items: center;
-  justify-content: flex-end;
-  gap: 0.5rem;
-  margin-top: 1.25rem;
-}
-.hero-counter {
-  margin-right: 0.25rem;
-  color: var(--muted);
-  font-size: 0.8rem;
-  font-variant-numeric: tabular-nums;
+  position: absolute;
+  inset: 0;
+  z-index: 2;
+  pointer-events: none;
 }
 .hero-controls button {
+  position: absolute;
   display: inline-flex;
   align-items: center;
   justify-content: center;
   width: 44px;
   height: 44px;
   padding: 0.5rem;
-  border: 1px solid rgba(161, 181, 187, 0.4);
+  border: 0;
   border-radius: 6px;
-  background: rgba(8, 16, 30, 0.85);
-  color: var(--text);
+  background: transparent;
+  color: rgba(222, 236, 255, 0.4);
   cursor: pointer;
+  pointer-events: auto;
 }
-.hero-controls button:hover {
-  border-color: var(--accent);
+.hero-controls [data-hero-previous],
+.hero-controls [data-hero-next] {
+  top: 50%;
+  transform: translateY(-50%);
+}
+.hero-controls [data-hero-previous] {
+  left: 0;
+}
+.hero-controls [data-hero-next] {
+  right: 0;
+}
+.hero-controls .hero-pause {
+  right: 0.25rem;
+  bottom: 0.25rem;
+}
+.hero-pause svg {
+  width: 14px;
+  height: 14px;
+}
+.hero-controls button:focus-visible {
+  color: var(--text);
+  background: rgba(8, 16, 30, 0.5);
+  outline-offset: -4px;
+}
+@media (hover: hover) {
+  .hero-controls button:hover {
+    color: var(--text);
+    background: rgba(8, 16, 30, 0.35);
+  }
 }
 .hero-controls button:disabled {
   opacity: 0.55;

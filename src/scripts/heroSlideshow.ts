@@ -11,17 +11,8 @@ for (const hero of document.querySelectorAll<HTMLElement>(
     "[data-hero-previous]",
   );
   const next = hero.querySelector<HTMLButtonElement>("[data-hero-next]");
-  const counter = hero.querySelector<HTMLElement>("[data-hero-counter]");
   const message = hero.querySelector<HTMLElement>("[data-hero-message]");
-  if (
-    !photos ||
-    !controls ||
-    !control ||
-    !previous ||
-    !next ||
-    !counter ||
-    !message
-  )
+  if (!photos || !controls || !control || !previous || !next || !message)
     continue;
   let images: BannerImage[];
   try {
@@ -45,7 +36,7 @@ for (const hero of document.querySelectorAll<HTMLElement>(
   let currentPhoto = photos.querySelector("img");
   hero.dataset.heroIndex = "0";
   controls.hidden = false;
-  hero.classList.add("hero-controls-ready");
+  hero.classList.add("hero-swipe-ready");
   function updateControl() {
     control!
       .querySelector("[data-hero-symbol]")
@@ -62,7 +53,6 @@ for (const hero of document.querySelectorAll<HTMLElement>(
     );
     previous!.disabled = loading;
     next!.disabled = loading;
-    counter!.textContent = `${index + 1} / ${images.length}`;
     hero.dataset.heroPaused = String(paused);
   }
   function setPaused(value: boolean) {
@@ -161,6 +151,42 @@ for (const hero of document.querySelectorAll<HTMLElement>(
   control.addEventListener("click", () => setPaused(!paused));
   previous.addEventListener("click", () => void advance(-1, true));
   next.addEventListener("click", () => void advance(1, true));
+  let swipe: { id: number; x: number; y: number } | undefined;
+  hero.addEventListener("pointerdown", (event) => {
+    if (event.pointerType !== "touch") return;
+    if (!event.isPrimary) {
+      swipe = undefined; // A second finger belongs to a native pinch gesture.
+      return;
+    }
+    if (
+      loading ||
+      (window.visualViewport?.scale ?? 1) > 1 ||
+      (event.target instanceof Element &&
+        event.target.closest(
+          "a, button, input, textarea, select, [contenteditable], [role='button']",
+        ))
+    )
+      return;
+    swipe = { id: event.pointerId, x: event.clientX, y: event.clientY };
+    hero.setPointerCapture(event.pointerId);
+  });
+  hero.addEventListener("pointercancel", () => {
+    swipe = undefined;
+  });
+  hero.addEventListener("pointerup", (event) => {
+    const start = swipe;
+    if (!start || event.pointerId !== start.id) return;
+    swipe = undefined;
+    const dx = event.clientX - start.x;
+    const dy = event.clientY - start.y;
+    // Native vertical scrolling and pinch zoom remain available. Ignore taps and jitter.
+    if (
+      (window.visualViewport?.scale ?? 1) <= 1 &&
+      Math.abs(dx) >= 48 &&
+      Math.abs(dx) > Math.abs(dy) * 1.5
+    )
+      void advance(dx < 0 ? 1 : -1, true);
+  });
   document.addEventListener("visibilitychange", schedule);
   preference.addEventListener("change", () => {
     if (preference.matches) paused = true;
@@ -168,6 +194,7 @@ for (const hero of document.querySelectorAll<HTMLElement>(
     schedule();
   });
   window.addEventListener("pagehide", () => {
+    swipe = undefined;
     pageActive = false;
     stop();
   });
