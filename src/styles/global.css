@@ -314,7 +314,6 @@ nav a:hover {
   background: transparent;
   color: rgba(222, 236, 255, 0.4);
   cursor: pointer;
-  touch-action: manipulation;
   pointer-events: auto;
 }
 .hero-controls button svg {

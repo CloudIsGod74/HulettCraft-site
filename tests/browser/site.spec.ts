@@ -1,4 +1,4 @@
-import { test, expect, type Locator } from "@playwright/test";
+import { test, expect } from "@playwright/test";
 import { readFileSync } from "node:fs";
 import { createSession } from "../../src/lib/adminSession";
 import { png } from "../helpers";
@@ -551,22 +551,6 @@ test.describe("manual title banners on touchscreens", () => {
     const next = hero.getByRole("button", { name: "Next banner photo" });
     const images = JSON.parse((await hero.getAttribute("data-hero-images"))!);
     const touch = await page.context().newCDPSession(page);
-    const tapButton = async (button: Locator) => {
-      await expect(button).toBeEnabled();
-      await button.scrollIntoViewIfNeeded();
-      const box = (await button.boundingBox())!;
-      // Dispatch a real-duration contact sequentially. Playwright's tap sends
-      // start/end concurrently, which can omit the native click in Chromium 145.
-      await touch.send("Input.dispatchTouchEvent", {
-        type: "touchStart",
-        touchPoints: [{ x: box.x + box.width / 2, y: box.y + box.height / 2 }],
-      });
-      await page.waitForTimeout(80);
-      await touch.send("Input.dispatchTouchEvent", {
-        type: "touchEnd",
-        touchPoints: [],
-      });
-    };
     const swipe = async (dx: number, dy = 0) => {
       await hero.scrollIntoViewIfNeeded();
       const box = (await hero.boundingBox())!;
@@ -587,7 +571,7 @@ test.describe("manual title banners on touchscreens", () => {
         type: "touchEnd",
         touchPoints: [],
       });
-      // Let queued gesture processing finish before the next gesture.
+      // Let queued gesture processing finish before another input with the page clock frozen.
       await page.clock.runFor(50);
     };
     await hero.evaluate((element) => {
@@ -621,12 +605,19 @@ test.describe("manual title banners on touchscreens", () => {
     await swipe(18, 2); // A tap with some jitter must not select a different photo.
     await expect(hero).toHaveAttribute("data-hero-index", "0");
     await expect(hero).toHaveAttribute("data-hero-paused", "false");
+    await swipe(5, -110); // Real native touch input must still scroll the page vertically.
+    await expect
+      .poll(() => page.evaluate(() => window.scrollY))
+      .toBeGreaterThan(0);
+    await expect(hero).toHaveAttribute("data-hero-index", "0");
+    await expect(hero).toHaveAttribute("data-hero-paused", "false");
+    await page.evaluate(() => window.scrollTo(0, 0));
     await swipe(-110);
     await expect(hero).toHaveAttribute("data-hero-index", "1");
     await expect(hero).toHaveAttribute("data-hero-paused", "true");
     await swipe(110);
     await expect(hero).toHaveAttribute("data-hero-index", "0");
-    await tapButton(next);
+    await next.tap();
     try {
       await expect(hero).toHaveAttribute("data-hero-index", "1");
     } catch (error) {
@@ -637,7 +628,7 @@ test.describe("manual title banners on touchscreens", () => {
       throw error;
     }
     await expect(hero).toHaveAttribute("data-hero-paused", "true");
-    await tapButton(previous);
+    await previous.tap();
     await expect(hero).toHaveAttribute("data-hero-index", "0");
     await previous.focus();
     await page.keyboard.press("Enter");
@@ -654,26 +645,26 @@ test.describe("manual title banners on touchscreens", () => {
     await hero.screenshot({
       path: test.info().outputPath("manual-banner-mobile.png"),
     });
-    await tapButton(
-      hero.getByRole("button", { name: "Play photos in banner slideshow" }),
-    );
+    await hero
+      .getByRole("button", { name: "Play photos in banner slideshow" })
+      .tap();
     await page.clock.fastForward(8100);
     await expect(hero).toHaveAttribute("data-hero-index", "0");
-    await tapButton(
-      hero.getByRole("button", { name: "Pause photos in banner slideshow" }),
-    );
+    await hero
+      .getByRole("button", { name: "Pause photos in banner slideshow" })
+      .tap();
     await page.emulateMedia({ reducedMotion: "reduce" });
     await page.reload();
     const failed = "**" + images[1].src.replace(/ /g, "%20");
     await page.route(failed, (route) => route.abort());
-    await tapButton(next); // Skip the unavailable next photo and show the other one.
+    await next.tap(); // Skip the unavailable next photo and show the other one.
     await expect(hero).toHaveAttribute("data-hero-index", "2");
     await expect(hero).toHaveAttribute("data-hero-paused", "true");
     await page.reload();
     await page.route("**" + images[2].src.replace(/ /g, "%20"), (route) =>
       route.abort(),
     );
-    await tapButton(next); // Both alternatives are unavailable: preserve the current photo.
+    await next.tap(); // Both alternatives are unavailable: preserve the current photo.
     await expect(hero.locator("[data-hero-message]")).toContainText(
       "Keeping the current photo",
     );
@@ -685,20 +676,10 @@ test.describe("manual title banners on touchscreens", () => {
     );
     await page.goto("/hytale"); // The same controls work for the two-photo Hytale playlist.
     await expect(hero).toHaveAttribute("data-hero-paused", "true");
-    await tapButton(previous);
+    await previous.tap();
     await expect(hero).toHaveAttribute("data-hero-index", "1");
-    await tapButton(next);
+    await next.tap();
     await expect(hero).toHaveAttribute("data-hero-index", "0");
-    // Keep the independent native scrolling check after photo navigation.
-    await tapButton(
-      hero.getByRole("button", { name: "Play photos in banner slideshow" }),
-    );
-    await swipe(5, -110);
-    await expect
-      .poll(() => page.evaluate(() => window.scrollY))
-      .toBeGreaterThan(0);
-    await expect(hero).toHaveAttribute("data-hero-index", "0");
-    await expect(hero).toHaveAttribute("data-hero-paused", "false");
   });
 });
 
