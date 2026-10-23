@@ -571,6 +571,8 @@ test.describe("manual title banners on touchscreens", () => {
         type: "touchEnd",
         touchPoints: [],
       });
+      // Let queued gesture processing finish before another input with the page clock frozen.
+      await page.clock.runFor(50);
     };
     await swipe(18, 2); // A tap with some jitter must not select a different photo.
     await expect(hero).toHaveAttribute("data-hero-index", "0");
