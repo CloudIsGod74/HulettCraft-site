@@ -7,6 +7,10 @@ import {
 } from "../config/applications";
 Astro.response.headers.set("Cache-Control", "no-store");
 const available = !!Astro.locals.runtime?.env?.SESSION;
+Astro.response.headers.set(
+  "X-Application-Storage",
+  available ? "bound" : "missing",
+);
 ---
 
 <BaseLayout title="Request to join HulettCraft SMP">
@@ -41,7 +45,8 @@ const available = !!Astro.locals.runtime?.env?.SESSION;
   {
     !available && (
       <p role="alert">
-        Applications are temporarily unavailable. Please check back later.
+        Applications are temporarily unavailable. You can still fill out the
+        form, but please try sending it later.
       </p>
     )
   }
@@ -67,7 +72,7 @@ const available = !!Astro.locals.runtime?.env?.SESSION;
     enctype="multipart/form-data"
     autocomplete="off"
   >
-    <fieldset class="join-controls" disabled={!available}>
+    <fieldset class="join-controls">
       <legend class="sr-only">HulettCraft SMP application</legend>
       <section class="join-section" aria-labelledby="player-heading">
         <p class="eyebrow">01 · Your player details</p><h2 id="player-heading">

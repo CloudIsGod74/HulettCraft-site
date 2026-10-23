@@ -861,7 +861,8 @@ test("private SMP applications retain failed submissions, save a screenshot, and
   context,
   request,
 }) => {
-  await page.goto("/join");
+  const joinResponse = await page.goto("/join");
+  expect(joinResponse!.headers()["x-application-storage"]).toBe("bound");
   await expect(
     page.getByRole("heading", { name: "A place for your next chapter." }),
   ).toBeVisible();
@@ -878,7 +879,9 @@ test("private SMP applications retain failed submissions, save a screenshot, and
     "",
   );
   await expect(page.getByRole("combobox")).toHaveCount(1); // Engagement only: SMP has no other-server selector.
-  await page.locator("#minecraft").fill("BrowserApplicant");
+  await page.locator("#minecraft").click();
+  await expect(page.locator("#minecraft")).toBeFocused();
+  await page.keyboard.type("BrowserApplicant");
   await page.locator("#discord").fill("browser.applicant");
   await page
     .locator("#proud")
@@ -993,6 +996,69 @@ test("private SMP applications retain failed submissions, save a screenshot, and
     page.getByRole("link", { name: /BrowserApplicant/ }),
   ).toHaveCount(0);
   expect((await page.request.get(imagePath)).status()).toBe(404);
+});
+
+test("application fields remain editable without storage and a failed submission retains answers", async ({
+  page,
+  browser,
+}) => {
+  const response = await page.goto("http://127.0.0.1:4322/join");
+  expect(response!.headers()["x-application-storage"]).toBe("missing");
+  await expect(page.getByRole("alert").first()).toContainText(
+    "temporarily unavailable",
+  );
+  const textFields = {
+    minecraft: "UnavailableTest",
+    discord: "synthetic.unavailable.test",
+    proud: "Synthetic application: testing unavailable storage.",
+    building: "Synthetic application: testing unavailable storage.",
+    hopes: "Synthetic application: testing unavailable storage.",
+    interactions: "Synthetic application: testing unavailable storage.",
+    creators: "Synthetic application: testing unavailable storage.",
+    griefing: "Synthetic application: testing unavailable storage.",
+  };
+  for (const [field, answer] of Object.entries(textFields)) {
+    const input = page.locator("#" + field);
+    await input.click(); // Verify real pointer access, including overlay hit testing.
+    await expect(input).toBeFocused();
+    await page.keyboard.type(answer);
+    await expect(input).toHaveValue(answer);
+  }
+  await page.locator("#engagement").selectOption("balanced");
+  await page.locator('[name="acknowledgement"]').check();
+  const submitted = page.waitForResponse(
+    (response) =>
+      response.url().endsWith("/api/join") &&
+      response.request().method() === "POST",
+  );
+  await page.getByRole("button", { name: "Send application" }).click();
+  expect((await submitted).status()).toBe(503);
+  await expect(page.locator("#join-result")).toContainText(
+    "Your answers are still here.",
+  );
+  await expect(page.locator("#minecraft")).toBeEnabled();
+  await expect(page.locator("#minecraft")).toHaveValue("UnavailableTest");
+  await expect(page.locator("#proud")).toHaveValue(
+    "Synthetic application: testing unavailable storage.",
+  );
+  await expect(page.locator("#join-success")).toBeHidden();
+  await expect(page.locator("#join-form")).toBeVisible();
+  await page
+    .locator("#proud")
+    .fill("I can edit this after the failed attempt, too.");
+  const nativeContext = await browser.newContext({ javaScriptEnabled: false });
+  try {
+    await nativeContext.route("**/api/favicon.png?*", (route) =>
+      route.fulfill({ contentType: "image/png", body: creeperIcon().bytes }),
+    );
+    const native = await nativeContext.newPage();
+    await native.goto("http://127.0.0.1:4322/join");
+    await native.locator("#minecraft").fill("NoScriptTest");
+    await native.locator("#proud").fill("Fields also work without JavaScript.");
+    await expect(native.locator("#minecraft")).toHaveValue("NoScriptTest");
+  } finally {
+    await nativeContext.close();
+  }
 });
 
 test("SMP application page is responsive and supports native submission without JavaScript", async ({
