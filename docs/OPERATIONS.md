@@ -111,3 +111,7 @@ Review commits use Cloudflare's documented `[CF-Pages-Skip]` prefix to prevent a
 ## Community directory
 
 The authenticated `/admin/roster` editor stores its validated roster in the existing `SESSION` KV key `public:community-roster:v1` without expiration. It uses the existing administrator allowlist and exact-Origin write protection. See [Community operations](COMMUNITY.md) for editing, propagation/concurrent-edit limitations, preview namespace isolation and the future Discord plan. No roster migration or new Cloudflare binding is required when `SESSION` already exists.
+
+## Private SMP applications
+
+`/join` collects SMP join requests into the existing private SESSION KV binding, under the separate `private:join-application:v1:<scope>:` prefix. Screenshots are bounded private KV attachments and never enter R2 or the public gallery. Production and preview hostname scopes are separate even with a shared binding. `/admin/applications` requires the existing allowlisted admin session; review/deletion mutations require exact Origin. See [application operations](APPLICATIONS.md) for private retention, pagination, KV consistency, rate protection, and live verification. No Discord notification or server access changes are automated.

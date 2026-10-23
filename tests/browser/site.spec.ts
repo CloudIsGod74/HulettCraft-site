@@ -1,4 +1,5 @@
 import { test, expect } from "@playwright/test";
+import { readFileSync } from "node:fs";
 import { createSession } from "../../src/lib/adminSession";
 import { png } from "../helpers";
 import { creeperIcon, icon } from "../fixtures/serverIcon";
@@ -49,6 +50,7 @@ test("world pages render and contain no live-map navigation, embeds, or horizont
       "/gallery/modded",
       "/gallery/upload",
       "/community",
+      "/join",
       "/admin/login",
     ]) {
       errors.length = 0;
@@ -631,4 +633,202 @@ test("roster storage load failures disable editing instead of presenting an empt
     "Editing is disabled until the saved roster can be loaded.",
   );
   await expect(page.locator("#roster-form")).toBeHidden();
+});
+
+test("private SMP applications retain failed submissions, save a screenshot, and support authenticated review and deletion", async ({
+  page,
+  context,
+  request,
+}) => {
+  await page.goto("/join");
+  await expect(
+    page.getByRole("heading", { name: "A place for your next chapter." }),
+  ).toBeVisible();
+  await expect(page.locator('[name="creators"]')).not.toHaveAttribute(
+    "required",
+    "",
+  );
+  await expect(page.locator('[name="griefing"]')).not.toHaveAttribute(
+    "required",
+    "",
+  );
+  await expect(page.locator('[name="screenshot"]')).not.toHaveAttribute(
+    "required",
+    "",
+  );
+  await expect(page.getByRole("combobox")).toHaveCount(1); // Engagement only: SMP has no other-server selector.
+  await page.locator("#minecraft").fill("BrowserApplicant");
+  await page.locator("#discord").fill("browser.applicant");
+  await page
+    .locator("#proud")
+    .fill("A village with friends. <img src=x onerror=alert(1)>");
+  await page.locator("#building").fill("Cozy towns and redstone farms.");
+  await page.locator("#hopes").fill("A lasting world and friendly neighbors.");
+  await page
+    .locator("#interactions")
+    .fill("Trading, chatting and community builds.");
+  await page.locator("#engagement").selectOption("balanced");
+  const imageBytes = readFileSync("public/images/home/HCS4.jpg");
+  await page.locator("#screenshot").setInputFiles({
+    name: "private-build.jpg",
+    mimeType: "image/jpeg",
+    buffer: imageBytes,
+  });
+  await page.locator('[name="acknowledgement"]').check();
+  await page.route("**/api/join", (route) =>
+    route.fulfill({
+      status: 503,
+      body: "Applications are temporarily unavailable.",
+    }),
+  );
+  await page.getByRole("button", { name: "Send application" }).click();
+  await expect(page.locator("#join-result")).toContainText(
+    "Your answers are still here.",
+  );
+  await expect(page.locator("#minecraft")).toHaveValue("BrowserApplicant");
+  expect(
+    await page
+      .locator("#screenshot")
+      .evaluate((input: HTMLInputElement) => input.files?.length),
+  ).toBe(1);
+  await page.unroute("**/api/join");
+  await page.getByRole("button", { name: "Send application" }).click();
+  await expect(page.locator("#join-success")).toBeVisible();
+  await expect(page.locator("#join-form")).toBeHidden();
+  await expect(page.locator("#minecraft")).toHaveValue("");
+  await context.addCookies([
+    {
+      name: "admin_session",
+      value: await createSession("cloudisgod74", secret),
+      url: "http://127.0.0.1:4321",
+    },
+  ]);
+  await page.goto("/admin/pending");
+  await page
+    .getByRole("link", { name: "Join applications", exact: true })
+    .click();
+  await page.getByRole("link", { name: /BrowserApplicant/ }).click();
+  await expect(page.locator("h1")).toHaveText("BrowserApplicant");
+  await expect(
+    page.getByText("browser.applicant", { exact: true }),
+  ).toBeVisible();
+  await expect(
+    page.getByText("A village with friends. <img src=x onerror=alert(1)>", {
+      exact: true,
+    }),
+  ).toBeVisible();
+  await expect(page.locator(".application-answers img")).toHaveCount(0);
+  const id = (await page
+    .locator("#application-review")
+    .getAttribute("data-id"))!;
+  const imagePath = `/api/admin/applications/${id}/screenshot`;
+  expect((await request.get(imagePath)).status()).toBe(401);
+  expect((await request.get(`/api/admin/applications/${id}`)).status()).toBe(
+    401,
+  );
+  const image = await page.request.get(imagePath);
+  expect(image.status()).toBe(200);
+  expect(image.headers()["cache-control"]).toContain("private, no-store");
+  expect(await image.body()).toEqual(imageBytes);
+  expect(
+    (
+      await request.get(
+        "/api/gallery/image?key=" +
+          encodeURIComponent("private:join-application:v1:" + id),
+      )
+    ).status(),
+  ).toBe(404);
+  expect(await (await request.get("/community")).text()).not.toContain(
+    "browser.applicant",
+  );
+  await page.locator("#application-status").selectOption("reviewing");
+  await page
+    .locator("#application-note")
+    .fill("Follow up manually on Discord.");
+  await page.getByRole("button", { name: "Save review", exact: true }).click();
+  await expect(page.locator("#review-result")).toContainText("Review saved.");
+  await page.reload();
+  await expect(page.locator("#application-status")).toHaveValue("reviewing");
+  await expect(page.locator("#application-note")).toHaveValue(
+    "Follow up manually on Discord.",
+  );
+  await page.evaluate(() => window.scrollTo(0, 0));
+  await page.screenshot({
+    path: test.info().outputPath("application-review-desktop.png"),
+    fullPage: true,
+  });
+  page.once("dialog", (dialog) => dialog.accept());
+  await page
+    .getByRole("button", { name: "Delete application and screenshot" })
+    .click();
+  await expect(page).toHaveURL(/\/admin\/applications$/);
+  await expect(
+    page.getByRole("link", { name: /BrowserApplicant/ }),
+  ).toHaveCount(0);
+  expect((await page.request.get(imagePath)).status()).toBe(404);
+});
+
+test("SMP application page is responsive and supports native submission without JavaScript", async ({
+  browser,
+  page,
+}) => {
+  await page.goto("/join");
+  await page.screenshot({
+    path: test.info().outputPath("join-desktop.png"),
+    fullPage: true,
+  });
+  await page.setViewportSize({ width: 375, height: 900 });
+  expect(
+    await page.evaluate(
+      () => document.documentElement.scrollWidth <= innerWidth + 1,
+    ),
+  ).toBe(true);
+  await page.screenshot({
+    path: test.info().outputPath("join-mobile.png"),
+    fullPage: true,
+  });
+  const context = await browser.newContext({ javaScriptEnabled: false });
+  try {
+    const native = await context.newPage();
+    await native.goto("http://127.0.0.1:4321/join");
+    await native.locator("#minecraft").fill("NoScriptPlayer");
+    await native.locator("#discord").fill("native.player");
+    for (const field of ["proud", "building", "hopes", "interactions"])
+      await native
+        .locator("#" + field)
+        .fill("A short answer from a local test applicant.");
+    await native.locator("#engagement").selectOption("independent");
+    await native.locator('[name="acknowledgement"]').check();
+    const submitted = native.waitForResponse(
+      (response) =>
+        response.url().endsWith("/api/join") &&
+        response.request().method() === "POST",
+    );
+    await native.getByRole("button", { name: "Send application" }).click();
+    const nativeResponse = await submitted;
+    expect(nativeResponse.status()).toBe(303);
+    await expect(native).toHaveURL(/\/join\/thanks$/);
+    await expect(
+      native.getByRole("heading", { name: "Thanks for introducing yourself." }),
+    ).toBeVisible();
+  } finally {
+    await context.close();
+  }
+});
+
+test("application review pages and attachments reject visitors without admin login", async ({
+  page,
+  request,
+}) => {
+  await page.goto("/admin/applications");
+  await expect(page).toHaveURL(/\/admin\/login$/);
+  await page.goto(
+    "/admin/applications/0000000000000-00000000-0000-4000-8000-000000000000",
+  );
+  await expect(page).toHaveURL(/\/admin\/login$/);
+  const response = await request.get(
+    "/api/admin/applications/0000000000000-00000000-0000-4000-8000-000000000000/screenshot",
+  );
+  expect(response.status()).toBe(401);
+  expect(response.headers()["cache-control"]).toContain("private, no-store");
 });

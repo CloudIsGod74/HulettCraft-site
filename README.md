@@ -33,6 +33,7 @@ Browser tests build the site and run the compiled Pages output with local Wrangl
 - src/config/hulettcraft.ts: season titles, descriptions, and current season.
 - src/config/servers.ts: existing game-server addresses and status-provider targets.
 - /admin/roster: authenticated community member editor; [roster operations and future Discord sync](docs/COMMUNITY.md).
+- /join and /admin/applications: private HulettCraft SMP applications and administrator review; [application operations](docs/APPLICATIONS.md).
 - public/images: existing static photographs/screenshots, retained in place.
 - tests: API/security tests with memory-only storage and browser tests with local Cloudflare emulation.
 

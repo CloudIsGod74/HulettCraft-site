@@ -1,5 +1,11 @@
 import { defineMiddleware } from "astro:middleware";
+import { applicationScopeForHost } from "./config/applications";
 export const onRequest = defineMiddleware(async (context, next) => {
+  // Keep application trials on Pages/local hosts out of the production queue,
+  // even when a preview happens to share the existing SESSION binding.
+  context.locals.applicationScope = applicationScopeForHost(
+    context.url.hostname,
+  );
   const response = await next();
   response.headers.set("X-Content-Type-Options", "nosniff");
   response.headers.set("Referrer-Policy", "strict-origin-when-cross-origin");

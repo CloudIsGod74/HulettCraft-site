@@ -1,0 +1,101 @@
+---
+import BaseLayout from "../../../layouts/BaseLayout.astro";
+import PageHero from "../../../components/PageHero.astro";
+import { requireAdmin } from "../../../lib/requireAdmin";
+import { listApplications } from "../../../lib/applications";
+import { APPLICATION_STATUSES } from "../../../config/applications";
+Astro.response.headers.set("Cache-Control", "private, no-store");
+if (!(await requireAdmin(Astro.request, Astro.locals)))
+  return Astro.redirect("/admin/login");
+let page: Awaited<ReturnType<typeof listApplications>> | undefined;
+try {
+  page = await listApplications(
+    Astro.locals,
+    Astro.url.searchParams.get("cursor") || undefined,
+  );
+} catch {
+  Astro.response.status = 503;
+}
+---
+
+<BaseLayout title="Join applications | HulettCraft Admin">
+  <PageHero
+    ><h1>Join applications</h1><p>
+      Private introductions from people who would like to join HulettCraft SMP.
+    </p></PageHero
+  >
+  <nav class="admin-roster-nav" aria-label="Administrator tools">
+    <a href="/admin/pending">Pending screenshots</a><a href="/admin/roster"
+      >Member roster</a
+    ><a href="/join">View application form</a>
+  </nav>
+  <p class="muted">
+    Newest submissions appear first. New applications and review updates may
+    take about a minute to appear. Please use one reviewer per application at a
+    time.
+  </p>
+  {
+    !page ? (
+      <p role="alert">
+        Applications could not be loaded. Please refresh or try again later.
+      </p>
+    ) : (
+      <>
+        {page.applications.length === 0 && (
+          <p class="card">No applications on this page yet.</p>
+        )}
+        <div class="application-list">
+          {page.applications.map((application) => (
+            <a
+              class="card application-summary"
+              href={"/admin/applications/" + application.id}
+            >
+              <div>
+                <p class="eyebrow">
+                  {
+                    APPLICATION_STATUSES.find(
+                      (status) => status.value === application.status,
+                    )?.label
+                  }
+                </p>
+                <h2>{application.minecraft}</h2>
+                <p class="muted">
+                  Submitted{" "}
+                  <time datetime={application.createdAt}>
+                    {new Date(application.createdAt).toLocaleString("en-US", {
+                      timeZone: "America/Chicago",
+                      dateStyle: "medium",
+                      timeStyle: "short",
+                    })}{" "}
+                    Central
+                  </time>
+                </p>
+              </div>
+              <span>Read application →</span>
+            </a>
+          ))}
+        </div>
+        {page.cursor && (
+          <p>
+            <a
+              class="application-next"
+              href={
+                "/admin/applications?" +
+                new URLSearchParams({ cursor: page.cursor })
+              }
+            >
+              Next page →
+            </a>
+          </p>
+        )}
+        {Astro.url.searchParams.has("cursor") && (
+          <p>
+            <a class="application-next" href="/admin/applications">
+              Back to newest applications
+            </a>
+          </p>
+        )}
+      </>
+    )
+  }
+</BaseLayout>
