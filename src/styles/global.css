@@ -316,6 +316,9 @@ nav a:hover {
   cursor: pointer;
   pointer-events: auto;
 }
+.hero-controls button svg {
+  pointer-events: none;
+}
 .hero-controls [data-hero-previous],
 .hero-controls [data-hero-next] {
   top: 50%;
