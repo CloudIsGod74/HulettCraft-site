@@ -2,6 +2,7 @@
 import PageHero from "../components/PageHero.astro";
 import BaseLayout from "../layouts/BaseLayout.astro";
 import ServerState from "../components/ServerState.astro";
+import WorldArtwork from "../components/WorldArtwork.astro";
 import { SERVERS } from "../config/servers";
 ---
 
@@ -12,29 +13,92 @@ import { SERVERS } from "../config/servers";
       deeper into their history, screenshots, and seasons.
     </p>
   </PageHero>
-  <section class="server-grid">
+  <section class="server-grid world-grid" aria-label="Explore our worlds">
     {
       SERVERS.map((server) => (
-        <div class="card card-link">
+        <article class={`card card-link world-card world-card-${server.id}`}>
           <a
             href={server.gallery}
             class="card-overlay"
             aria-label={server.title}
           />
-          <>
-            <h3>{server.title}</h3>
+          <div class="world-card-visual" aria-hidden="true">
+            {server.id === "hulettcraft" ? (
+              <img
+                src="/images/home/HCS4.jpg"
+                alt=""
+                width="2048"
+                height="1109"
+                loading="lazy"
+                decoding="async"
+              />
+            ) : server.id === "hytale" ? (
+              <img
+                src="/images/gallery/hytale/hytaleserver.jpg"
+                alt=""
+                width="2162"
+                height="1009"
+                loading="lazy"
+                decoding="async"
+              />
+            ) : (
+              <WorldArtwork kind={server.id} />
+            )}
+            <span class="world-card-tag">
+              {server.id === "hulettcraft"
+                ? "Survival"
+                : server.id === "creative"
+                  ? "Creative"
+                  : server.id === "modded"
+                    ? "Seasonal / Modded"
+                    : "Hytale · Beta"}
+            </span>
+          </div>
+          <div class="world-card-body">
+            <h2>{server.title}</h2>
             <ServerState id={server.id} />
-          </>
-          <p class="muted">{server.description}</p>
-          <button
-            type="button"
-            class="ip copyable"
-            data-copy={server.address}
-            title="Click to copy"
-          >
-            {server.address}
-          </button>
-        </div>
+            <p class="muted">{server.description}</p>
+            <span class="world-card-explore" aria-hidden="true">
+              Explore gallery
+              <svg
+                width="18"
+                height="18"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="1.5"
+              >
+                <path d="M6 18 18 6M6 6h12v12" />
+              </svg>
+            </span>
+            <button
+              type="button"
+              class="ip copyable world-card-address"
+              data-copy={server.address}
+              title="Copy server address"
+              aria-label={`Copy ${server.address}`}
+            >
+              <span data-copy-label aria-live="polite">
+                {server.address}
+              </span>
+              <svg
+                width="16"
+                height="16"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="1.5"
+                aria-hidden="true"
+                focusable="false"
+              >
+                <>
+                  <rect x="8" y="8" width="12" height="12" rx="2" />
+                  <path d="M16 8V4H4v12h4" />
+                </>
+              </svg>
+            </button>
+          </div>
+        </article>
       ))
     }
   </section>

@@ -116,6 +116,64 @@ test("world pages render and contain no live-map navigation, embeds, or horizont
     fullPage: true,
   });
 });
+test("visual Worlds cards keep live status, keyboard address copying and gallery links usable", async ({
+  page,
+  context,
+}) => {
+  await context.grantPermissions(["clipboard-read", "clipboard-write"]);
+  await page.setViewportSize({ width: 1440, height: 1000 });
+  await page.goto("/worlds");
+  const cards = page.locator(".world-card");
+  for (const card of await cards.all()) {
+    const button = card.getByRole("button");
+    const address = await button.getAttribute("data-copy");
+    await button.focus();
+    await page.keyboard.press("Enter");
+    await expect(button.locator("[data-copy-label]")).toHaveText("Copied!");
+    expect(await page.evaluate(() => navigator.clipboard.readText())).toBe(
+      address,
+    );
+    await expect(page).toHaveURL(/\/worlds$/);
+    await expect(button.locator("svg")).toBeVisible();
+  }
+  await expect(
+    page.locator('[data-status-server="hulettcraft"]'),
+  ).toContainText("Online");
+  await expect(page.locator('[data-status-server="modded"]')).toContainText(
+    "Offline",
+  );
+  for (const img of await cards.locator("img").all()) {
+    await img.scrollIntoViewIfNeeded();
+    await expect
+      .poll(() =>
+        img.evaluate((node) => (node as HTMLImageElement).naturalWidth),
+      )
+      .toBeGreaterThan(0);
+  }
+  await page.evaluate(() => window.scrollTo(0, 0));
+  await page.screenshot({
+    path: test.info().outputPath("desktop-worlds.png"),
+    fullPage: true,
+  });
+  await page.setViewportSize({ width: 375, height: 900 });
+  await page.evaluate(() => window.scrollTo(0, 0));
+  await page.waitForTimeout(1300); // Allow copy feedback to restore the address before visual review.
+  await page.screenshot({
+    path: test.info().outputPath("mobile-worlds.png"),
+    fullPage: true,
+  });
+  const smp = page.getByRole("link", { name: "HulettCraft SMP", exact: true });
+  await smp.focus();
+  await page.keyboard.press("Enter");
+  await expect(page).toHaveURL(/\/gallery\/hulettcraft$/);
+  await page.goto("/worlds");
+  // The decorative image and its label must not intercept the full-card link.
+  await page
+    .getByRole("link", { name: "Creative Server", exact: true })
+    .click({ position: { x: 25, y: 25 } });
+  await expect(page).toHaveURL(/\/gallery$/);
+});
+
 test("mobile navigation opens by keyboard and Escape returns focus", async ({
   page,
 }) => {
