@@ -13,7 +13,7 @@ import { SERVERS } from "../config/servers";
   <section class="server-grid">
     {
       SERVERS.map((server) => (
-        <div class="card card-link">
+        <div class="card card-link status-card">
           <a
             class="card-overlay"
             href={server.id === "hytale" ? "/hytale" : server.gallery}
@@ -21,7 +21,9 @@ import { SERVERS } from "../config/servers";
           />
           <>
             <h3>{server.title}</h3>
-            <div class="node">Node: {server.node}</div>
+            <div class="node">
+              Node: <strong>{server.node}</strong>
+            </div>
           </>
           <button
             type="button"

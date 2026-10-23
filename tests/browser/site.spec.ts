@@ -74,6 +74,39 @@ test("world pages render and contain no live-map navigation, embeds, or horizont
     path: test.info().outputPath("desktop-worlds.png"),
     fullPage: true,
   });
+  await page.route("**/api/server-status.json", (route) =>
+    route.fulfill({
+      json: {
+        hulettcraft: {
+          state: "online",
+          players: { online: 3, max: 20 },
+          version: "1.21.4",
+        },
+        creative: { state: "offline" },
+        modded: { state: "offline" },
+        hytale: { state: "unavailable" },
+      },
+    }),
+  );
+  await page.goto("/status");
+  await expect(
+    page.locator('[data-status-server="hulettcraft"]'),
+  ).toContainText("3/20");
+  await page.screenshot({
+    path: test.info().outputPath("desktop-status.png"),
+    fullPage: true,
+  });
+  await page.setViewportSize({ width: 375, height: 900 });
+  await page.screenshot({
+    path: test.info().outputPath("mobile-status.png"),
+    fullPage: true,
+  });
+  await page.setViewportSize({ width: 1440, height: 900 });
+  await page.goto("/");
+  await page.screenshot({
+    path: test.info().outputPath("desktop-home.png"),
+    fullPage: true,
+  });
   await page.goto("/gallery/hulettcraft/season-8");
   await page.screenshot({
     path: test.info().outputPath("desktop-gallery.png"),
@@ -131,6 +164,20 @@ test("status pages share results and render external values as text", async ({
   page,
 }) => {
   await page.goto("/status");
+  await expect(
+    page.getByRole("link", { name: "Status", exact: true }),
+  ).toHaveAttribute("aria-current", "page");
+  await page.context().grantPermissions(["clipboard-read", "clipboard-write"]);
+  await page
+    .getByRole("button", { name: "play.hulettcraft.com", exact: true })
+    .click();
+  await expect(
+    page.getByRole("button", { name: "Copied!", exact: true }),
+  ).toBeVisible();
+  expect(await page.evaluate(() => navigator.clipboard.readText())).toBe(
+    "play.hulettcraft.com",
+  );
+  await expect(page).toHaveURL(/\/status$/);
   await expect(
     page.locator('[data-status-server="hulettcraft"]'),
   ).toContainText("3/20");
