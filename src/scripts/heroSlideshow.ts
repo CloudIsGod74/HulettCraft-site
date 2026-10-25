@@ -148,9 +148,86 @@ for (const hero of document.querySelectorAll<HTMLElement>(
       schedule();
     }
   }
-  control.addEventListener("click", () => setPaused(!paused));
-  previous.addEventListener("click", () => void advance(-1, true));
-  next.addEventListener("click", () => void advance(1, true));
+  let controlTouch:
+    | { button: HTMLButtonElement; id: number; x: number; y: number }
+    | undefined;
+  let suppressTouchClick = false;
+  const actions: [HTMLButtonElement, () => void][] = [
+    [control, () => setPaused(!paused)],
+    [previous, () => void advance(-1, true)],
+    [next, () => void advance(1, true)],
+  ];
+  for (const [button, activate] of actions) {
+    button.addEventListener("pointerdown", (event) => {
+      if (event.pointerType !== "touch") {
+        controlTouch = undefined;
+        suppressTouchClick = false;
+        return;
+      }
+      suppressTouchClick = true;
+      if (!event.isPrimary || button.disabled) {
+        controlTouch = undefined;
+        return;
+      }
+      controlTouch = {
+        button,
+        id: event.pointerId,
+        x: event.clientX,
+        y: event.clientY,
+      };
+    });
+    button.addEventListener("pointermove", (event) => {
+      const start = controlTouch;
+      if (
+        start?.id === event.pointerId &&
+        Math.hypot(event.clientX - start.x, event.clientY - start.y) > 12
+      )
+        controlTouch = undefined;
+    });
+    button.addEventListener("pointerup", (event) => {
+      const start = controlTouch;
+      if (!start || start.button !== button || start.id !== event.pointerId)
+        return;
+      controlTouch = undefined;
+      const box = button.getBoundingClientRect();
+      if (
+        button.disabled ||
+        Math.hypot(event.clientX - start.x, event.clientY - start.y) > 12 ||
+        event.clientX < box.left ||
+        event.clientX > box.right ||
+        event.clientY < box.top ||
+        event.clientY > box.bottom
+      )
+        return;
+      // Some touch sequences have pointerup without a synthesized click. Handle
+      // the tap once here, then ignore its optional compatibility click below.
+      suppressTouchClick = true;
+      activate();
+    });
+    button.addEventListener("pointercancel", () => {
+      controlTouch = undefined;
+    });
+    button.addEventListener("click", (event) => {
+      const pointerType = (event as PointerEvent).pointerType;
+      if (
+        pointerType === "touch" ||
+        (suppressTouchClick && event.detail > 0 && !pointerType)
+      ) {
+        suppressTouchClick = false;
+        return;
+      }
+      suppressTouchClick = false;
+      activate(); // Native mouse clicks and keyboard/assistive activation remain available.
+    });
+  }
+  document.addEventListener(
+    "pointerdown",
+    (event) => {
+      if (event.pointerType === "touch" && !event.isPrimary)
+        controlTouch = undefined;
+    },
+    { capture: true, passive: true },
+  );
   let swipe: { id: number; x: number; y: number } | undefined;
   hero.addEventListener("pointerdown", (event) => {
     if (event.pointerType !== "touch") return;
@@ -196,6 +273,8 @@ for (const hero of document.querySelectorAll<HTMLElement>(
   });
   window.addEventListener("pagehide", () => {
     swipe = undefined;
+    controlTouch = undefined;
+    suppressTouchClick = false;
     pageActive = false;
     stop();
   });

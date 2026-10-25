@@ -603,6 +603,45 @@ test.describe("manual title banners on touchscreens", () => {
         );
       }
     });
+    // Moving out and back or using two fingers on a control must not activate it.
+    const buttonBox = (await next.boundingBox())!;
+    const buttonX = buttonBox.x + buttonBox.width / 2;
+    const buttonY = buttonBox.y + buttonBox.height / 2;
+    await touch.send("Input.dispatchTouchEvent", {
+      type: "touchStart",
+      touchPoints: [{ x: buttonX, y: buttonY, id: 1 }],
+    });
+    await touch.send("Input.dispatchTouchEvent", {
+      type: "touchMove",
+      touchPoints: [{ x: buttonX + 18, y: buttonY, id: 1 }],
+    });
+    await touch.send("Input.dispatchTouchEvent", {
+      type: "touchMove",
+      touchPoints: [{ x: buttonX, y: buttonY, id: 1 }],
+    });
+    await touch.send("Input.dispatchTouchEvent", {
+      type: "touchEnd",
+      touchPoints: [],
+    });
+    await expect(hero).toHaveAttribute("data-hero-index", "0");
+    await expect(hero).toHaveAttribute("data-hero-paused", "false");
+    await touch.send("Input.dispatchTouchEvent", {
+      type: "touchStart",
+      touchPoints: [{ x: buttonX, y: buttonY, id: 1 }],
+    });
+    await touch.send("Input.dispatchTouchEvent", {
+      type: "touchStart",
+      touchPoints: [
+        { x: buttonX, y: buttonY, id: 1 },
+        { x: buttonX - 20, y: buttonY, id: 2 },
+      ],
+    });
+    await touch.send("Input.dispatchTouchEvent", {
+      type: "touchEnd",
+      touchPoints: [],
+    });
+    await expect(hero).toHaveAttribute("data-hero-index", "0");
+    await expect(hero).toHaveAttribute("data-hero-paused", "false");
     await swipe(18, 2); // A tap with some jitter must not select a different photo.
     await expect(hero).toHaveAttribute("data-hero-index", "0");
     await expect(hero).toHaveAttribute("data-hero-paused", "false");
@@ -644,6 +683,10 @@ test.describe("manual title banners on touchscreens", () => {
     }
     await expect(hero).toHaveAttribute("data-hero-paused", "true");
     await previous.tap();
+    await expect(hero).toHaveAttribute("data-hero-index", "0");
+    await next.click(); // A touch tap must not suppress a later mouse click.
+    await expect(hero).toHaveAttribute("data-hero-index", "1");
+    await previous.click();
     await expect(hero).toHaveAttribute("data-hero-index", "0");
     await previous.focus();
     await page.keyboard.press("Enter");
