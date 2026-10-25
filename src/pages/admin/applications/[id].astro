@@ -83,10 +83,10 @@ if (application) {
           <h2 id="application-email-heading">Application email</h2>
           <p id="application-email-result" role="status" aria-live="polite">
             {emailState === "sent"
-              ? "Email service accepted this application for support@hulettcraft.com. Inbox delivery is not confirmed here."
+              ? "The sending service accepted this application for support@hulettcraft.com. Forwarding and inbox delivery are not confirmed here."
               : emailEnabled
-                ? "Email delivery has not been confirmed. The application is safely saved here; you can retry sending it to support@hulettcraft.com."
-                : "Email is not configured or enabled in this environment. The application is safely saved here."}
+                ? "Email delivery has not been confirmed. The application is safely saved here. Check Cloudflare Email Sending activity before retrying; a previous attempt may have been accepted."
+                : "Cloudflare email sending is not configured or enabled in this environment. The application is safely saved here."}
           </p>
           {emailState !== "sent" && (
             <button

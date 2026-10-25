@@ -11,7 +11,8 @@ export interface Env {
   APPLICATION_EMAIL_ENABLED?: string;
   APPLICATION_EMAIL_PREVIEW_ENABLED?: string;
   APPLICATION_EMAIL_FROM?: string;
-  RESEND_API_KEY?: string;
+  CLOUDFLARE_ACCOUNT_ID?: string;
+  CLOUDFLARE_EMAIL_API_TOKEN?: string;
   UPLOAD_RATE_LIMITER?: {
     limit(options: { key: string }): Promise<{ success: boolean }>;
   };

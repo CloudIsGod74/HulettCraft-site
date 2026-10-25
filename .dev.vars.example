@@ -3,3 +3,9 @@ ADMIN_SESSION_SECRET=replace-with-a-random-local-secret-at-least-32-characters
 # GitHub OAuth is optional locally. Use a separate local OAuth application.
 # GITHUB_CLIENT_ID=
 # GITHUB_CLIENT_SECRET=
+# Optional Cloudflare application email. Local/preview mail stays off by default.
+# CLOUDFLARE_ACCOUNT_ID=
+# CLOUDFLARE_EMAIL_API_TOKEN= # Secret; Email Sending: Edit, scoped to the account.
+# APPLICATION_EMAIL_ENABLED=true
+# APPLICATION_EMAIL_PREVIEW_ENABLED=true
+# APPLICATION_EMAIL_FROM=applications@hulettcraft.com

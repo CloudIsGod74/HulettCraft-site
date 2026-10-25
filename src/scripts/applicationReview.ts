@@ -3,6 +3,14 @@ const retryEmail = document.querySelector<HTMLButtonElement>(
   "#retry-application-email",
 );
 retryEmail?.addEventListener("click", async () => {
+  // Cloudflare's sending API does not document an idempotency-key guarantee.
+  // A timeout can occur after acceptance; check activity before a manual retry.
+  if (
+    !confirm(
+      "Check Cloudflare Email Sending activity first. If this message was already accepted, retrying may send a duplicate. Send the application email?",
+    )
+  )
+    return;
   const result = document.querySelector<HTMLElement>(
     "#application-email-result",
   )!;
@@ -15,7 +23,7 @@ retryEmail?.addEventListener("click", async () => {
     );
     if (!response.ok) throw new Error(await response.text());
     result.textContent =
-      "Email service accepted this application for support@hulettcraft.com. Check the mailbox to confirm delivery.";
+      "Cloudflare accepted this application email for support@hulettcraft.com. Check forwarding and your inbox to confirm delivery.";
     retryEmail.hidden = true;
   } catch (error) {
     result.textContent =

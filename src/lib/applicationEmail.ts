@@ -27,13 +27,20 @@ export function emailConfiguration(locals: App.Locals) {
   )
     return undefined;
   if (
-    !env.RESEND_API_KEY ||
+    !env.CLOUDFLARE_EMAIL_API_TOKEN ||
+    !/^[a-f0-9]{32}$/i.test(env.CLOUDFLARE_ACCOUNT_ID ?? "") ||
     !/^[a-zA-Z0-9._%+-]+@(?:[a-zA-Z0-9-]+\.)*hulettcraft\.com$/.test(
-      env.APPLICATION_EMAIL_FROM ?? "",
+      env.APPLICATION_EMAIL_FROM ?? "applications@hulettcraft.com",
     )
   )
-    throw new Error("Application email sender or API key is not configured");
-  return { key: env.RESEND_API_KEY, from: env.APPLICATION_EMAIL_FROM! };
+    throw new Error(
+      "Cloudflare email sender, account ID or sending token is not configured",
+    );
+  return {
+    key: env.CLOUDFLARE_EMAIL_API_TOKEN,
+    accountId: env.CLOUDFLARE_ACCOUNT_ID!,
+    from: env.APPLICATION_EMAIL_FROM ?? "applications@hulettcraft.com",
+  };
 }
 
 export async function readApplicationEmail(
@@ -58,7 +65,7 @@ function message(locals: App.Locals, application: JoinApplication) {
       ? scopeHost
       : "hulettcraft.com";
   return {
-    to: [APPLICATION_EMAIL_TO],
+    to: APPLICATION_EMAIL_TO,
     subject: `${preview ? "[PREVIEW TEST] " : ""}HulettCraft SMP application: ${application.minecraft}`,
     // Plain text prevents applicant answers from becoming HTML or email headers.
     text: [
@@ -81,6 +88,26 @@ function message(locals: App.Locals, application: JoinApplication) {
   };
 }
 
+function cloudflareAccepted(value: unknown) {
+  if (
+    !isRecord(value) ||
+    value.success !== true ||
+    !Array.isArray(value.errors) ||
+    value.errors.length !== 0 ||
+    !isRecord(value.result)
+  )
+    return false;
+  const { delivered, queued, permanent_bounces } = value.result;
+  return (
+    Array.isArray(delivered) &&
+    Array.isArray(queued) &&
+    Array.isArray(permanent_bounces) &&
+    permanent_bounces.length === 0 &&
+    delivered.length + queued.length === 1 &&
+    (delivered[0] ?? queued[0]) === APPLICATION_EMAIL_TO
+  );
+}
+
 /** Save the application first. Email failure must never invite duplicate applications. */
 export async function notifyApplication(
   locals: App.Locals,
@@ -92,38 +119,28 @@ export async function notifyApplication(
     if (!config) return "disabled";
     if ((await readApplicationEmail(locals, application.id)) === "sent")
       return "sent";
-    const hash = new Uint8Array(
-      await crypto.subtle.digest(
-        "SHA-256",
-        new TextEncoder().encode(locals.applicationScope ?? "test"),
-      ),
-    );
-    const scope = Array.from(hash, (byte) =>
-      byte.toString(16).padStart(2, "0"),
-    ).join("");
-    const response = await fetch("https://api.resend.com/emails", {
-      method: "POST",
-      redirect: "manual", // workerd supports follow/manual only; reject redirects below.
-      signal: AbortSignal.timeout(8000),
-      headers: {
-        Authorization: `Bearer ${config.key}`,
-        "Content-Type": "application/json",
-        "Idempotency-Key": `join-${scope}-${application.id}`,
+    const response = await fetch(
+      `https://api.cloudflare.com/client/v4/accounts/${config.accountId}/email/sending/send`,
+      {
+        method: "POST",
+        redirect: "manual", // workerd supports follow/manual only; reject redirects below.
+        signal: AbortSignal.timeout(8000),
+        headers: {
+          Authorization: `Bearer ${config.key}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          from: config.from,
+          ...message(locals, application),
+        }),
       },
-      body: JSON.stringify({
-        from: config.from,
-        ...message(locals, application),
-      }),
-    });
+    );
     // Consume the response within the timeout; provider acceptance is not inbox delivery.
     const result: unknown = response.ok ? await response.json() : undefined;
-    if (
-      !response.ok ||
-      !isRecord(result) ||
-      typeof result.id !== "string" ||
-      !result.id
-    )
-      throw new Error("Email service did not confirm acceptance");
+    // HTTP 200 alone is insufficient: Cloudflare reports outcomes per recipient.
+    // Only our fixed support address being delivered or queued counts as accepted.
+    if (!response.ok || !cloudflareAccepted(result))
+      throw new Error("Cloudflare did not confirm acceptance for support");
     accepted = true;
     await applicationStore(locals).put(
       applicationEmailKey(locals, application.id),

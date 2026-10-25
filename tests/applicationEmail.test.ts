@@ -14,6 +14,12 @@ import {
 import { POST as submit } from "../src/pages/api/join";
 import { POST as retry } from "../src/pages/api/admin/applications/[id]/email";
 import { context, locals, request, png } from "./helpers";
+import {
+  emailTestAccount,
+  cloudflareEmailPath,
+  cloudflareQueued,
+  cloudflareDelivered,
+} from "./fixtures/applicationEmail";
 
 const answers = {
   minecraft: "MailTestBuilder",
@@ -47,7 +53,8 @@ function setup(overrides: Record<string, unknown> = {}) {
     SESSION: kv,
     APPLICATION_EMAIL_ENABLED: "true",
     APPLICATION_EMAIL_FROM: "applications@hulettcraft.com",
-    RESEND_API_KEY: "test-only-not-a-real-key",
+    CLOUDFLARE_ACCOUNT_ID: emailTestAccount,
+    CLOUDFLARE_EMAIL_API_TOKEN: "test-only-not-a-real-key",
     ...overrides,
   });
   env.applicationScope = "production";
@@ -75,7 +82,7 @@ test("saved application is emailed to the fixed support address with safe text a
     globalThis,
     "fetch",
     async (url: string, init: RequestInit) => {
-      assert.equal(url, "https://api.resend.com/emails");
+      assert.equal(url, "https://api.cloudflare.com" + cloudflareEmailPath);
       assert.equal(init.redirect, "manual");
       assert.ok(init.signal);
       assert.ok(
@@ -89,11 +96,7 @@ test("saved application is emailed to the fixed support address with safe text a
         new Headers(init.headers).get("authorization"),
         "Bearer test-only-not-a-real-key",
       );
-      assert.match(
-        new Headers(init.headers).get("idempotency-key")!,
-        /^join-[a-f0-9]{64}-/,
-      );
-      return Response.json({ id: "synthetic-provider-id" });
+      return Response.json(cloudflareQueued);
     },
   );
   const data = await submission().formData();
@@ -111,7 +114,7 @@ test("saved application is emailed to the fixed support address with safe text a
   assert.equal(response.status, 201);
   assert.deepEqual(await response.json(), { received: true });
   assert.equal(fetch.mock.callCount(), 1);
-  assert.deepEqual(sent.to, ["support@hulettcraft.com"]);
+  assert.equal(sent.to, "support@hulettcraft.com");
   assert.equal(sent.from, "applications@hulettcraft.com");
   assert.equal(sent.subject, "HulettCraft SMP application: MailTestBuilder");
   assert.match(sent.text as string, /synthetic\.discord/);
@@ -152,17 +155,17 @@ test("invalid submissions and failed durable storage never trigger email", async
   assert.equal(kv.values.size, 0);
 });
 
-test("provider failures preserve the saved application and retry uses the same idempotency key", async (t) => {
+test("Cloudflare failures preserve the saved application and authenticated retry leaves answers unchanged", async (t) => {
   const { kv, env } = setup();
-  const keys: string[] = [];
+  const recipients: string[] = [];
   let working = false;
   t.mock.method(
     globalThis,
     "fetch",
     async (_url: string, init: RequestInit) => {
-      keys.push(new Headers(init.headers).get("idempotency-key")!);
+      recipients.push(JSON.parse(init.body as string).to);
       return working
-        ? Response.json({ id: "synthetic-provider-id" })
+        ? Response.json(cloudflareDelivered)
         : new Response("provider outage", { status: 503 });
     },
   );
@@ -186,7 +189,10 @@ test("provider failures preserve the saved application and retry uses the same i
     value,
     "retry never changes answers, notes or revisions",
   );
-  assert.equal(keys[0], keys[1]);
+  assert.deepEqual(recipients, [
+    "support@hulettcraft.com",
+    "support@hulettcraft.com",
+  ]);
 });
 
 test("redirects, invalid acceptance payloads, and network timeouts are failures rather than confirmed sends", async (t) => {
@@ -200,6 +206,40 @@ test("redirects, invalid acceptance payloads, and network timeouts are failures 
     () => new Response("invalid JSON"),
     () => Response.json({}),
     () => Response.json({ id: "" }),
+    () => Response.json({ ...cloudflareQueued, success: false }),
+    () => Response.json({ ...cloudflareQueued, errors: [{ code: 10102 }] }),
+    () => Response.json({ ...cloudflareQueued, result: null }),
+    () =>
+      Response.json({
+        ...cloudflareQueued,
+        result: { ...cloudflareQueued.result, queued: ["other@example.test"] },
+      }),
+    () =>
+      Response.json({
+        ...cloudflareQueued,
+        result: { ...cloudflareQueued.result, queued: [] },
+      }),
+    () =>
+      Response.json({
+        ...cloudflareQueued,
+        result: { ...cloudflareQueued.result, queued: null },
+      }),
+    () =>
+      Response.json({
+        ...cloudflareQueued,
+        result: {
+          ...cloudflareQueued.result,
+          permanent_bounces: ["support@hulettcraft.com"],
+        },
+      }),
+    () =>
+      Response.json({
+        ...cloudflareQueued,
+        result: {
+          ...cloudflareQueued.result,
+          delivered: ["support@hulettcraft.com"],
+        },
+      }),
     () => {
       throw new DOMException("Timed out", "TimeoutError");
     },
@@ -214,10 +254,46 @@ test("redirects, invalid acceptance payloads, and network timeouts are failures 
   }
 });
 
+test("Cloudflare delivered and queued results are accepted only for the fixed support recipient, with a default sender", async (t) => {
+  const { env } = setup({ APPLICATION_EMAIL_FROM: undefined });
+  let count = 0;
+  t.mock.method(
+    globalThis,
+    "fetch",
+    async (_url: string, init: RequestInit) => {
+      const payload = JSON.parse(init.body as string);
+      assert.equal(payload.from, "applications@hulettcraft.com");
+      assert.equal(payload.to, "support@hulettcraft.com");
+      return Response.json([cloudflareDelivered, cloudflareQueued][count++]);
+    },
+  );
+  for (let i = 0; i < 2; i++) {
+    const app = newApplication(validateApplicant(answers));
+    await saveApplication(env, app);
+    assert.equal(await notifyApplication(env, app), "sent");
+    assert.equal(await readApplicationEmail(env, app.id), "sent");
+  }
+});
+
+test("an accepted delivery saved by the previous sender is preserved without sending again through Cloudflare", async (t) => {
+  const { kv, env } = setup();
+  const app = newApplication(validateApplicant(answers));
+  await saveApplication(env, app);
+  await kv.put(
+    applicationEmailKey(env, app.id),
+    JSON.stringify({ state: "sent", at: "2026-01-01T00:00:00Z" }),
+  );
+  const fetch = t.mock.method(globalThis, "fetch", async () => {
+    throw Error("must not resend");
+  });
+  assert.equal(await notifyApplication(env, app), "sent");
+  assert.equal(fetch.mock.callCount(), 0);
+});
+
 test("mail is disabled by default and previews require explicit opt-in, even with production secrets", async (t) => {
   const { env } = setup();
   const fetch = t.mock.method(globalThis, "fetch", async () =>
-    Response.json({ id: "test" }),
+    Response.json(cloudflareQueued),
   );
   env.runtime.env.APPLICATION_EMAIL_ENABLED = undefined;
   const app = newApplication(validateApplicant(answers));
@@ -241,7 +317,9 @@ test("missing credentials and unsafe sender headers cannot send mail or lose app
     throw new Error("must not send");
   });
   for (const overrides of [
-    { RESEND_API_KEY: "" },
+    { CLOUDFLARE_EMAIL_API_TOKEN: "" },
+    { CLOUDFLARE_ACCOUNT_ID: "" },
+    { CLOUDFLARE_ACCOUNT_ID: "../different-account?token=unsafe" },
     { APPLICATION_EMAIL_FROM: "bad\r\nBcc: attacker@test.com" },
     { APPLICATION_EMAIL_FROM: "sender@unrelated.test" },
   ]) {
@@ -257,7 +335,7 @@ test("email retry authenticates and checks Origin, cannot fetch deleted or arbit
   const app = newApplication(validateApplicant(answers));
   await saveApplication(env, app);
   const fetch = t.mock.method(globalThis, "fetch", async () =>
-    Response.json({ id: "test" }),
+    Response.json(cloudflareQueued),
   );
   const path = `/api/admin/applications/${app.id}/email`;
   assert.equal(
@@ -298,7 +376,9 @@ test("failure to record provider acceptance never changes the saved application 
   const app = newApplication(validateApplicant(answers));
   await saveApplication(env, app);
   kv.failEmail = true;
-  t.mock.method(globalThis, "fetch", async () => Response.json({ id: "test" }));
+  t.mock.method(globalThis, "fetch", async () =>
+    Response.json(cloudflareQueued),
+  );
   assert.equal(await notifyApplication(env, app), "unrecorded");
   assert.equal(await readApplicationEmail(env, app.id), "unrecorded");
   assert.equal(
