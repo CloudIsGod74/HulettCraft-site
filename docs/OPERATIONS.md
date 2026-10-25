@@ -52,7 +52,7 @@ Public image streaming accepts common stored raster MIME types and known raster 
 
 npm test uses Node's default process isolation, which works on the CI version Node 22.22.0. Do not add `--test-isolation=none`; that option requires a newer Node release.
 
-CI pins Ubuntu 24.04 and the Node 24 editions of checkout/setup-node (verified release commit SHAs). The application's validation commands still run on Node 22.22.0. The native touchscreen slideshow test uses a running browser clock: freezing it while dispatching CDP gestures can suppress the synthesized click after a swipe. It exercises actual swipes, taps, scrolling and keyboard controls, waits through one real rotation interval to check manual pause, and checks resumed rotation. The separate automatic-slideshow test retains fake time for timer and reduced-motion coverage.
+CI pins Ubuntu 24.04 and the Node 24 editions of checkout/setup-node (verified release commit SHAs). The application's validation commands still run on Node 22.22.0. Browser tests select full Chromium's headless mode with `channel: "chromium"`, or the explicitly configured/system executable, rather than the separate chrome-headless-shell binary. The native touchscreen slideshow test uses a running browser clock and exercises actual swipes, taps, scrolling and keyboard controls, waits through one real rotation interval to check manual pause, and checks resumed rotation. The separate automatic-slideshow test retains fake time for timer and reduced-motion coverage.
 
 npm run test:e2e generates .wrangler/browser/wrangler.jsonc, dummy-only .dev.vars, and isolated state. Its seed script resets only that test state. It never uses a remote R2 binding. Do not point it at production configuration.
 

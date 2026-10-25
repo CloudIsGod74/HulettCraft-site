@@ -12,6 +12,9 @@ export default defineConfig({
   use: {
     baseURL: "http://127.0.0.1:4321",
     headless: true,
+    // Exercise native gestures in full Chromium's headless mode, as in a real
+    // browser, rather than Playwright's separate chrome-headless-shell binary.
+    channel: "chromium",
     launchOptions: {
       ...(executable ? { executablePath: executable } : {}),
       args: ["--no-sandbox", "--disable-dev-shm-usage"],

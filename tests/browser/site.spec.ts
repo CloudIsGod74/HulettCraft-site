@@ -543,8 +543,8 @@ test.describe("manual title banners on touchscreens", () => {
   test("swipes and faint arrows wrap, pause rotation, preserve vertical scrolling and retain valid photos", async ({
     page,
   }) => {
-    // Native Chromium gesture/click synthesis needs a running clock. Keep fake
-    // time in the separate automatic-rotation test, not in this touch sequence.
+    // Keep real input on real time. Fake time remains in the separate automatic
+    // rotation test; it should not overlap native scrolling and touch gestures.
     test.setTimeout(45_000);
     await page.goto("/community");
     const hero = page.locator("[data-hero-slideshow]");
