@@ -32,12 +32,14 @@ document.querySelectorAll<HTMLButtonElement>(".copyable").forEach((button) =>
   button.addEventListener("click", async () => {
     const value = button.dataset.copy;
     if (!value) return;
+    const label =
+      button.querySelector<HTMLElement>("[data-copy-label]") ?? button;
     try {
       await navigator.clipboard.writeText(value);
-      button.textContent = "Copied!";
-      setTimeout(() => (button.textContent = value), 1200);
+      label.textContent = "Copied!";
+      setTimeout(() => (label.textContent = value), 1200);
     } catch {
-      button.textContent = "Copy unavailable: " + value;
+      label.textContent = "Copy unavailable: " + value;
     }
   }),
 );

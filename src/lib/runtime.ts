@@ -8,6 +8,11 @@ export interface Env {
   GITHUB_CLIENT_ID?: string;
   GITHUB_CLIENT_SECRET?: string;
   ADMIN_SESSION_SECRET?: string;
+  APPLICATION_EMAIL_ENABLED?: string;
+  APPLICATION_EMAIL_PREVIEW_ENABLED?: string;
+  APPLICATION_EMAIL_FROM?: string;
+  CLOUDFLARE_ACCOUNT_ID?: string;
+  CLOUDFLARE_EMAIL_API_TOKEN?: string;
   UPLOAD_RATE_LIMITER?: {
     limit(options: { key: string }): Promise<{ success: boolean }>;
   };

@@ -52,6 +52,10 @@ Public image streaming accepts common stored raster MIME types and known raster 
 
 npm test uses Node's default process isolation, which works on the CI version Node 22.22.0. Do not add `--test-isolation=none`; that option requires a newer Node release.
 
+CI pins Ubuntu 24.04 and the Node 24 editions of checkout/setup-node (verified release commit SHAs). The application's validation commands still run on Node 22.22.0. Playwright is pinned to 1.64.1, which installs Chromium 156 on CI instead of the older Chromium 145 from Playwright 1.58.2. Browser tests select full Chromium's headless mode with `channel: "chromium"`, or the explicitly configured/system executable, rather than the separate chrome-headless-shell binary. The native touchscreen slideshow test uses a running browser clock and exercises actual swipes, taps, scrolling and keyboard controls, waits through one real rotation interval to check manual pause, and checks resumed rotation. The separate automatic-slideshow test retains fake time for timer and reduced-motion coverage.
+
+Banner controls complete a primary touch on pointer release, including sequences where Chromium does not synthesize a click. Any follow-up touch click is suppressed so the action occurs once; native mouse and keyboard clicks remain supported. Dragging, leaving a button, pointer cancellation and additional fingers cancel the touch selection. Browser coverage includes drag-and-return, multiple fingers, one-step touch advancement, subsequent mouse clicks, keyboard wrapping, and native scrolling.
+
 npm run test:e2e generates .wrangler/browser/wrangler.jsonc, dummy-only .dev.vars, and isolated state. Its seed script resets only that test state. It never uses a remote R2 binding. Do not point it at production configuration.
 
 Ordinary local development can use npm run setup:local; existing wrangler.jsonc and .dev.vars are preserved. Local configuration and emulator data are ignored by Git. CI uses the same checks and local emulation.
@@ -111,3 +115,7 @@ Review commits use Cloudflare's documented `[CF-Pages-Skip]` prefix to prevent a
 ## Community directory
 
 The authenticated `/admin/roster` editor stores its validated roster in the existing `SESSION` KV key `public:community-roster:v1` without expiration. It uses the existing administrator allowlist and exact-Origin write protection. See [Community operations](COMMUNITY.md) for editing, propagation/concurrent-edit limitations, preview namespace isolation and the future Discord plan. No roster migration or new Cloudflare binding is required when `SESSION` already exists.
+
+## Private SMP applications
+
+`/join` collects SMP join requests into the existing private SESSION KV binding, under the separate `private:join-application:v1:<scope>:` prefix. Screenshots are bounded private KV attachments and never enter R2 or the public gallery. Production and preview hostname scopes are separate even with a shared binding. `/admin/applications` requires the existing allowlisted admin session; review/deletion/email-retry mutations require exact Origin. Cloudflare Email Service sends application answers directly to support@hulettcraft.com after private storage succeeds; the existing routing rule forwards them onward. It needs explicit runtime enablement, the existing account ID, a dedicated Email Sending token and account permission to send to support. No support mailbox or external mail service is required. Ordinary previews do not send email. See [application operations](APPLICATIONS.md) for email setup/testing, private retention, pagination, KV consistency, rate protection, and live verification. No Discord notification or server access changes are automated.

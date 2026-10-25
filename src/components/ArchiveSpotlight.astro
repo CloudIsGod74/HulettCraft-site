@@ -1,0 +1,108 @@
+---
+import { LOCAL_ARCHIVE } from "../config/spotlight";
+---
+
+<section
+  class="archive-spotlight"
+  data-archive-spotlight
+  aria-labelledby="spotlight-heading"
+>
+  <div class="spotlight-heading">
+    <div>
+      <p class="eyebrow">Snapshots through the seasons</p>
+      <h2 id="spotlight-heading">A look inside the worlds</h2>
+      <p class="muted">
+        Familiar places, forgotten corners, and something new each time.
+      </p>
+    </div>
+    <a href="/gallery">Explore the archive →</a>
+  </div>
+  <div class="spotlight-grid">
+    {
+      LOCAL_ARCHIVE.slice(0, 2).map((photo) => (
+        <figure class="spotlight-card">
+          <a class="spotlight-frame" href={photo.href}>
+            <img
+              src={photo.src}
+              alt={photo.caption}
+              width="640"
+              height="360"
+              loading="lazy"
+              decoding="async"
+            />
+          </a>
+        </figure>
+      ))
+    }
+  </div>
+  <div class="spotlight-controls" hidden>
+    <span
+      class="sr-only"
+      data-spotlight-message
+      role="status"
+      aria-live="polite"></span>
+    <div>
+      <button
+        type="button"
+        class="spotlight-icon"
+        data-spotlight-previous
+        aria-label="Previous screenshots"
+        title="Previous screenshots"
+        disabled
+      >
+        <svg
+          width="20"
+          height="20"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          stroke-width="2"
+          aria-hidden="true"
+          focusable="false"><path d="m14 6-6 6 6 6"></path></svg
+        >
+      </button>
+      <button
+        type="button"
+        class="spotlight-icon"
+        data-spotlight-pause
+        aria-label="Pause slideshow"
+        title="Pause slideshow"
+      >
+        <svg
+          width="18"
+          height="18"
+          viewBox="0 0 24 24"
+          fill="currentColor"
+          aria-hidden="true"
+          focusable="false"
+          ><path data-spotlight-symbol d="M6 5h4v14H6zM14 5h4v14h-4z"
+          ></path></svg
+        >
+      </button>
+      <button
+        type="button"
+        class="spotlight-icon"
+        data-spotlight-next
+        aria-label="Next screenshots"
+        title="Next screenshots"
+      >
+        <svg
+          width="20"
+          height="20"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          stroke-width="2"
+          aria-hidden="true"
+          focusable="false"><path d="m10 6 6 6-6 6"></path></svg
+        >
+      </button>
+      <button type="button" data-spotlight-shuffle
+        >Shuffle screenshots <span aria-hidden="true">↻</span></button
+      >
+    </div>
+  </div>
+  <script>
+    import "../scripts/archiveSpotlight";
+  </script>
+</section>

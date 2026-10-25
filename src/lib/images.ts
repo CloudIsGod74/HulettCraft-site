@@ -1,5 +1,8 @@
-import type { R2ObjectBody } from "@cloudflare/workers-types/experimental";
-export function imageResponse(obj: R2ObjectBody, isPublic: boolean) {
+import type {
+  R2Object,
+  R2ObjectBody,
+} from "@cloudflare/workers-types/experimental";
+export function rasterContentType(obj: Pick<R2Object, "key" | "httpMetadata">) {
   const contentType = obj.httpMetadata?.contentType?.toLowerCase();
   const types: Record<string, string> = {
     "image/png": "image/png",
@@ -18,7 +21,12 @@ export function imageResponse(obj: R2ObjectBody, isPublic: boolean) {
     gif: "image/gif",
     webp: "image/webp",
   };
-  const type = contentType ? types[contentType] : fallback[extension ?? ""];
+  const allowed = contentType ? types : fallback;
+  const name = contentType || extension || "";
+  return Object.hasOwn(allowed, name) ? allowed[name] : undefined;
+}
+export function imageResponse(obj: R2ObjectBody, isPublic: boolean) {
+  const type = rasterContentType(obj);
   if (!type) return new Response("Unsupported image type", { status: 415 });
   return new Response(obj.body as unknown as BodyInit, {
     headers: {
