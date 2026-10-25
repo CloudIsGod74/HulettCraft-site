@@ -24,11 +24,21 @@ The binding name must be exactly `SESSION`, assigned to the **Preview** environm
 
 Existing allowlisted GitHub administrators can open `/admin/applications`, linked from the admin tools. Lists are paginated newest first. A detail page shows all answers and the optional screenshot, with review status (New, In review, Accepted, Declined) and private notes. Screenshots require the same administrator session at `/api/admin/applications/<id>/screenshot` and use private/no-store, nosniff and sandbox headers. Detail JSON omits attachment bytes. Public gallery routes reject application keys, and public pages never serialize submissions.
 
+### Preview login setup
+
+`GitHub login is unavailable` at `/api/admin/auth/login` means the deployed environment has no `GITHUB_CLIENT_ID`. A working `SESSION` binding enables application storage; it does not configure GitHub login or email. Production settings are separate from Preview settings.
+
+Use the stable branch alias `https://codex-join-applications.hulettcraft-site.pages.dev` for both submissions and review. Create a separate preview GitHub OAuth application with that homepage and callback `https://codex-join-applications.hulettcraft-site.pages.dev/api/admin/auth/callback`; preserve the production OAuth application's callback. In Cloudflare Pages **Preview** settings, set its `GITHUB_CLIENT_ID`, store its `GITHUB_CLIENT_SECRET` as a Secret, and set a separate random `ADMIN_SESSION_SECRET` (at least 32 characters) as a Secret. Redeploy the review branch and sign in through the branch alias. Never paste secret values into screenshots or chat.
+
+The login route uses the OAuth application's registered callback. Reusing the production client normally returns the browser to production, where its preview-host state cookie is unavailable. Changing from a hashed preview host to the branch alias also changes the application queue: an earlier hashed-host test remains in its original KV scope and will not appear in the branch-alias list. After configuring the preview, use the branch alias throughout the new synthetic test rather than repeatedly submitting real answers on different hosts.
+
 Every review and deletion authenticates the existing signed allowlisted session and verifies exact Origin. Observed stale revisions return HTTP 409. KV is eventually consistent, so this is **not an atomic concurrent-review lock**; use one reviewer per application and allow about a minute for lists/updates/deletions to propagate. Deletion asks for confirmation. Failed review saves retain the administrator's edits. Accepted is an administrative decision record only: verify the Discord identity, follow up manually, and handle server access separately. Add confirmed active members to the roster separately when appropriate.
 
 ## Email to support@hulettcraft.com
 
 After saving an application, the server can send its answers to the fixed recipient **support@hulettcraft.com**, using Resend's HTTPS API (no new dependency). The message contains the Minecraft and Discord handles, all answers, engagement preference, submission time and a link to authenticated admin review. It uses plain text; applicant content cannot become HTML or mail headers. Optional screenshots remain in private KV and are viewed through the admin portal, not copied into email. Private review notes are never emailed. The form discloses that answers are emailed to support. Applicants receive no outgoing email.
+
+Support-address forwarding handles incoming mail only. It does not configure the website's outgoing Resend integration. An `Application received` receipt confirms the private application was saved, not that Resend accepted a notification or that forwarding delivered it. Diagnose in order: the admin detail's email status, the matching Resend delivery event, then support forwarding and the destination inbox/spam folder. If email is not configured or enabled, check the settings below in **Preview**, including both enable flags, then redeploy before testing. Do not resubmit a saved application to retry mail; use its authenticated retry control on the same host once configuration is ready.
 
 Configure these separately in the existing Cloudflare Pages production/preview environment, after approving the mail service setup:
 

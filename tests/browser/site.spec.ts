@@ -543,7 +543,9 @@ test.describe("manual title banners on touchscreens", () => {
   test("swipes and faint arrows wrap, pause rotation, preserve vertical scrolling and retain valid photos", async ({
     page,
   }) => {
-    await page.clock.install();
+    // Native Chromium gesture/click synthesis needs a running clock. Keep fake
+    // time in the separate automatic-rotation test, not in this touch sequence.
+    test.setTimeout(45_000);
     await page.goto("/community");
     const hero = page.locator("[data-hero-slideshow]");
     const previous = hero.getByRole("button", {
@@ -572,8 +574,6 @@ test.describe("manual title banners on touchscreens", () => {
         type: "touchEnd",
         touchPoints: [],
       });
-      // Let queued gesture processing finish before another input with the page clock frozen.
-      await page.clock.runFor(50);
     };
     await hero.evaluate((element) => {
       const events: object[] = [];
@@ -634,13 +634,13 @@ test.describe("manual title banners on touchscreens", () => {
     await previous.focus();
     await page.keyboard.press("Enter");
     await expect(hero).toHaveAttribute("data-hero-index", "2");
-    await page.clock.fastForward(1000); // Finish fades after several rapid changes.
+    // Let real transitions finish after several rapid changes.
     await expect(hero.locator(".hero-photo")).toHaveCount(1);
     await expect(hero.locator(".hero-photo")).toHaveAttribute(
       "src",
       images[2].src,
     );
-    await page.clock.fastForward(20_000);
+    await page.waitForTimeout(8100); // A whole rotation interval must leave a manual selection alone.
     await expect(hero).toHaveAttribute("data-hero-index", "2");
     await previous.evaluate((button) => button.blur());
     await hero.screenshot({
@@ -649,8 +649,9 @@ test.describe("manual title banners on touchscreens", () => {
     await hero
       .getByRole("button", { name: "Play photos in banner slideshow" })
       .tap();
-    await page.clock.fastForward(8100);
-    await expect(hero).toHaveAttribute("data-hero-index", "0");
+    await expect(hero).toHaveAttribute("data-hero-index", "0", {
+      timeout: 10_000,
+    });
     await hero
       .getByRole("button", { name: "Pause photos in banner slideshow" })
       .tap();
