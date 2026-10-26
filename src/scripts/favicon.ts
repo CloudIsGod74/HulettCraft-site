@@ -56,6 +56,11 @@ async function refreshFavicon() {
     await image.decode();
     if (image.naturalWidth !== 64 || image.naturalHeight !== 64) return;
     link.href = dataUrl;
+    document
+      .querySelectorAll<HTMLImageElement>("img[data-server-brand]")
+      .forEach((brand) => {
+        brand.src = dataUrl;
+      });
     currentEtag = etag;
   } catch {
     // Keep the displayed icon through timeouts, offline periods and bad responses.

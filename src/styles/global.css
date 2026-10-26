@@ -156,7 +156,12 @@ nav a:hover {
   width: 100%;
   background: var(--accent);
 }
-.brand-block {
+.brand-icon {
+  display: block;
+  width: 32px;
+  height: 32px;
+  object-fit: contain;
+  image-rendering: pixelated;
   flex-shrink: 0;
   filter: drop-shadow(0 3px 8px rgba(121, 185, 255, 0.2));
 }
@@ -1543,6 +1548,13 @@ img {
   display: block;
   aspect-ratio: 16 / 9;
   background: #050c16;
+  cursor: zoom-in;
+}
+.spotlight-enlarged {
+  display: block;
+  width: 100%;
+  max-height: 78vh;
+  object-fit: contain;
 }
 .spotlight-frame img {
   display: block;

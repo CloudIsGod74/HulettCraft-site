@@ -415,7 +415,7 @@ test("bulk upload preserves edited fields through rerenders and safely displays 
   ).toBe(true);
 });
 
-test("favicon stays unchanged through repeat queries, offline responses and fallback redirects", async ({
+test("favicon and header icon stay synchronized through updates, offline responses and fallback redirects", async ({
   page,
 }) => {
   await page.clock.install({ time: new Date("2026-10-17T12:00:01Z") });
@@ -444,7 +444,12 @@ test("favicon stays unchanged through repeat queries, offline responses and fall
   });
   await page.goto("/");
   const link = page.locator("link[data-server-favicon]");
+  const brand = page.locator("img[data-server-brand]");
   await expect(link).toHaveAttribute("href", creeperIcon().uri);
+  await expect(brand).toHaveAttribute("src", creeperIcon().uri);
+  await expect(
+    page.getByRole("link", { name: "HulettCraft", exact: true }),
+  ).toHaveAttribute("href", "/");
   const initialCalls = calls;
   for (const next of ["good", "unchanged", "offline", "fallback", "invalid"]) {
     mode = next;
@@ -454,6 +459,7 @@ test("favicon stays unchanged through repeat queries, offline responses and fall
     // Wait until the fetch/decoding attempt has completed before checking retention.
     await page.waitForTimeout(50);
     await expect(link).toHaveAttribute("href", creeperIcon().uri);
+    await expect(brand).toHaveAttribute("src", creeperIcon().uri);
   }
   expect(calls).toBeGreaterThan(initialCalls);
   mode = "changed";
@@ -464,6 +470,7 @@ test("favicon stays unchanged through repeat queries, offline responses and fall
     ),
   );
   await expect(link).toHaveAttribute("href", icon(200).uri);
+  await expect(brand).toHaveAttribute("src", icon(200).uri);
   const count = calls;
   await page.evaluate(() => window.dispatchEvent(new Event("focus")));
   await expect(link).toHaveAttribute("href", icon(200).uri);
@@ -1349,7 +1356,7 @@ test("photo-only home screenshots support previous/next history and fresh shuffl
   await spotlight.scrollIntoViewIfNeeded();
   await expectPair(pairs[0]);
   await expect(spotlight.locator("figcaption")).toHaveCount(0);
-  for (const image of await spotlight.locator("img").all())
+  for (const image of await spotlight.locator(".spotlight-frame img").all())
     await expect(image).toHaveAttribute("alt", /\S/);
   await expect(
     spotlight.getByRole("button", { name: "Play slideshow" }),
@@ -1443,9 +1450,121 @@ test("compiled Pages archive API serves two distinct public photos and the home 
     await expect(frames).toHaveCount(2);
     await expect(page.locator(".spotlight-controls")).toBeHidden();
     await expect(page.locator(".hero-controls")).toBeHidden();
-    for (const frame of await frames.all())
-      await expect(frame).toHaveAttribute("href", "/gallery/hulettcraft");
+    for (const [index, frame] of (await frames.all()).entries())
+      await expect(frame).toHaveAttribute("href", LOCAL_ARCHIVE[index].src);
+    expect(
+      await page.locator("img[data-server-brand]").getAttribute("src"),
+    ).toBe(
+      await page.locator("link[data-server-favicon]").getAttribute("href"),
+    );
   } finally {
     await context.close();
   }
 });
+
+for (const mobile of [false, true]) {
+  test(`homepage screenshots enlarge the selected photo without leaving the page on ${mobile ? "touchscreen" : "desktop"}`, async ({
+    browser,
+  }) => {
+    const context = await browser.newContext({
+      viewport: { width: mobile ? 390 : 1440, height: 900 },
+      isMobile: mobile,
+      hasTouch: mobile,
+    });
+    try {
+      const page = await context.newPage();
+      await page.route("**/api/favicon.png?*", (route) =>
+        route.fulfill({
+          contentType: "image/png",
+          headers: { "X-Favicon-Source": "mcstatus" },
+          body: creeperIcon().bytes,
+        }),
+      );
+      await page.clock.install();
+      let calls = 0;
+      await page.route("**/api/gallery/spotlight.json?*", (route) => {
+        calls++;
+        return route.fulfill({
+          json: {
+            photos: LOCAL_ARCHIVE.slice(
+              calls === 1 ? 2 : 4,
+              calls === 1 ? 4 : 6,
+            ),
+          },
+        });
+      });
+      await page.goto("/");
+      const spotlight = page.locator("[data-archive-spotlight]");
+      await spotlight.scrollIntoViewIfNeeded();
+      await expect(spotlight).toHaveAttribute("data-spotlight-loaded", "true");
+      const frames = spotlight.locator(".spotlight-frame");
+      const viewer = page.getByRole("dialog", {
+        name: "Homepage screenshot viewer",
+      });
+      const activate = async (target: ReturnType<typeof page.locator>) => {
+        if (mobile) await target.tap();
+        else await target.click();
+      };
+      await activate(frames.first());
+      await expect(viewer).toBeVisible();
+      await expect(viewer.locator("img")).toHaveAttribute(
+        "src",
+        new URL(LOCAL_ARCHIVE[2].src, page.url()).href,
+      );
+      await expect(viewer.locator("img")).toHaveAttribute(
+        "alt",
+        LOCAL_ARCHIVE[2].caption,
+      );
+      await expect(page).toHaveURL("http://127.0.0.1:4321/");
+      await expect(
+        viewer.getByRole("button", { name: "Close screenshot viewer" }),
+      ).toBeFocused();
+      const before = calls;
+      await page.clock.fastForward(36_100);
+      expect(calls).toBe(before);
+      await expect(frames.first().locator("img")).toHaveAttribute(
+        "src",
+        LOCAL_ARCHIVE[2].src,
+      );
+      await page.screenshot({
+        path: test.info().outputPath("enlarged-screenshot.png"),
+      });
+      expect(
+        await viewer.evaluate(
+          (el) => el.getBoundingClientRect().width <= innerWidth,
+        ),
+      ).toBe(true);
+      await activate(
+        viewer.getByRole("button", { name: "Close screenshot viewer" }),
+      );
+      await expect(viewer).not.toBeVisible();
+      // A manual selection changes both frames; opening the second must use its new image.
+      await activate(
+        spotlight.getByRole("button", { name: "Next screenshots" }),
+      );
+      await expect(frames.nth(1).locator("img")).toHaveAttribute(
+        "src",
+        LOCAL_ARCHIVE[5].src,
+      );
+      if (mobile) await frames.nth(1).tap();
+      else {
+        await frames.nth(1).focus();
+        await page.keyboard.press("Enter");
+      }
+      await expect(viewer).toBeVisible();
+      await expect(viewer.locator("img")).toHaveAttribute(
+        "src",
+        new URL(LOCAL_ARCHIVE[5].src, page.url()).href,
+      );
+      await page.keyboard.press("Escape");
+      await expect(viewer).not.toBeVisible();
+      if (!mobile) await expect(frames.nth(1)).toBeFocused();
+      await frames.nth(1).evaluate((el) => (el as HTMLElement).blur());
+      const closedCalls = calls;
+      await page.clock.fastForward(12_100);
+      await expect.poll(() => calls).toBeGreaterThan(closedCalls);
+    } finally {
+      await context.close();
+    }
+  });
+}

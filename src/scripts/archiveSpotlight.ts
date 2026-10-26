@@ -22,6 +22,10 @@ if (root) {
   )!;
   const next = root.querySelector<HTMLButtonElement>("[data-spotlight-next]")!;
   const message = root.querySelector<HTMLElement>("[data-spotlight-message]")!;
+  const viewer = root.querySelector<HTMLDialogElement>(
+    "[data-spotlight-viewer]",
+  )!;
+  const enlarged = viewer.querySelector<HTMLImageElement>("img")!;
   const motion = matchMedia("(prefers-reduced-motion: reduce)");
   const pauseKey = "hulettcraft:archive-paused";
   let paused = motion.matches,
@@ -92,7 +96,14 @@ if (root) {
   }
   function schedule() {
     stop();
-    if (!paused && visible && pageActive && !document.hidden && !loading)
+    if (
+      !paused &&
+      visible &&
+      pageActive &&
+      !document.hidden &&
+      !loading &&
+      !viewer.open
+    )
       timer = window.setTimeout(
         () => void advance(false),
         SPOTLIGHT_INTERVAL_MS,
@@ -126,6 +137,7 @@ if (root) {
   ) {
     if (
       loading ||
+      viewer.open ||
       !pageActive ||
       document.hidden ||
       (!manual && !initial && (paused || !visible))
@@ -138,7 +150,7 @@ if (root) {
           ? historyIndex + 1
           : undefined;
     if (targetIndex !== undefined && targetIndex < 0) return;
-    // Keep a focused gallery link pointing at the screenshot the visitor selected.
+    // Keep a focused image link pointing at the screenshot the visitor selected.
     if (!manual && root!.querySelector(".spotlight-frame:focus")) {
       schedule();
       return;
@@ -182,6 +194,7 @@ if (root) {
       const images = await Promise.all(photos.map(decode));
       if (
         !pageActive ||
+        viewer.open ||
         document.hidden ||
         (!manual && !initial && (paused || !visible))
       )
@@ -191,7 +204,9 @@ if (root) {
         card.hidden = !photo;
         if (!photo) return;
         card.querySelector("img")!.replaceWith(images[index]);
-        card.querySelector<HTMLAnchorElement>("a")!.href = photo.href;
+        const link = card.querySelector<HTMLAnchorElement>("a")!;
+        link.href = photo.src;
+        link.setAttribute("aria-label", `Enlarge screenshot: ${photo.caption}`);
       });
       current = photos.map((photo) => photo.src);
       if (targetIndex !== undefined) historyIndex = targetIndex;
@@ -224,6 +239,37 @@ if (root) {
       void advance(false, true);
     } else schedule();
   }
+  cards.forEach((card) => {
+    const link = card.querySelector<HTMLAnchorElement>("a")!;
+    link.addEventListener("click", (event) => {
+      // Preserve native open-in-new-tab/download behavior and the no-JS image link.
+      if (
+        event.button !== 0 ||
+        event.ctrlKey ||
+        event.metaKey ||
+        event.shiftKey ||
+        event.altKey
+      )
+        return;
+      if (typeof viewer.showModal !== "function") return;
+      const image = link.querySelector<HTMLImageElement>("img")!;
+      enlarged.src = image.currentSrc || image.src;
+      enlarged.alt = image.alt;
+      viewer.showModal();
+      event.preventDefault();
+      stop();
+    });
+  });
+  viewer
+    .querySelector("button")!
+    .addEventListener("click", () => viewer.close());
+  viewer.addEventListener("click", (event) => {
+    if (event.target === viewer) viewer.close();
+  });
+  viewer.addEventListener("close", () => {
+    enlarged.removeAttribute("src");
+    schedule();
+  });
   pause.addEventListener("click", () => {
     paused = !paused;
     try {

@@ -21,7 +21,12 @@ import { LOCAL_ARCHIVE } from "../config/spotlight";
     {
       LOCAL_ARCHIVE.slice(0, 2).map((photo) => (
         <figure class="spotlight-card">
-          <a class="spotlight-frame" href={photo.href}>
+          <a
+            class="spotlight-frame"
+            href={photo.src}
+            aria-label={`Enlarge screenshot: ${photo.caption}`}
+            aria-haspopup="dialog"
+          >
             <img
               src={photo.src}
               alt={photo.caption}
@@ -35,6 +40,19 @@ import { LOCAL_ARCHIVE } from "../config/spotlight";
       ))
     }
   </div>
+  <dialog
+    class="gallery-dialog spotlight-dialog"
+    aria-label="Homepage screenshot viewer"
+    data-spotlight-viewer
+  >
+    <button
+      class="gallery-close"
+      type="button"
+      aria-label="Close screenshot viewer"
+      autofocus>Close ×</button
+    >
+    <img class="spotlight-enlarged" alt="" />
+  </dialog>
   <div class="spotlight-controls" hidden>
     <span
       class="sr-only"
