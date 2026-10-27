@@ -1,5 +1,6 @@
 import { HULETTCRAFT } from "../config/hulettcraft";
 import { WORLDS } from "../lib/galleryKeys";
+import { bindAuthorPicker } from "./authorPicker";
 type Row = {
   file: File;
   world: string;
@@ -72,6 +73,22 @@ if (dropzone && fileInput && tableBody && form && bulkSeason) {
           syncHeader();
         });
         td.append(input);
+        if (key === "author") {
+          input.classList.add("edit-author");
+          const template = document.querySelector<HTMLTemplateElement>(
+            "#upload-member-options",
+          )!;
+          const picker = template.content.firstElementChild!.cloneNode(
+            true,
+          ) as HTMLSelectElement;
+          picker.setAttribute(
+            "aria-label",
+            "Choose member for image " + (i + 1),
+          );
+          picker.value = row.author;
+          td.prepend(picker);
+          bindAuthorPicker(td);
+        }
       }
       tableBody!.append(tr);
     });
