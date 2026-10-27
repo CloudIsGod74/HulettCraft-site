@@ -8,6 +8,10 @@ import {
   type JoinApplication,
 } from "./applications";
 import { isRecord } from "./http";
+import {
+  applicationForwardingHeader,
+  APPLICATION_FORWARDING_HEADER,
+} from "./applicationForwarding";
 
 export const APPLICATION_EMAIL_TO = "support@hulettcraft.com";
 export const APPLICATION_EMAIL_PREFIX = "private:join-email:v1:";
@@ -119,6 +123,12 @@ export async function notifyApplication(
     if (!config) return "disabled";
     if ((await readApplicationEmail(locals, application.id)) === "sent")
       return "sent";
+    const email = message(locals, application);
+    const forwardingMarker = await applicationForwardingHeader(
+      locals.runtime?.env?.APPLICATION_FORWARDING_SECRET,
+      application.id,
+      email.subject,
+    );
     const response = await fetch(
       `https://api.cloudflare.com/client/v4/accounts/${config.accountId}/email/sending/send`,
       {
@@ -131,7 +141,10 @@ export async function notifyApplication(
         },
         body: JSON.stringify({
           from: config.from,
-          ...message(locals, application),
+          ...email,
+          ...(forwardingMarker
+            ? { headers: { [APPLICATION_FORWARDING_HEADER]: forwardingMarker } }
+            : {}),
         }),
       },
     );
