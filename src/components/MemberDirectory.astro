@@ -4,11 +4,22 @@ import {
   memberLinks,
   type CommunityMember,
 } from "../config/community";
+import { memberAvatarSource } from "../lib/memberImages";
 interface Props {
   members?: CommunityMember[];
   unavailable?: boolean;
 }
 const members = activeMembers(Astro.props.members);
+const avatars: (string | null)[] = [];
+// Bound simultaneous KV reads and raster validation for larger rosters.
+for (let offset = 0; offset < members.length; offset += 8)
+  avatars.push(
+    ...(await Promise.all(
+      members
+        .slice(offset, offset + 8)
+        .map((member) => memberAvatarSource(member, Astro.locals)),
+    )),
+  );
 ---
 
 <section
@@ -40,11 +51,21 @@ const members = activeMembers(Astro.props.members);
       </p>
     ) : members.length ? (
       <div class="member-grid">
-        {members.map((member) => (
+        {members.map((member, index) => (
           <article class="card member-card">
             <div class="member-identity">
               <span class="member-avatar" aria-hidden="true">
                 {member.displayName.slice(0, 2).toUpperCase()}
+                {avatars[index] && (
+                  <img
+                    src={avatars[index]!}
+                    alt=""
+                    loading="lazy"
+                    decoding="async"
+                    referrerpolicy="no-referrer"
+                    data-member-image
+                  />
+                )}
               </span>
               <div>
                 <h3>{member.displayName}</h3>
@@ -97,3 +118,13 @@ const members = activeMembers(Astro.props.members);
     )
   }
 </section>
+<script>
+  document
+    .querySelectorAll<HTMLImageElement>("[data-member-image]")
+    .forEach((image) => {
+      image.addEventListener("error", () => {
+        image.hidden = true;
+      });
+      if (image.complete && image.naturalWidth === 0) image.hidden = true;
+    });
+</script>
