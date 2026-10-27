@@ -15,6 +15,10 @@ retryEmail?.addEventListener("click", async () => {
     "#application-email-result",
   )!;
   retryEmail.disabled = true;
+  const previousFailure = document.querySelector<HTMLElement>(
+    "#application-email-failure",
+  );
+  if (previousFailure) previousFailure.hidden = true;
   result.textContent = "Sending application email…";
   try {
     const response = await fetch(
