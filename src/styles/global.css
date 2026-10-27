@@ -1571,6 +1571,38 @@ img {
   margin: 2rem 0 3rem;
   overflow-wrap: anywhere;
 }
+.modded-changelog {
+  margin: 2rem 0 3rem;
+  overflow-wrap: anywhere;
+}
+.modded-change {
+  border-top: 1px solid var(--border);
+  padding: 0.25rem 0;
+}
+.modded-change summary {
+  cursor: pointer;
+  padding: 1rem 0;
+}
+.modded-change summary::marker {
+  color: var(--accent);
+}
+.modded-change time,
+.modded-change-version {
+  color: var(--muted);
+  font-size: 0.85rem;
+}
+.modded-change summary strong {
+  display: block;
+  margin: 0.4rem 0;
+  font-size: 1.1rem;
+}
+.modded-change .setup-instructions {
+  margin-top: 0;
+  max-width: 78ch;
+}
+.modded-change-editor {
+  margin: 1rem 0;
+}
 .setup-versions dt {
   color: var(--muted);
 }

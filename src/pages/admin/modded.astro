@@ -99,11 +99,55 @@ if (!(await requireAdmin(Astro.request, Astro.locals)))
         ></textarea></label
       >
       <p id="modded-setup-dirty" class="muted">No unsaved changes.</p>
+      <section aria-labelledby="changelog-editor-heading">
+        <h2 id="changelog-editor-heading">Recent changes</h2>
+        <p class="muted">
+          Add pack updates, mod changes or important server notes. These appear
+          with the published setup, newest first. Keep up to 20 entries.
+        </p>
+        <div id="modded-changelog-entries"></div>
+        <button type="button" id="add-modded-change">Add change</button>
+      </section>
       <button type="submit" id="save-modded-setup" disabled
         >Save client setup</button
       >
     </fieldset>
   </form>
+  <template id="modded-change-template">
+    <fieldset class="modded-change-editor">
+      <legend>Change</legend>
+      <div class="setup-pair">
+        <label
+          >Change date<input
+            type="date"
+            data-change-field="date"
+            required
+          /></label
+        >
+        <label
+          >Related version (optional)<input
+            data-change-field="version"
+            maxlength="80"
+          /></label
+        >
+      </div>
+      <label
+        >Change title<input
+          data-change-field="title"
+          maxlength="120"
+          required
+        /></label
+      >
+      <label
+        >What changed<textarea
+          data-change-field="notes"
+          rows="3"
+          maxlength="1000"
+          required></textarea></label
+      >
+      <button type="button" data-remove-change>Remove change</button>
+    </fieldset>
+  </template>
   <script>
     import "../../scripts/moddedGuideEditor";
   </script>

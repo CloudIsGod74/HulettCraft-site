@@ -8,6 +8,12 @@ export const LOADERS = [
   "Quilt",
   "Other",
 ] as const;
+export interface ModdedChange {
+  date: string;
+  title: string;
+  notes: string;
+  version?: string;
+}
 export interface ModdedGuide {
   published: boolean;
   mode: "pack" | "custom";
@@ -19,6 +25,7 @@ export interface ModdedGuide {
   packUrl: string;
   requiredMods: string;
   instructions: string;
+  changelog?: ModdedChange[];
 }
 export interface ModdedGuideDocument {
   revision: string;
@@ -40,10 +47,49 @@ export const EMPTY_MODDED_GUIDE: ModdedGuide = {
 function invalid(message: string): never {
   throw new Response(message, { status: 400 });
 }
+function validateChanges(value: unknown): ModdedChange[] {
+  if (!Array.isArray(value) || value.length > 20)
+    return invalid("Keep at most 20 changelog entries.");
+  return value.map((entry) => {
+    if (
+      !isRecord(entry) ||
+      Object.keys(entry).some(
+        (key) => !["date", "title", "notes", "version"].includes(key),
+      )
+    )
+      return invalid("Invalid changelog entry.");
+    const text = (key: string, max: number, optional = false) => {
+      const value = optional && entry[key] === undefined ? "" : entry[key];
+      if (
+        typeof value !== "string" ||
+        value.length > max ||
+        /[\x00-\x08\x0b\x0c\x0e-\x1f]/.test(value) ||
+        (!optional && !value.trim())
+      )
+        return invalid(
+          `Changelog ${key} must be text of at most ${max} characters.`,
+        );
+      return value.trim();
+    };
+    const date = text("date", 10),
+      title = text("title", 120),
+      notes = text("notes", 1000),
+      version = text("version", 80, true);
+    if (
+      !/^\d{4}-\d{2}-\d{2}$/.test(date) ||
+      !Number.isFinite(Date.parse(`${date}T12:00:00Z`)) ||
+      new Date(`${date}T12:00:00Z`).toISOString().slice(0, 10) !== date
+    )
+      return invalid("Choose a valid calendar date for each changelog entry.");
+    return { date, title, notes, ...(version ? { version } : {}) };
+  });
+}
 export function validateModdedGuide(value: unknown): ModdedGuide {
   if (
     !isRecord(value) ||
-    Object.keys(value).some((key) => !Object.hasOwn(EMPTY_MODDED_GUIDE, key)) ||
+    Object.keys(value).some(
+      (key) => key !== "changelog" && !Object.hasOwn(EMPTY_MODDED_GUIDE, key),
+    ) ||
     typeof value.published !== "boolean" ||
     typeof value.mode !== "string" ||
     !["pack", "custom"].includes(value.mode)
@@ -69,6 +115,9 @@ export function validateModdedGuide(value: unknown): ModdedGuide {
     packUrl: field("packUrl", 2048),
     requiredMods: field("requiredMods", 12000),
     instructions: field("instructions", 6000),
+    ...(value.changelog !== undefined
+      ? { changelog: validateChanges(value.changelog) }
+      : {}),
   };
   if (guide.loader && !(LOADERS as readonly string[]).includes(guide.loader))
     return invalid("Choose a supported loader.");

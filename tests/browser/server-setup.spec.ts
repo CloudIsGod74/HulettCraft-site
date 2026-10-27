@@ -29,6 +29,157 @@ test.beforeEach(async ({ page }) => {
     }),
   );
 });
+
+test("Modded changelog saves dated entries, keeps drafts private and renders newest-first safe disclosures", async ({
+  page,
+  context,
+}) => {
+  test.setTimeout(60000);
+  await page.clock.install({ time: new Date("2026-10-27T00:30:00Z") });
+  await context.addCookies([
+    {
+      name: "admin_session",
+      value: await createSession("cloudisgod74", secret),
+      url: "http://127.0.0.1:4321",
+    },
+  ]);
+  const initial = await (
+    await page.request.get("/api/admin/modded-guide")
+  ).json();
+  try {
+    const draft = {
+      ...initial.guide,
+      published: false,
+      mode: "custom",
+      minecraftVersion: "test-game",
+      loader: "Forge",
+      loaderVersion: "test-loader",
+      requiredMods: "Test mod 1.0",
+      changelog: [],
+    };
+    expect(
+      (
+        await page.request.post("/api/admin/modded-guide", {
+          headers: { Origin: "http://127.0.0.1:4321" },
+          data: { revision: initial.revision, guide: draft },
+        })
+      ).ok(),
+    ).toBe(true);
+    await page.goto("/admin/modded");
+    await expect(page.locator("#modded-setup-form")).toBeVisible();
+    const rows = page.locator(".modded-change-editor");
+    await page.getByRole("button", { name: "Add change", exact: true }).click();
+    await expect(rows.first().getByLabel("Change date")).toHaveValue(
+      "2026-10-26",
+    );
+    await rows
+      .first()
+      .getByLabel("Change title")
+      .fill("Pack update <img src=x>");
+    await rows.first().getByLabel("Related version (optional)").fill("2.2");
+    await rows
+      .first()
+      .getByLabel("What changed")
+      .fill("Update your client before joining.\nNew building mods added.");
+    await page.getByRole("button", { name: "Add change", exact: true }).click();
+    await rows.first().getByLabel("Change date").fill("2026-10-24");
+    await rows.first().getByLabel("Change title").fill("New world opened");
+    await rows
+      .first()
+      .getByLabel("What changed")
+      .fill("A fresh world is ready.");
+    await page.getByRole("button", { name: "Save client setup" }).click();
+    await expect(page.locator("#modded-setup-result")).toContainText(
+      "Draft saved",
+    );
+    await page.reload();
+    await expect(rows).toHaveCount(2);
+    await expect(
+      rows.nth(1).getByLabel("Related version (optional)"),
+    ).toHaveValue("2.2");
+    await page.goto("/modded");
+    await expect(page.locator(".modded-changelog")).toHaveCount(0);
+    expect(await page.content()).not.toContain("New world opened");
+    await page.goto("/admin/modded");
+    await page.getByLabel("Publish these client requirements").check();
+    await page.route("**/api/admin/modded-guide", (route) =>
+      route.request().method() === "POST"
+        ? route.fulfill({
+            status: 503,
+            body: "Storage temporarily unavailable",
+          })
+        : route.continue(),
+    );
+    await page.getByRole("button", { name: "Save client setup" }).click();
+    await expect(page.locator("#modded-setup-result")).toContainText(
+      "Your edits are still here",
+    );
+    await expect(rows).toHaveCount(2);
+    await page.unroute("**/api/admin/modded-guide");
+    await page.getByRole("button", { name: "Save client setup" }).click();
+    await expect(page.locator("#modded-setup-result")).toContainText(
+      "Client setup published",
+    );
+    await page.goto("/modded");
+    const section = page.locator(".modded-changelog"),
+      entries = section.locator("details");
+    await expect(
+      section.getByRole("heading", { name: "Recent changes" }),
+    ).toBeVisible();
+    await expect(entries.first().locator("summary")).toContainText(
+      "Pack update <img src=x>",
+    );
+    await expect(entries.first().locator("time")).toHaveAttribute(
+      "datetime",
+      "2026-10-26",
+    );
+    await expect(entries.first()).toHaveAttribute("open", "");
+    await expect(entries.first()).toContainText("Version 2.2");
+    await expect(section.locator("img,script")).toHaveCount(0);
+    await expect(entries.nth(1).locator("p")).toBeHidden();
+    await entries.nth(1).locator("summary").focus();
+    await page.keyboard.press("Enter");
+    await expect(entries.nth(1).locator("p")).toBeVisible();
+    await page.setViewportSize({ width: 375, height: 900 });
+    await section.scrollIntoViewIfNeeded();
+    expect(
+      await page.evaluate(
+        () => document.documentElement.scrollWidth <= innerWidth + 1,
+      ),
+    ).toBe(true);
+    await page.screenshot({
+      path: test.info().outputPath("modded-changelog-mobile.png"),
+    });
+    await page.goto("/admin/modded");
+    await rows.first().getByRole("button", { name: "Remove change" }).click();
+    await page.getByRole("button", { name: "Save client setup" }).click();
+    await expect(page.locator("#modded-setup-result")).toContainText(
+      "Client setup published",
+    );
+    await page.goto("/modded");
+    await expect(entries).toHaveCount(1);
+    expect(await page.content()).not.toContain("New world opened");
+    await page.goto("/admin/modded");
+    await rows.first().getByRole("button", { name: "Remove change" }).click();
+    await page.getByRole("button", { name: "Save client setup" }).click();
+    await expect(page.locator("#modded-setup-result")).toContainText(
+      "Client setup published",
+    );
+    await page.goto("/modded");
+    await expect(section).toHaveCount(0);
+  } finally {
+    const current = await (
+      await page.request.get("/api/admin/modded-guide")
+    ).json();
+    await page.request.post("/api/admin/modded-guide", {
+      headers: { Origin: "http://127.0.0.1:4321" },
+      data: {
+        revision: current.revision,
+        guide: { ...initial.guide, changelog: initial.guide.changelog ?? [] },
+      },
+    });
+  }
+});
 test("Hytale renders a real query result across its page, Worlds and Status and handles unavailable checks", async ({
   page,
 }) => {

@@ -1,5 +1,11 @@
 import type { APIRoute } from "astro";
-import { adminMutation, api, json, readJson } from "../../../lib/http";
+import {
+  adminMutation,
+  api,
+  isRecord,
+  json,
+  readJson,
+} from "../../../lib/http";
 import { requireAdmin } from "../../../lib/requireAdmin";
 import {
   readModdedGuide,
@@ -30,6 +36,14 @@ export const POST: APIRoute = ({ request, locals }) =>
         "Client setup changed since you loaded it. Copy your edits before reloading and reviewing the latest version.",
         { status: 409 },
       );
+    // Existing clients can update setup details without erasing the history.
+    // Sending an explicit empty list is how the new editor removes all entries.
+    if (
+      isRecord(body.guide) &&
+      !Object.hasOwn(body.guide, "changelog") &&
+      current.guide.changelog !== undefined
+    )
+      guide.changelog = current.guide.changelog;
     const saved = {
       revision: crypto.randomUUID(),
       updatedAt: new Date().toISOString(),

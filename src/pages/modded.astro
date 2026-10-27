@@ -2,6 +2,7 @@
 import BaseLayout from "../layouts/BaseLayout.astro";
 import PageHero from "../components/PageHero.astro";
 import ServerState from "../components/ServerState.astro";
+import ModdedChangelog from "../components/ModdedChangelog.astro";
 import { readModdedGuide, type ModdedGuideDocument } from "../lib/moddedGuide";
 import { SERVERS } from "../config/servers";
 Astro.response.headers.set("Cache-Control", "no-store");
@@ -128,4 +129,5 @@ const guide = document?.guide.published ? document.guide : undefined;
       )
     }
   </section>
+  <ModdedChangelog entries={guide?.changelog ?? []} />
 </BaseLayout>

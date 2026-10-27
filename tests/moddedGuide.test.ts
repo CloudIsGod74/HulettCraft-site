@@ -195,3 +195,84 @@ test("stale edits, missing or corrupt storage cannot replace the saved setup", a
     503,
   );
 });
+
+test("dated changelog entries persist and legacy saves preserve history until explicitly cleared", async () => {
+  const { env } = storage();
+  let revision = "unpublished";
+  const entries = [
+    {
+      date: "2026-10-26",
+      title: "Pack update",
+      notes: "Install the new release.",
+      version: "2.1",
+    },
+    { date: "2024-02-29", title: "Earlier update", notes: "A valid leap day." },
+  ];
+  for (const next of [
+    guide,
+    { ...guide, changelog: entries },
+    guide,
+    { ...guide, changelog: [] },
+  ]) {
+    const response = await POST(
+      context(
+        await request("/api/admin/modded-guide", { revision, guide: next }),
+        env,
+      ),
+    );
+    assert.equal(response.status, 200);
+    const saved = await response.json();
+    revision = saved.revision;
+    if (next === guide && saved.guide.changelog)
+      assert.deepEqual(saved.guide.changelog, entries);
+    else if (next !== guide)
+      assert.deepEqual(saved.guide.changelog, next.changelog);
+  }
+  assert.deepEqual((await readModdedGuide(env)).guide.changelog, []);
+});
+
+test("invalid changelog dates, incomplete entries and excessive history cannot overwrite a saved guide", async () => {
+  const { env, values } = storage();
+  const saved = await (
+    await POST(
+      context(
+        await request("/api/admin/modded-guide", {
+          revision: "unpublished",
+          guide,
+        }),
+        env,
+      ),
+    )
+  ).json();
+  const original = values.get(MODDED_GUIDE_KEY);
+  const entry = {
+    date: "2026-10-26",
+    title: "Pack update",
+    notes: "Updated mods.",
+  };
+  for (const changelog of [
+    null,
+    {},
+    Array(21).fill(entry),
+    [{ ...entry, date: "2026-02-29" }],
+    [{ ...entry, date: "2026-13-01" }],
+    [{ ...entry, date: "October 26" }],
+    [{ ...entry, title: " " }],
+    [{ ...entry, notes: "" }],
+    [{ ...entry, notes: "x".repeat(1001) }],
+    [{ ...entry, version: "x".repeat(81) }],
+    [{ ...entry, author: "unexpected" }],
+  ]) {
+    const response = await POST(
+      context(
+        await request("/api/admin/modded-guide", {
+          revision: saved.revision,
+          guide: { ...guide, changelog },
+        }),
+        env,
+      ),
+    );
+    assert.equal(response.status, 400);
+    assert.equal(values.get(MODDED_GUIDE_KEY), original);
+  }
+});
