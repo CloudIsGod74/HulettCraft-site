@@ -22,3 +22,15 @@ jobs:
       - run: npm run build
       - run: npx playwright install --with-deps chromium
       - run: npm run test:e2e
+      - name: Save browser failure details
+        if: failure()
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2 (Node 24 action runtime)
+        with:
+          name: browser-failure-details-${{ github.run_attempt }}
+          path: |
+            playwright-report/
+            test-results/**/trace.zip
+            test-results/**/test-failed-*.png
+            test-results/**/error-context.md
+          if-no-files-found: ignore
+          retention-days: 7
