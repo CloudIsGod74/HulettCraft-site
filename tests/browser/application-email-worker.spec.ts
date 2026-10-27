@@ -307,7 +307,13 @@ test("administrator email retry requires a duplicate-risk confirmation and cance
   let requests = 0;
   await page.route(`**/api/admin/applications/${id}/email`, (route) => {
     requests++;
-    return route.fulfill({ json: { sent: true } });
+    return requests === 1
+      ? route.fulfill({
+          status: 503,
+          contentType: "text/plain",
+          body: "Cloudflare did not allow sending on this account. HTTP 403. Cloudflare code 10105.",
+        })
+      : route.fulfill({ json: { sent: true } });
   });
   try {
     page.once("dialog", (dialog) => {
@@ -319,8 +325,14 @@ test("administrator email retry requires a duplicate-risk confirmation and cance
     await expect(retry).toBeEnabled();
     page.once("dialog", (dialog) => void dialog.accept());
     await retry.click();
+    await expect(page.locator("#application-email-result")).toContainText(
+      "Cloudflare code 10105",
+    );
+    await expect(retry).toBeEnabled();
+    page.once("dialog", (dialog) => void dialog.accept());
+    await retry.click();
     await expect(retry).toBeHidden();
-    expect(requests).toBe(1);
+    expect(requests).toBe(2);
     await expect(page.locator("#application-email-result")).toContainText(
       "Cloudflare accepted",
     );
@@ -333,5 +345,68 @@ test("administrator email retry requires a duplicate-risk confirmation and cance
         })
       ).status(),
     ).toBe(200);
+  }
+});
+
+test("built Pages worker records safe Cloudflare rejection details and returns them only through authenticated retry", async () => {
+  const { runtime, mock } = await worker();
+  const upstream = mock.get("https://api.cloudflare.com");
+  for (let i = 0; i < 2; i++)
+    upstream
+      .intercept({ path: cloudflareEmailPath, method: "POST" })
+      .reply(403, {
+        success: false,
+        errors: [
+          {
+            code: 10105,
+            message: "PRIVATE-PROVIDER-TEXT <script> SECRET-TEST",
+          },
+        ],
+      });
+  try {
+    const receipt = await submit(runtime);
+    expect(receipt.status).toBe(201);
+    expect(await receipt.json()).toEqual({ received: true });
+    const kv = await runtime.getKVNamespace("SESSION");
+    const applications = await kv.list({
+      prefix: "private:join-application:v1:production:",
+    });
+    const app = JSON.parse((await kv.get(applications.keys[0].name))!);
+    const saved = (await kv.get(
+      "private:join-email:v1:" + applications.keys[0].name,
+    ))!;
+    expect(JSON.parse(saved).failure).toEqual({
+      reason: "entitlement",
+      httpStatus: 403,
+      providerCode: 10105,
+    });
+    const cookie =
+      "admin_session=" +
+      encodeURIComponent(await createSession("cloudisgod74", secret));
+    const url = `https://hulettcraft.com/api/admin/applications/${app.id}/email`;
+    expect(
+      (
+        await runtime.dispatchFetch(url, {
+          method: "POST",
+          headers: { Origin: "https://hulettcraft.com" },
+        })
+      ).status,
+    ).toBe(401);
+    const response = await runtime.dispatchFetch(url, {
+      method: "POST",
+      headers: { cookie, Origin: "https://hulettcraft.com" },
+    });
+    expect(response.status).toBe(503);
+    expect(response.headers.get("cache-control")).toContain("no-store");
+    const text = await response.text();
+    expect(text).toContain("HTTP 403");
+    expect(text).toContain("Cloudflare code 10105");
+    expect(text).toContain("support@hulettcraft.com");
+    expect(text + saved).not.toContain("PRIVATE-PROVIDER-TEXT");
+    expect(text + saved).not.toContain("SECRET-TEST");
+    mock.assertNoPendingInterceptors();
+  } finally {
+    await runtime.dispose();
+    await mock.close();
   }
 });

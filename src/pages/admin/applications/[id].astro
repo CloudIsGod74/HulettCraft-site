@@ -3,7 +3,8 @@ import BaseLayout from "../../../layouts/BaseLayout.astro";
 import { requireAdmin } from "../../../lib/requireAdmin";
 import {
   emailConfiguration,
-  readApplicationEmail,
+  readApplicationEmailDetails,
+  emailFailureMessage,
 } from "../../../lib/applicationEmail";
 import {
   readApplication,
@@ -20,6 +21,7 @@ if (!(await requireAdmin(Astro.request, Astro.locals)))
 let application: JoinApplication | undefined;
 let emailState = "unrecorded";
 let emailEnabled = false;
+let emailFailure: string | undefined;
 try {
   application = await readApplication(Astro.locals, Astro.params.id ?? "");
 } catch (error) {
@@ -27,7 +29,12 @@ try {
 }
 if (application) {
   try {
-    emailState = await readApplicationEmail(Astro.locals, application.id);
+    const details = await readApplicationEmailDetails(
+      Astro.locals,
+      application.id,
+    );
+    emailState = details.state;
+    if (details.failure) emailFailure = emailFailureMessage(details.failure);
   } catch {
     emailState = "unavailable";
   }
@@ -88,6 +95,7 @@ if (application) {
                 ? "Email delivery has not been confirmed. The application is safely saved here. Check Cloudflare Email Sending activity before retrying; a previous attempt may have been accepted."
                 : "Cloudflare email sending is not configured or enabled in this environment. The application is safely saved here."}
           </p>
+          {emailFailure && <p id="application-email-failure">{emailFailure}</p>}
           {emailState !== "sent" && (
             <button
               type="button"
