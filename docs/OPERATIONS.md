@@ -56,6 +56,10 @@ CI pins Ubuntu 24.04 and the Node 24 editions of checkout/setup-node (verified r
 
 Banner controls complete a primary touch on pointer release, including sequences where Chromium does not synthesize a click. Any follow-up touch click is suppressed so the action occurs once; native mouse and keyboard clicks remain supported. Dragging, leaving a button, pointer cancellation and additional fingers cancel the touch selection. Browser coverage includes drag-and-return, multiple fingers, one-step touch advancement, subsequent mouse clicks, keyboard wrapping, and native scrolling.
 
+The screenshot-viewer test registers a close-event listener before closing the native dialog, then waits for the browser's queued `close` event before advancing the simulated slideshow clock. The dialog can become invisible before that event restarts the timer; testing visibility alone caused intermittent failures even when the site behaved correctly. The normal automatic-resume assertion remains enabled. Playwright retains traces/screenshots only for failures; GitHub uploads the HTML report, failure traces, screenshots and error contexts as `browser-failure-details-<attempt>` for seven days. Tests use synthetic local data and do not send real email or record production credentials.
+
+Cloudflare deployment builds the site separately from GitHub's validation workflow. The workflow has one validation job, so GitHub's notification can say “All jobs have failed” when one browser assertion fails after successful unit tests, checks and build. Inspect the failed step and saved browser details before treating that notification as a production outage.
+
 npm run test:e2e generates .wrangler/browser/wrangler.jsonc, dummy-only .dev.vars, and isolated state. Its seed script resets only that test state. It never uses a remote R2 binding. Do not point it at production configuration.
 
 Ordinary local development can use npm run setup:local; existing wrangler.jsonc and .dev.vars are preserved. Local configuration and emulator data are ignored by Git. CI uses the same checks and local emulation.
