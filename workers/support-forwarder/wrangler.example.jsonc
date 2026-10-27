@@ -1,0 +1,13 @@
+{
+  "$schema": "../../node_modules/wrangler/config-schema.json",
+  "name": "hulettcraft-support-forwarder",
+  "main": "index.ts",
+  "compatibility_date": "2026-01-23",
+  "workers_dev": false,
+  "preview_urls": false,
+  "observability": { "enabled": true },
+  // Set SUPPORT_FORWARD_TO and APPLICATION_FORWARDING_SECRET as Worker Secrets.
+  // Personal inboxes belong only in the Worker Secret, never in Git or Pages.
+  // Routing rules are deliberately absent. Deploying this Worker must not
+  // automatically replace the working support forwarding rule.
+}

@@ -36,6 +36,8 @@ Every review and deletion authenticates the existing signed allowlisted session 
 
 ## Email to support@hulettcraft.com
 
+The owner has now verified support itself as a destination and reported successful production notification delivery. For the optional application-only copy to additional reviewers, see [support forwarding](SUPPORT_FORWARDING.md). Personal destinations remain in a separate Cloudflare Worker Secret; the website still sends only to support. That setup has not been deployed or attached to the working rule.
+
 After saving an application, the server sends its answers directly to **Cloudflare Email Service**, addressed only to **support@hulettcraft.com**. The existing Cloudflare Email Routing rule then forwards the message to the owner's inbox. No mailbox at the support address, external sending service, new Worker, new dependency or hosting migration is required. The Pages function uses Cloudflare's [documented REST API](https://developers.cloudflare.com/email-service/api/send-emails/rest-api/) because Pages does not expose every Workers binding.
 
 The plain-text message contains the Minecraft/Discord handles, answers, engagement preference, submission time and authenticated admin link. Applicant content cannot become HTML or email headers. Screenshots stay private in KV, accessible through the admin portal; neither screenshot bytes nor admin notes are emailed. Applicants receive no outgoing email.

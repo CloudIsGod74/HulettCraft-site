@@ -20,5 +20,7 @@ jobs:
       - run: npm test
       - run: npm run check
       - run: npm run build
+      - name: Bundle the support forwarding Worker without deploying
+        run: ./node_modules/.bin/wrangler deploy --dry-run --config workers/support-forwarder/wrangler.example.jsonc --outdir "${{ runner.temp }}/support-forwarder"
       - run: npx playwright install --with-deps chromium
       - run: npm run test:e2e

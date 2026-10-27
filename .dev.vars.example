@@ -9,3 +9,4 @@ ADMIN_SESSION_SECRET=replace-with-a-random-local-secret-at-least-32-characters
 # APPLICATION_EMAIL_ENABLED=true
 # APPLICATION_EMAIL_PREVIEW_ENABLED=true
 # APPLICATION_EMAIL_FROM=applications@hulettcraft.com
+# APPLICATION_FORWARDING_SECRET= # Optional Secret; same random value in the support Worker.

@@ -9,6 +9,10 @@ import {
   cloudflareQueued,
 } from "../fixtures/applicationEmail";
 
+import {
+  APPLICATION_FORWARDING_HEADER,
+  isApplicationNotification,
+} from "../../src/lib/applicationForwarding";
 const secret = "mail-runtime-test-only-not-a-real-secret";
 async function worker(overrides: Record<string, string> = {}) {
   const mock = createFetchMock();
@@ -333,5 +337,47 @@ test("administrator email retry requires a duplicate-risk confirmation and cance
         })
       ).status(),
     ).toBe(200);
+  }
+});
+
+test("built Pages worker signs notification markers while keeping support as its only recipient", async () => {
+  const markerSecret = "runtime-marker-test-only-not-a-real-secret-123";
+  const { runtime, mock } = await worker({
+    APPLICATION_FORWARDING_SECRET: markerSecret,
+  });
+  let payload = Promise.resolve<Record<string, unknown>>({});
+  mock
+    .get("https://api.cloudflare.com")
+    .intercept({ path: cloudflareEmailPath, method: "POST" })
+    .reply(200, (options) => {
+      payload = new Response(options.body as BodyInit).json();
+      return JSON.stringify(cloudflareQueued);
+    });
+  try {
+    expect((await submit(runtime)).status).toBe(201);
+    const sent = await payload;
+    expect(sent.to).toBe("support@hulettcraft.com");
+    const marker = (sent.headers as Record<string, string>)[
+      APPLICATION_FORWARDING_HEADER
+    ];
+    expect(
+      await isApplicationNotification(
+        markerSecret,
+        marker,
+        String(sent.subject),
+      ),
+    ).toBe(true);
+    expect(
+      await isApplicationNotification(
+        markerSecret,
+        marker,
+        "Ordinary support message",
+      ),
+    ).toBe(false);
+    expect(JSON.stringify(sent)).not.toContain(markerSecret);
+    mock.assertNoPendingInterceptors();
+  } finally {
+    await runtime.dispose();
+    await mock.close();
   }
 });
