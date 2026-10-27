@@ -1428,6 +1428,33 @@ img {
 .application-attachment a {
   color: var(--accent);
 }
+.application-views {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin-top: 1.5rem;
+}
+.application-views a {
+  display: inline-flex;
+  align-items: center;
+  min-height: 44px;
+  padding: 0.5rem 1rem;
+  border: 1px solid var(--border);
+  border-radius: 0.65rem;
+  color: var(--muted);
+  text-decoration: none;
+}
+.application-views a[aria-current="page"] {
+  color: var(--text);
+  background: var(--accent-soft);
+  border-color: var(--accent);
+}
+#completed-applications-link {
+  color: var(--accent);
+}
+#completed-applications-link[hidden] {
+  display: none;
+}
 .application-list {
   display: grid;
   gap: 1rem;

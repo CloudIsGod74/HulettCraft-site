@@ -22,7 +22,11 @@ The binding name must be exactly `SESSION`, assigned to the **Preview** environm
 
 ## Administrator review
 
-Existing allowlisted GitHub administrators can open `/admin/applications`, linked from the admin tools. Lists are paginated newest first. A detail page shows all answers and the optional screenshot, with review status (New, In review, Accepted, Declined) and private notes. Screenshots require the same administrator session at `/api/admin/applications/<id>/screenshot` and use private/no-store, nosniff and sandbox headers. Detail JSON omits attachment bytes. Public gallery routes reject application keys, and public pages never serialize submissions.
+Existing allowlisted GitHub administrators can open `/admin/applications`, linked from the admin tools. The default **Active** view shows New and In review requests. Accepting or declining an application automatically hides it from Active and keeps it in **Completed**. **All applications** shows both groups. Nothing is deleted or moved: these are views of the existing saved review status. Change a completed request back to New or In review to reopen it. The saved answers, screenshot, notes and email state remain intact.
+
+Lists are paginated newest first, with the selected view preserved in paging/detail/back links. Filtering scans only KV metadata and does not load private attachments. A request reads at most ten underlying KV pages; if a long run of other statuses exhausts that bound, it keeps a continuation link rather than claiming no matches exist. Changing views starts at the newest submissions in that view. Review updates still follow KV's roughly one-minute propagation window. No migration or new binding is required; existing accepted/declined applications automatically appear in Completed after deployment.
+
+A detail page shows all answers and the optional screenshot, with review status (New, In review, Accepted, Declined) and private notes. Screenshots require the same administrator session at `/api/admin/applications/<id>/screenshot` and use private/no-store, nosniff and sandbox headers. Detail JSON omits attachment bytes. Public gallery routes reject application keys, and public pages never serialize submissions.
 
 ### Preview login setup
 

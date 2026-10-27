@@ -13,10 +13,16 @@ import {
   APPLICATION_QUESTIONS,
   APPLICATION_STATUSES,
   ENGAGEMENT_OPTIONS,
+  applicationView,
+  applicationListHref,
+  isCompletedApplication,
 } from "../../../config/applications";
 Astro.response.headers.set("Cache-Control", "private, no-store");
 if (!(await requireAdmin(Astro.request, Astro.locals)))
   return Astro.redirect("/admin/login");
+const listHref = applicationListHref(
+  applicationView(Astro.url.searchParams.get("view")),
+);
 let application: JoinApplication | undefined;
 let emailState = "unrecorded";
 let emailEnabled = false;
@@ -41,7 +47,7 @@ if (application) {
 
 <BaseLayout title="Review application | HulettCraft Admin">
   <nav class="admin-roster-nav" aria-label="Administrator tools">
-    <a href="/admin/applications">← Join applications</a><a href="/admin/roster"
+    <a href={listHref}>← Join applications</a><a href="/admin/roster"
       >Member roster</a
     >
   </nav>
@@ -159,6 +165,7 @@ if (application) {
             id="application-review"
             data-id={application.id}
             data-revision={application.revision}
+            data-list-href={listHref}
           >
             <label for="application-status">
               Review status
@@ -192,6 +199,13 @@ if (application) {
               </>
             </div>
             <p id="review-result" role="status" aria-live="polite" />
+            <a
+              id="completed-applications-link"
+              href="/admin/applications?view=completed"
+              hidden={!isCompletedApplication(application.status)}
+            >
+              View completed applications →
+            </a>
           </form>
         </section>
       </>
