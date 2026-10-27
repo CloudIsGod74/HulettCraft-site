@@ -69,7 +69,11 @@ Ordinary local development can use npm run setup:local; existing wrangler.jsonc 
 5. After explicit approval, deploy through the established Cloudflare workflow and purge legacy pending-image caches.
 6. Manually verify real GitHub OAuth, session/logout behavior, existing R2 screenshots, real mcstatus.io responses, and upload throttling.
 
-No deploy, merge, production cache purge, DNS change, plugin change, map-service shutdown, or production data mutation has been performed. The Discord invitation is unknown, so the placeholder link was replaced with a request to contact an administrator. Hytale status is explicitly unavailable.
+No deploy, merge, production cache purge, DNS change, plugin change, map-service shutdown, or production data mutation has been performed. The Discord invitation is unknown, so the placeholder link was replaced with a request to contact an administrator. Hytale uses a validated Nitrado query when reachable; see [server setup](SERVER_SETUP.md) for required server-side configuration and verification limits.
+
+## Game queries and Modded client requirements
+
+Hytale's optional `HYTALE_QUERY_URL` runtime text setting overrides the default trusted HTTPS Nitrado endpoint. It accepts only the documented HulettCraft query hosts/path, never visitor-supplied URLs or redirects. Website queries do not update the game, install plugins or modify DNS. Both status APIs preserve their existing response shapes and share short-lived checks. `/modded` displays only the published guide edited at `/admin/modded`; `SESSION` stores it separately at `public:modded-guide:v1`. See [server setup](SERVER_SETUP.md) before configuring the query or publishing current pack details. Real Hytale connectivity and the current pack remain unverified until the server owner supplies/configures them.
 
 ## Map removal
 

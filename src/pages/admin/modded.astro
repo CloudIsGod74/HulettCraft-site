@@ -1,0 +1,110 @@
+---
+import BaseLayout from "../../layouts/BaseLayout.astro";
+import PageHero from "../../components/PageHero.astro";
+import { requireAdmin } from "../../lib/requireAdmin";
+import { LOADERS } from "../../lib/moddedGuide";
+Astro.response.headers.set("Cache-Control", "private, no-store");
+if (!(await requireAdmin(Astro.request, Astro.locals)))
+  return Astro.redirect("/admin/login");
+---
+
+<BaseLayout title="Modded client setup | HulettCraft Admin">
+  <PageHero
+    ><h1>Modded client setup</h1><p>
+      Keep the current pack and joining instructions up to date as the server
+      changes.
+    </p></PageHero
+  >
+  <nav class="admin-roster-nav" aria-label="Administrator tools">
+    <a href="/admin/pending">Pending screenshots</a>
+    <a href="/admin/roster">Member roster</a>
+    <a href="/modded" target="_blank" rel="noopener noreferrer"
+      >View Modded server (new tab)</a
+    >
+  </nav>
+  <p class="muted">
+    These are public client requirements. Include exact versions and list only
+    mods players need to install. Save a draft until the details are confirmed.
+    Use one editor at a time.
+  </p>
+  <noscript
+    ><p role="alert">Enable JavaScript to edit client setup.</p></noscript
+  >
+  <p id="modded-setup-result" role="status" aria-live="polite">
+    Loading client setup…
+  </p>
+  <form id="modded-setup-form" class="server-setup-form" hidden>
+    <fieldset id="modded-setup-fields">
+      <legend>Current Modded server</legend>
+      <label class="setup-check"
+        ><input type="checkbox" name="published" /> Publish these client requirements</label
+      >
+      <label
+        >Setup type<select name="mode"
+          ><option value="pack">Published modpack</option><option value="custom"
+            >Custom mod list</option
+          ></select
+        ></label
+      >
+      <div class="setup-pair" data-pack-fields>
+        <label>Modpack name<input name="packName" maxlength="120" /></label>
+        <label
+          >Exact pack version<input name="packVersion" maxlength="80" /></label
+        >
+      </div>
+      <div class="setup-pair">
+        <label
+          >Minecraft version<input
+            name="minecraftVersion"
+            maxlength="60"
+          /></label
+        >
+        <label
+          >Mod loader<select name="loader"
+            ><option value="">Choose loader</option>{
+              LOADERS.map((loader) => <option value={loader}>{loader}</option>)
+            }</select
+          ></label
+        >
+        <label
+          >Loader version<input name="loaderVersion" maxlength="80" /></label
+        >
+      </div>
+      <label
+        >Pack or download link<input
+          name="packUrl"
+          type="url"
+          pattern="https://.*"
+          maxlength="2048"
+          placeholder="https://www.curseforge.com/minecraft/modpacks/…"
+        /></label
+      >
+      <p class="muted">
+        Use a CurseForge/Modrinth release link or another trusted HTTPS download
+        page. The listed pack version must match the current server.
+      </p>
+      <label
+        >Required client mods and versions<textarea
+          name="requiredMods"
+          rows="8"
+          maxlength="12000"
+          placeholder="One required mod and version per line"></textarea></label
+      >
+      <label
+        >Installation and joining instructions<textarea
+          name="instructions"
+          rows="7"
+          maxlength="6000"
+          placeholder="Which launcher to use, where to find the exact release, and any extra steps"
+        ></textarea></label
+      >
+      <p id="modded-setup-dirty" class="muted">No unsaved changes.</p>
+      <button type="submit" id="save-modded-setup" disabled
+        >Save client setup</button
+      >
+    </fieldset>
+  </form>
+  <script>
+    import "../../scripts/moddedGuideEditor";
+  </script>
+</BaseLayout>

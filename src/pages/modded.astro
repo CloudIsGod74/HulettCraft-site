@@ -1,0 +1,131 @@
+---
+import BaseLayout from "../layouts/BaseLayout.astro";
+import PageHero from "../components/PageHero.astro";
+import ServerState from "../components/ServerState.astro";
+import { readModdedGuide, type ModdedGuideDocument } from "../lib/moddedGuide";
+import { SERVERS } from "../config/servers";
+Astro.response.headers.set("Cache-Control", "no-store");
+const server = SERVERS.find((server) => server.id === "modded")!;
+let document: ModdedGuideDocument | undefined,
+  unavailable = false;
+try {
+  document = await readModdedGuide(Astro.locals);
+} catch {
+  unavailable = true;
+}
+const guide = document?.guide.published ? document.guide : undefined;
+---
+
+<BaseLayout title="Modded server & client setup | HulettCraft">
+  <PageHero
+    ><h1>Seasonal / Modded</h1><p>
+      A new pack, a new project, a different way to play.
+    </p></PageHero
+  >
+  <section class="server-grid">
+    <div class="card">
+      <h2>Join the server</h2><ServerState id="modded" detailed />
+      <button
+        type="button"
+        class="ip copyable"
+        data-copy={server.address}
+        title="Copy server address">{server.address}</button
+      >
+      <p class="muted">
+        Install the matching client setup below before joining. A server showing
+        Online can still require a different pack or game version.
+      </p>
+      <a href="/gallery/modded">Explore the Modded gallery →</a>
+    </div>
+    <div class="card">
+      <h2>Match the current pack</h2><p class="muted">
+        Our Modded server changes over time. Use the exact pack release,
+        Minecraft version and loader listed here. For a CurseForge pack, choose
+        that release in the CurseForge app and follow any additional
+        instructions.
+      </p>
+    </div>
+  </section>
+  <section
+    class="card modded-client-guide"
+    aria-labelledby="client-setup-heading"
+  >
+    <p class="eyebrow">Before you join</p><h2 id="client-setup-heading">
+      Required client setup
+    </h2>
+    {
+      guide ? (
+        <>
+          <h3>{guide.mode === "pack" ? guide.packName : "Custom mod setup"}</h3>
+          <dl class="setup-versions">
+            {guide.mode === "pack" && (
+              <div>
+                <dt>Pack release</dt>
+                <dd>{guide.packVersion}</dd>
+              </div>
+            )}
+            <div>
+              <>
+                <dt>Minecraft</dt>
+                <dd>{guide.minecraftVersion}</dd>
+              </>
+            </div>
+            <div>
+              <>
+                <dt>Loader</dt>
+                <dd>
+                  {guide.loader} {guide.loaderVersion}
+                </dd>
+              </>
+            </div>
+          </dl>
+          {guide.packUrl && (
+            <p>
+              <a
+                class="join-cta"
+                href={guide.packUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+              >
+                {guide.mode === "pack"
+                  ? "Get this modpack"
+                  : "Download / setup page"}
+                <span class="sr-only"> (opens in a new tab)</span> ↗
+              </a>
+            </p>
+          )}
+          {guide.requiredMods && (
+            <>
+              <h3>Required client mods</h3>
+              <ul class="setup-mods">
+                {guide.requiredMods
+                  .split(/\r?\n/)
+                  .map((line) => line.trim())
+                  .filter(Boolean)
+                  .map((line) => (
+                    <li>{line}</li>
+                  ))}
+              </ul>
+            </>
+          )}
+          {guide.instructions && (
+            <>
+              <h3>Installation instructions</h3>
+              <p class="setup-instructions">{guide.instructions}</p>
+            </>
+          )}
+          <p class="muted">
+            Only install the client mods listed for this setup. Server-only mods
+            do not normally need installing on your computer.
+          </p>
+        </>
+      ) : (
+        <p role="status">
+          {unavailable
+            ? "Client setup could not be loaded. Please check back or ask an administrator before installing mods."
+            : "The current client requirements are being confirmed. Ask an administrator for the correct pack before joining."}
+        </p>
+      )
+    }
+  </section>
+</BaseLayout>

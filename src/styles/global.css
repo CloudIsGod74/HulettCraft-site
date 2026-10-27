@@ -1505,6 +1505,94 @@ img {
 }
 
 /* Home archive: matching frames preserve each full screenshot. */
+.server-setup-form {
+  max-width: 880px;
+  margin: 2rem auto;
+}
+.server-setup-form[hidden],
+.server-setup-form [hidden] {
+  display: none;
+}
+.server-setup-form fieldset {
+  display: grid;
+  gap: 1.25rem;
+  min-width: 0;
+  padding: clamp(1rem, 3vw, 2rem);
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+}
+.server-setup-form label {
+  display: grid;
+  gap: 0.5rem;
+  min-width: 0;
+}
+.server-setup-form input:not([type="checkbox"]),
+.server-setup-form select,
+.server-setup-form textarea {
+  width: 100%;
+  min-width: 0;
+  box-sizing: border-box;
+  padding: 0.75rem;
+  background: var(--panel);
+  color: var(--text);
+  font: inherit;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+}
+.server-setup-form textarea {
+  resize: vertical;
+}
+.server-setup-form .setup-check {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+}
+.server-setup-form button {
+  padding: 0.75rem 1rem;
+  background: var(--accent-soft);
+  color: var(--text);
+  border: 1px solid var(--accent-muted);
+  border-radius: 6px;
+  font: inherit;
+  cursor: pointer;
+}
+.server-setup-form button:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+.setup-pair,
+.setup-versions {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 1rem;
+}
+.modded-client-guide {
+  margin: 2rem 0 3rem;
+  overflow-wrap: anywhere;
+}
+.setup-versions dt {
+  color: var(--muted);
+}
+.setup-versions dd {
+  margin: 0.4rem 0 0;
+  font-weight: 600;
+}
+.setup-instructions {
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+.setup-mods li {
+  margin: 0.5rem 0;
+  overflow-wrap: anywhere;
+}
+@media (max-width: 640px) {
+  .setup-pair,
+  .setup-versions {
+    grid-template-columns: 1fr;
+  }
+}
+
 .archive-spotlight {
   padding: 3rem 0;
 }
