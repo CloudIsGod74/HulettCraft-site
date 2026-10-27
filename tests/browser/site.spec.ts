@@ -3,7 +3,10 @@ import { readFileSync } from "node:fs";
 import { createSession } from "../../src/lib/adminSession";
 import { png } from "../helpers";
 import { creeperIcon, icon } from "../fixtures/serverIcon";
-import { LOCAL_ARCHIVE } from "../../src/config/spotlight";
+import {
+  LOCAL_ARCHIVE,
+  SPOTLIGHT_INTERVAL_MS,
+} from "../../src/config/spotlight";
 const secret = "browser-test-only-secret-never-use-in-production";
 test.beforeEach(async ({ page }) => {
   await page.route("**/api/favicon.png?*", (route) =>
@@ -1505,6 +1508,23 @@ for (const mobile of [false, true]) {
         if (mobile) await target.tap();
         else await target.click();
       };
+      const closeViewer = async (action: () => Promise<unknown>) => {
+        // dialog.open becomes false before the browser dispatches its queued
+        // close event. The slideshow restarts its timer in that event handler.
+        // Wait for the event before moving the test clock past the interval.
+        const closed = await viewer.evaluateHandle((dialog) => ({
+          event: new Promise<void>((resolve) => {
+            dialog.addEventListener("close", () => resolve(), { once: true });
+          }),
+        }));
+        try {
+          await action();
+          await closed.evaluate(({ event }) => event);
+        } finally {
+          await closed.dispose();
+        }
+        await expect(viewer).not.toBeVisible();
+      };
       await activate(frames.first());
       await expect(viewer).toBeVisible();
       await expect(viewer.locator("img")).toHaveAttribute(
@@ -1534,10 +1554,11 @@ for (const mobile of [false, true]) {
           (el) => el.getBoundingClientRect().width <= innerWidth,
         ),
       ).toBe(true);
-      await activate(
-        viewer.getByRole("button", { name: "Close screenshot viewer" }),
+      await closeViewer(() =>
+        activate(
+          viewer.getByRole("button", { name: "Close screenshot viewer" }),
+        ),
       );
-      await expect(viewer).not.toBeVisible();
       // A manual selection changes both frames; opening the second must use its new image.
       await activate(
         spotlight.getByRole("button", { name: "Next screenshots" }),
@@ -1556,12 +1577,12 @@ for (const mobile of [false, true]) {
         "src",
         new URL(LOCAL_ARCHIVE[5].src, page.url()).href,
       );
-      await page.keyboard.press("Escape");
-      await expect(viewer).not.toBeVisible();
+      await closeViewer(() => page.keyboard.press("Escape"));
       if (!mobile) await expect(frames.nth(1)).toBeFocused();
       await frames.nth(1).evaluate((el) => (el as HTMLElement).blur());
+      await expect(frames.nth(1)).not.toBeFocused();
       const closedCalls = calls;
-      await page.clock.fastForward(12_100);
+      await page.clock.fastForward(SPOTLIGHT_INTERVAL_MS + 100);
       await expect.poll(() => calls).toBeGreaterThan(closedCalls);
     } finally {
       await context.close();

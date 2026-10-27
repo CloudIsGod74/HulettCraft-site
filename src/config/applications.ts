@@ -67,6 +67,27 @@ export const APPLICATION_STATUSES = [
 ] as const;
 export type ApplicationStatus = (typeof APPLICATION_STATUSES)[number]["value"];
 
+export const APPLICATION_VIEWS = [
+  { value: "active", label: "Active" },
+  { value: "completed", label: "Completed" },
+  { value: "all", label: "All applications" },
+] as const;
+export type ApplicationView = (typeof APPLICATION_VIEWS)[number]["value"];
+export function applicationView(value: string | null): ApplicationView {
+  return (
+    APPLICATION_VIEWS.find((view) => view.value === value)?.value ?? "active"
+  );
+}
+export function isCompletedApplication(status: string) {
+  return status === "accepted" || status === "declined";
+}
+export function applicationListHref(view: ApplicationView, cursor?: string) {
+  const params = new URLSearchParams();
+  if (view !== "active") params.set("view", view);
+  if (cursor) params.set("cursor", cursor);
+  return "/admin/applications" + (params.size ? "?" + params.toString() : "");
+}
+
 export function applicationScopeForHost(hostname: string) {
   const host = hostname.toLowerCase().replace(/\.$/, "");
   return [
