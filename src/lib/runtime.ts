@@ -7,6 +7,7 @@ export interface Env {
   SESSION?: KVNamespace;
   GITHUB_CLIENT_ID?: string;
   GITHUB_CLIENT_SECRET?: string;
+  HYTALE_QUERY_URL?: string;
   ADMIN_SESSION_SECRET?: string;
   APPLICATION_EMAIL_ENABLED?: string;
   APPLICATION_EMAIL_PREVIEW_ENABLED?: string;
