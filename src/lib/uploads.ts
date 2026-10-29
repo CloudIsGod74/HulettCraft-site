@@ -130,7 +130,7 @@ export async function validateImage(file: File) {
       "Use a valid PNG, JPEG, GIF, or WebP image (maximum 40 megapixels). SVG is not supported.",
       { status: 415 },
     );
-  return { bytes, type, extension };
+  return { bytes, type, extension, width, height };
 }
 export function safeFilename(name: string) {
   return (

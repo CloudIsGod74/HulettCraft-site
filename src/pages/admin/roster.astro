@@ -16,6 +16,7 @@ if (!(await requireAdmin(Astro.request, Astro.locals)))
     </p>
   </PageHero>
   <nav class="admin-roster-nav" aria-label="Administrator tools">
+    <a href="/admin/modded">Modded client setup</a>
     <a href="/admin/applications">Join applications</a>
     <a href="/admin/pending">Pending screenshots</a>
     <a href="/admin/bulk-upload">Bulk upload</a>
@@ -68,6 +69,38 @@ if (!(await requireAdmin(Astro.request, Astro.locals)))
         <label class="roster-check"
           ><input type="checkbox" data-field="active" /> Show in directory</label
         >
+        <div class="roster-portrait">
+          <label
+            >Member image
+            <select data-field="avatarType">
+              <option value="none">Initials</option>
+              <option value="minecraft">Minecraft skin head</option>
+              <option value="upload">Uploaded image</option>
+            </select>
+          </label>
+          <p class="muted">
+            Minecraft heads load from mc-heads.net using the player name. If
+            unavailable, initials remain.
+          </p>
+          <label data-avatar-upload hidden
+            >Upload member image or screenshot
+            <input
+              type="file"
+              accept="image/png,image/jpeg,image/webp,image/gif"
+              data-field="avatarFile"
+            />
+            <span class="muted"
+              >Up to 10 MiB; resized to fit 256 × 256. Only upload images the
+              member wants publicly displayed.</span
+            >
+          </label>
+          <img
+            class="roster-portrait-preview"
+            alt="Member image preview"
+            hidden
+          />
+          <p data-avatar-status role="status"></p>
+        </div>
         <label class="roster-bio"
           >Short bio (optional)<textarea
             data-field="bio"

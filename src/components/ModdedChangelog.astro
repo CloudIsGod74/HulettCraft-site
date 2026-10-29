@@ -1,0 +1,44 @@
+---
+import type { ModdedChange } from "../lib/moddedGuide";
+interface Props {
+  entries: ModdedChange[];
+}
+const changes = [...Astro.props.entries].sort((a, b) =>
+  b.date.localeCompare(a.date),
+);
+const dateLabel = (date: string) =>
+  new Intl.DateTimeFormat("en-US", {
+    timeZone: "America/Chicago",
+    month: "short",
+    day: "numeric",
+    year: "numeric",
+  }).format(new Date(`${date}T12:00:00Z`));
+---
+
+{
+  changes.length > 0 && (
+    <section
+      class="card modded-changelog"
+      aria-labelledby="modded-changelog-heading"
+    >
+      <>
+        <p class="eyebrow">What’s new</p>
+        <h2 id="modded-changelog-heading">Recent changes</h2>
+      </>
+      {changes.map((change, index) => (
+        <details class="modded-change" open={index === 0}>
+          <summary>
+            <time datetime={change.date}>{dateLabel(change.date)}</time>
+            <strong>{change.title}</strong>
+            {change.version && (
+              <span class="modded-change-version">
+                Version {change.version}
+              </span>
+            )}
+          </summary>
+          <p class="setup-instructions">{change.notes}</p>
+        </details>
+      ))}
+    </section>
+  )
+}

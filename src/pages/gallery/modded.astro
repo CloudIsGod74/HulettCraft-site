@@ -2,6 +2,7 @@
 import PageHero from "../../components/PageHero.astro";
 import BaseLayout from "../../layouts/BaseLayout.astro";
 import WorldGallery from "../../components/WorldGallery.astro";
+Astro.response.headers.set("Cache-Control", "private, no-store");
 ---
 
 <BaseLayout>
@@ -10,5 +11,9 @@ import WorldGallery from "../../components/WorldGallery.astro";
       Seasonal, experimental, and retired modded worlds across different eras.
     </p>
   </PageHero>
+  <p class="center">
+    <a href="/modded"
+      >Joining the current server? View required mods and setup →</a>
+  </p>
   <WorldGallery world="modded" />
 </BaseLayout>

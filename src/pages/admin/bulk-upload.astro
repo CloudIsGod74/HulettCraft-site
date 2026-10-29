@@ -1,10 +1,18 @@
 ---
 import BaseLayout from "../../layouts/BaseLayout.astro";
 import { requireAdmin } from "../../lib/requireAdmin";
+import { readRoster } from "../../lib/communityRoster";
+import type { CommunityMember } from "../../config/community";
 
 Astro.response.headers.set("Cache-Control", "private, no-store");
 const admin = await requireAdmin(Astro.request, Astro.locals);
 if (!admin) return Astro.redirect("/admin/login");
+let members: CommunityMember[] = [];
+try {
+  members = (await readRoster(Astro.locals)).members;
+} catch {
+  /* Custom author entry stays available. */
+}
 ---
 
 <BaseLayout>
@@ -16,6 +24,19 @@ if (!admin) return Astro.redirect("/admin/login");
     >
   </p>
   <p class="subtitle">Admin-only direct upload (skips approval)</p>
+  <template id="upload-member-options">
+    <select data-author-picker>
+      <option value="">Custom / existing author</option>
+      {
+        members.map((member) => (
+          <option value={member.username}>
+            {member.displayName} ({member.username})
+            {!member.active ? " — hidden member" : ""}
+          </option>
+        ))
+      }
+    </select>
+  </template>
 
   <input
     type="file"

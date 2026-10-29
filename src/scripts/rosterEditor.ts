@@ -1,4 +1,4 @@
-import type { CommunityMember } from "../config/community";
+import { minecraftAvatar, type CommunityMember } from "../config/community";
 import type { CommunityRoster } from "../lib/communityRoster";
 
 const form = document.querySelector<HTMLFormElement>("#roster-form");
@@ -20,9 +20,12 @@ if (form) {
   )!;
   let revision = "",
     dirty = false;
+  let imageUploads = 0;
+  const avatarIds = new WeakMap<Element, string>();
 
   function field<
-    T extends HTMLInputElement | HTMLTextAreaElement = HTMLInputElement,
+    T extends HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement =
+      HTMLInputElement,
   >(root: Element, name: string) {
     return root.querySelector<T>(`[data-field="${name}"]`)!;
   }
@@ -30,7 +33,7 @@ if (form) {
     document.querySelector("#roster-count")!.textContent =
       `${list.children.length} ${list.children.length === 1 ? "member" : "members"} · ${list.querySelectorAll('[data-field="active"]:checked').length} visible`;
     add.disabled = list.children.length >= 200;
-    save.disabled = !dirty;
+    save.disabled = !dirty || imageUploads > 0;
     dirtyText.textContent = dirty ? "Unsaved changes." : "No unsaved changes.";
   }
   function changed() {
@@ -68,6 +71,121 @@ if (form) {
     field(row, "displayName").value = member.displayName;
     field(row, "active").checked = member.active;
     field(row, "bio").value = member.bio ?? "";
+    const avatarType = field<HTMLSelectElement>(row, "avatarType");
+    const preview = row.querySelector<HTMLImageElement>(
+      ".roster-portrait-preview",
+    )!;
+    const imageStatus = row.querySelector<HTMLElement>("[data-avatar-status]")!;
+    let uploadVersion = 0;
+    avatarType.value = member.avatar?.type ?? "none";
+    if (member.avatar?.type === "upload") avatarIds.set(row, member.avatar.id);
+    function updateAvatar() {
+      row.querySelector<HTMLElement>("[data-avatar-upload]")!.hidden =
+        avatarType.value !== "upload";
+      if (avatarType.value === "minecraft") {
+        preview.src = minecraftAvatar(field(row, "username").value);
+        preview.hidden = !preview.getAttribute("src");
+      } else if (avatarType.value === "none") preview.hidden = true;
+      else {
+        preview.hidden = true;
+        const id = avatarIds.get(row);
+        if (id)
+          void fetch(`/api/admin/member-image?id=${id}`, { cache: "no-store" })
+            .then(async (response) => {
+              if (!response.ok) throw new Error();
+              const image: { src: string } = await response.json();
+              if (avatarType.value === "upload" && avatarIds.get(row) === id) {
+                preview.src = image.src;
+                preview.hidden = false;
+              }
+            })
+            .catch(() => {
+              imageStatus.textContent =
+                "Preview unavailable; the saved image is retained.";
+            });
+      }
+    }
+    preview.addEventListener("error", () => {
+      preview.hidden = true;
+    });
+    avatarType.addEventListener("change", () => {
+      uploadVersion++;
+      imageStatus.textContent = "";
+      updateAvatar();
+    });
+    field(row, "username").addEventListener("change", () => {
+      if (avatarType.value === "minecraft") updateAvatar();
+    });
+    field(row, "avatarFile").addEventListener("change", async (event) => {
+      const input = event.target as HTMLInputElement;
+      const file = input.files?.[0];
+      if (!file) return;
+      const version = ++uploadVersion;
+      imageUploads++;
+      refresh();
+      imageStatus.textContent = "Resizing and uploading image…";
+      let objectUrl = "";
+      try {
+        if (
+          file.size > 10 * 1024 * 1024 ||
+          !["image/png", "image/jpeg", "image/gif", "image/webp"].includes(
+            file.type,
+          )
+        )
+          throw new Error(
+            "Choose a PNG, JPEG, GIF or WebP image up to 10 MiB.",
+          );
+        const image = new Image();
+        objectUrl = URL.createObjectURL(file);
+        image.src = objectUrl;
+        await image.decode();
+        if (image.naturalWidth * image.naturalHeight > 40_000_000)
+          throw new Error("Choose an image up to 40 megapixels.");
+        const scale = Math.min(
+          1,
+          256 / Math.max(image.naturalWidth, image.naturalHeight),
+        );
+        const canvas = document.createElement("canvas");
+        canvas.width = Math.max(1, Math.round(image.naturalWidth * scale));
+        canvas.height = Math.max(1, Math.round(image.naturalHeight * scale));
+        canvas
+          .getContext("2d")!
+          .drawImage(image, 0, 0, canvas.width, canvas.height);
+        const blob = await new Promise<Blob | null>((resolve) =>
+          canvas.toBlob(resolve, "image/webp", 0.85),
+        );
+        if (!blob || blob.size > 96 * 1024)
+          throw new Error(
+            "The resized image is too large. Please try another image.",
+          );
+        if (version !== uploadVersion || !row.isConnected) return;
+        const body = new FormData();
+        body.set("image", new File([blob], "member.webp", { type: blob.type }));
+        const response = await fetch("/api/admin/member-image", {
+          method: "POST",
+          body,
+          signal: AbortSignal.timeout(20000),
+        });
+        if (!response.ok) throw new Error(await response.text());
+        const uploaded: { id: string; src: string } = await response.json();
+        if (version !== uploadVersion || !row.isConnected) return;
+        avatarIds.set(row, uploaded.id);
+        preview.src = uploaded.src;
+        preview.hidden = false;
+        imageStatus.textContent =
+          "Image ready. Save the roster to publish this choice.";
+        changed();
+      } catch (error) {
+        if (version === uploadVersion)
+          imageStatus.textContent = `${error instanceof Error ? error.message : "Image upload failed."} The previous image is retained.`;
+      } finally {
+        if (objectUrl) URL.revokeObjectURL(objectUrl);
+        input.value = "";
+        imageUploads--;
+        refresh();
+      }
+    });
+    updateAvatar();
     const title = () => {
       row.querySelector("legend")!.textContent =
         field(row, "displayName").value || "New member";
@@ -93,16 +211,29 @@ if (form) {
     return row;
   }
   function members(): CommunityMember[] {
-    return Array.from(list.children).map((row) => ({
-      username: field(row, "username").value,
-      displayName: field(row, "displayName").value,
-      active: field(row, "active").checked,
-      bio: field(row, "bio").value,
-      links: Array.from(row.querySelectorAll(".roster-link")).map((link) => ({
-        label: field(link, "label").value,
-        url: field(link, "url").value,
-      })),
-    }));
+    return Array.from(list.children).map((row) => {
+      const type = field(row, "avatarType").value;
+      const id = avatarIds.get(row);
+      if (type === "upload" && !id)
+        throw new Error(
+          "Upload an image for each selected member, or choose Minecraft skin head or Initials.",
+        );
+      return {
+        username: field(row, "username").value,
+        displayName: field(row, "displayName").value,
+        active: field(row, "active").checked,
+        bio: field(row, "bio").value,
+        links: Array.from(row.querySelectorAll(".roster-link")).map((link) => ({
+          label: field(link, "label").value,
+          url: field(link, "url").value,
+        })),
+        ...(type === "minecraft"
+          ? { avatar: { type: "minecraft" as const } }
+          : type === "upload" && id
+            ? { avatar: { type: "upload" as const, id } }
+            : {}),
+      };
+    });
   }
   form.addEventListener("input", changed);
   form.addEventListener("change", changed);
@@ -117,7 +248,7 @@ if (form) {
   });
   form.addEventListener("submit", async (event) => {
     event.preventDefault();
-    if (!dirty || !form.reportValidity()) return;
+    if (!dirty || imageUploads || !form.reportValidity()) return;
     if (
       list.children.length === 0 &&
       !confirm(
