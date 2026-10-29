@@ -1,6 +1,6 @@
 # HulettCraft
 
-An Astro community website for Minecraft and Hytale, deployed using the existing Cloudflare Pages adapter. The site uses Cloudflare R2 for screenshots, GitHub OAuth for administrators, and mcstatus.io for Minecraft status. Hytale status is unavailable until a reliable game-server health source is configured.
+An Astro community website for Minecraft and Hytale, deployed using the existing Cloudflare Pages adapter. The site uses Cloudflare R2 for screenshots, GitHub OAuth for administrators, and mcstatus.io for Minecraft status. Hytale can use a Nitrado game-query endpoint once its server plugins, permissions and trusted HTTPS are configured; unverified/unreachable checks remain unavailable.
 
 ## Development
 
@@ -34,6 +34,7 @@ Browser tests build the site and run the compiled Pages output with local Wrangl
 - src/config/servers.ts: existing game-server addresses and status-provider targets.
 - /admin/roster: authenticated community member editor; [roster operations and future Discord sync](docs/COMMUNITY.md).
 - /join and /admin/applications: private HulettCraft SMP applications and administrator review; [application operations](docs/APPLICATIONS.md).
+- /modded and /admin/modded: current modpack/custom client requirements; [Hytale query and Modded setup](docs/SERVER_SETUP.md).
 - public/images: existing static photographs/screenshots, retained in place.
 - tests: API/security tests with memory-only storage and browser tests with local Cloudflare emulation.
 

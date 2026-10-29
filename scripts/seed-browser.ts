@@ -3,6 +3,12 @@ import { getPlatformProxy } from "wrangler";
 import { icon } from "../tests/fixtures/serverIcon";
 import { FAVICON_KV_KEY } from "../src/lib/favicon";
 import type { Env } from "../src/lib/runtime";
+import {
+  newApplication,
+  validateApplicant,
+  applicationKey,
+  applicationSummary,
+} from "../src/lib/applications";
 const directory = ".wrangler/browser",
   state = directory + "/state/v3";
 await mkdir(directory, { recursive: true });
@@ -95,6 +101,29 @@ try {
           author: "PendingBuilder",
         },
       },
+    );
+  }
+  // Synthetic completed requests exercise filtered pagination without loading attachments.
+  for (let index = 0; index < 26; index++) {
+    const application = newApplication(
+      validateApplicant({
+        minecraft: "HistoryMember" + String(index).padStart(2, "0"),
+        discord: "synthetic.history",
+        engagement: "balanced",
+        proud: "Synthetic archive fixture",
+        building: "Test builds",
+        hopes: "Community",
+        interactions: "Trading",
+      }),
+      undefined,
+      Date.UTC(2026, 9, 20) + index * 1000,
+    );
+    application.status = index % 2 ? "accepted" : "declined";
+    application.note = "Synthetic private history note";
+    await proxy.env.SESSION!.put(
+      applicationKey(application.id, "preview:127.0.0.1"),
+      JSON.stringify(application),
+      { metadata: applicationSummary(application) },
     );
   }
   console.log("Seeded isolated local browser-test R2 and KV.");

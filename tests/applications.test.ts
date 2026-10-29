@@ -575,3 +575,146 @@ test("only canonical production hosts share the production queue", () => {
   ])
     assert.equal(applicationScopeForHost(host), "preview:" + host);
 });
+
+test("active, completed and all views use saved status while keeping decisions, notes, screenshots and email state intact", async () => {
+  const kv = new PrivateKV();
+  const env = locals(undefined, { SESSION: kv });
+  const records = [];
+  for (const status of ["new", "reviewing", "accepted", "declined"] as const) {
+    const app = newApplication(validateApplicant(answers), {
+      type: "image/png",
+      base64: Buffer.from(png).toString("base64"),
+    });
+    app.status = status;
+    app.note = "Keep this private note";
+    await saveApplication(env, app);
+    records.push(app);
+    kv.values.set(
+      applicationEmailKey(env, app.id),
+      JSON.stringify({ state: "sent" }),
+    );
+  }
+  const before = [...kv.values.entries()];
+  const writes = kv.writes.length;
+  kv.failRead = true; // Listing must use metadata, never attachments or full answers.
+  assert.deepEqual(
+    (await listApplications(env)).applications.map((row) => row.status).sort(),
+    ["new", "reviewing"],
+  );
+  assert.deepEqual(
+    (await listApplications(env, undefined, "completed")).applications
+      .map((row) => row.status)
+      .sort(),
+    ["accepted", "declined"],
+  );
+  assert.equal(
+    (await listApplications(env, undefined, "all")).applications.length,
+    4,
+  );
+  assert.equal(kv.writes.length, writes);
+  assert.deepEqual([...kv.values.entries()], before);
+  kv.failRead = false;
+  for (const app of records)
+    assert.deepEqual(await readApplication(env, app.id), app);
+});
+
+test("accepting and declining hide a request from Active and reopening returns it without deleting private data", async () => {
+  const kv = new PrivateKV();
+  const { env, application } = await stored(kv);
+  const path = `/api/admin/applications/${application.id}`;
+  for (const status of ["accepted", "reviewing", "declined", "new"] as const) {
+    const previous = await readApplication(env, application.id);
+    const response = await review(
+      context(
+        await request(path, {
+          revision: previous.revision,
+          status,
+          note: "Retain my notes",
+        }),
+        env,
+        { id: application.id },
+      ),
+    );
+    assert.equal(response.status, 200);
+    const completed = status === "accepted" || status === "declined";
+    assert.equal(
+      (await listApplications(env)).applications.length,
+      completed ? 0 : 1,
+    );
+    assert.equal(
+      (await listApplications(env, undefined, "completed")).applications.length,
+      completed ? 1 : 0,
+    );
+    const saved = await readApplication(env, application.id);
+    assert.deepEqual(saved.answers, application.answers);
+    assert.equal(saved.note, "Retain my notes");
+    assert.deepEqual(kv.deleted, []);
+  }
+});
+
+test("filtered pagination scans past other statuses and never skips or duplicates matching submissions", async () => {
+  const kv = new PrivateKV();
+  const env = locals(undefined, { SESSION: kv });
+  const records = [];
+  for (let i = 0; i < 82; i++) {
+    const app = newApplication(
+      validateApplicant(answers),
+      undefined,
+      Date.UTC(2026, 9, 23) + i,
+    );
+    app.status = i % 3 === 0 ? "reviewing" : i % 2 ? "accepted" : "declined";
+    await saveApplication(env, app);
+    records.push(app);
+  }
+  kv.failRead = true;
+  for (const view of ["active", "completed", "all"] as const) {
+    const ids: string[] = [];
+    let cursor: string | undefined;
+    do {
+      const page = await listApplications(env, cursor, view);
+      assert.ok(page.applications.length <= 25);
+      ids.push(...page.applications.map((row) => row.id));
+      cursor = page.cursor;
+    } while (cursor);
+    const expected = records
+      .filter(
+        (app) =>
+          view === "all" ||
+          (view === "completed") ===
+            ["accepted", "declined"].includes(app.status),
+      )
+      .map((app) => app.id)
+      .sort();
+    assert.deepEqual(ids, expected);
+    assert.equal(new Set(ids).size, ids.length);
+  }
+});
+
+test("a bounded empty scan preserves a continuation to older open requests and rejects non-advancing cursors", async () => {
+  const kv = new PrivateKV();
+  const env = locals(undefined, { SESSION: kv });
+  for (let i = 0; i < 276; i++) {
+    const app = newApplication(
+      validateApplicant(answers),
+      undefined,
+      Date.UTC(2026, 9, 23) + i,
+    );
+    app.status = i === 0 ? "new" : "accepted";
+    await saveApplication(env, app);
+  }
+  const first = await listApplications(env);
+  assert.deepEqual(first.applications, []);
+  assert.ok(
+    first.cursor,
+    "empty bounded scans must not claim the end of the queue",
+  );
+  const next = await listApplications(env, first.cursor);
+  assert.equal(next.applications.length, 1);
+  assert.equal(next.applications[0].status, "new");
+  assert.equal(next.cursor, undefined);
+  kv.list = async () => ({ keys: [], cursor: "", list_complete: false });
+  await assert.rejects(
+    listApplications(env),
+    (error: unknown) => error instanceof Response && error.status === 503,
+  );
+});

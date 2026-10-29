@@ -3,10 +3,12 @@ import GalleryGrid from "./GalleryGrid.astro";
 import { listGallery, type GalleryItem } from "../lib/gallery";
 import { getBucket } from "../lib/runtime";
 import type { World } from "../lib/galleryKeys";
+import { requireAdmin } from "../lib/requireAdmin";
 interface Props {
   world: World;
 }
 const { world } = Astro.props;
+const admin = await requireAdmin(Astro.request, Astro.locals);
 let images: GalleryItem[] = [],
   error = false;
 try {
@@ -44,6 +46,7 @@ const seasons = [...new Set(images.map((i) => i.key.split("/")[2]))].sort(
           <GalleryGrid
             images={images.filter((i) => i.key.split("/")[2] === season)}
             viewer={index === 0}
+            admin={admin}
           />
         </>
       </section>

@@ -1,3 +1,4 @@
+import { isCompletedApplication } from "../config/applications";
 export {};
 const retryEmail = document.querySelector<HTMLButtonElement>(
   "#retry-application-email",
@@ -15,6 +16,10 @@ retryEmail?.addEventListener("click", async () => {
     "#application-email-result",
   )!;
   retryEmail.disabled = true;
+  const previousFailure = document.querySelector<HTMLElement>(
+    "#application-email-failure",
+  );
+  if (previousFailure) previousFailure.hidden = true;
   result.textContent = "Sending application email…";
   try {
     const response = await fetch(
@@ -82,12 +87,18 @@ if (form) {
       const saved = await response.json();
       dirty = false;
       if (remove) {
-        location.assign("/admin/applications");
+        location.assign(form!.dataset.listHref || "/admin/applications");
         return;
       }
       form!.dataset.revision = saved.revision;
-      result.textContent =
-        "Review saved. No Discord message or server access change was made.";
+      const completed = isCompletedApplication(status.value);
+      const completedLink = document.querySelector<HTMLElement>(
+        "#completed-applications-link",
+      );
+      if (completedLink) completedLink.hidden = !completed;
+      result.textContent = completed
+        ? "Review saved. This application is now under Completed and hidden from Active. No Discord message or server access change was made."
+        : "Review saved. This application is in Active. No Discord message or server access change was made.";
     } catch (error) {
       result.textContent = `${error instanceof Error ? error.message : "The change could not be saved."} Your review edits are still here.`;
     } finally {
