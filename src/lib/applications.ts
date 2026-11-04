@@ -3,6 +3,8 @@ import {
   APPLICATION_STATUSES,
   ENGAGEMENT_OPTIONS,
   type ApplicationStatus,
+  type ApplicationView,
+  isCompletedApplication,
   type QuestionId,
 } from "../config/applications";
 import { isRecord } from "./http";
@@ -196,22 +198,31 @@ export async function readApplication(
     );
   }
 }
-export async function listApplications(locals: App.Locals, cursor?: string) {
+export async function listApplications(
+  locals: App.Locals,
+  cursor?: string,
+  view: ApplicationView = "active",
+) {
   if (cursor && cursor.length > 4096)
     throw new Response("Invalid page cursor", { status: 400 });
   const prefix = APPLICATION_PREFIX + (locals.applicationScope ?? "test") + ":";
-  const page = await applicationStore(locals).list<ApplicationSummary>({
-    prefix,
-    limit: 25,
-    ...(cursor ? { cursor } : {}),
-  });
-  const applications = page.keys
-    .filter(
-      (key) =>
-        key.name.startsWith(prefix) &&
-        APPLICATION_ID.test(key.name.slice(prefix.length)),
-    )
-    .map((key) => {
+  const applications: (ApplicationSummary & { id: string })[] = [];
+  let next = cursor;
+  // Filter metadata rather than loading private answers/attachments. Request only
+  // the remaining places so the underlying cursor never skips a matching record.
+  // Bound sparse scans; an unfinished scan keeps its continuation, even if empty.
+  for (let scan = 0; scan < 10; scan++) {
+    const page = await applicationStore(locals).list<ApplicationSummary>({
+      prefix,
+      limit: 25 - applications.length,
+      ...(next ? { cursor: next } : {}),
+    });
+    for (const key of page.keys) {
+      if (
+        !key.name.startsWith(prefix) ||
+        !APPLICATION_ID.test(key.name.slice(prefix.length))
+      )
+        continue;
       const summary = key.metadata;
       if (
         !summary ||
@@ -223,15 +234,27 @@ export async function listApplications(locals: App.Locals, cursor?: string) {
           "Applications could not be listed. Please try again.",
           { status: 503 },
         );
-      return {
+      const completed = isCompletedApplication(summary.status);
+      if (view !== "all" && (view === "completed") !== completed) continue;
+      applications.push({
         id: key.name.slice(prefix.length),
         minecraft: summary.minecraft,
         createdAt: summary.createdAt,
         status: summary.status,
-      };
-    });
-  return { applications, cursor: page.list_complete ? undefined : page.cursor };
+      });
+    }
+    if (page.list_complete) return { applications, cursor: undefined };
+    if (!page.cursor || page.cursor === next)
+      throw new Response(
+        "Applications could not be listed. Please try again.",
+        { status: 503 },
+      );
+    next = page.cursor;
+    if (applications.length === 25) break;
+  }
+  return { applications, cursor: next };
 }
+
 export function encodeScreenshot(bytes: Uint8Array) {
   let binary = "";
   for (let start = 0; start < bytes.length; start += 8192)

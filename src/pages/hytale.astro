@@ -1,6 +1,7 @@
 ---
 import PageHero from "../components/PageHero.astro";
 import BaseLayout from "../layouts/BaseLayout.astro";
+import ServerState from "../components/ServerState.astro";
 ---
 
 <BaseLayout>
@@ -45,6 +46,11 @@ import BaseLayout from "../layouts/BaseLayout.astro";
       >
         hytale.hulettcraft.com
       </button>
+      <ServerState id="hytale" detailed />
+      <p class="muted">
+        Use a game version compatible with the server. If you see a version
+        mismatch when joining, contact an administrator.
+      </p>
 
       <div class="card-actions">
         <a href="/status" class="status-link"> View server status → </a>

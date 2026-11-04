@@ -1,7 +1,10 @@
-import { getServerStatuses, statusHeaders } from "../../lib/serverStatus";
+import type { APIRoute } from "astro";
+import { serverStatusService, statusHeaders } from "../../lib/serverStatus";
 // Preserve the original string-valued API contract, now using real checks.
-export async function GET() {
-  const statuses = await getServerStatuses();
+export const GET: APIRoute = async ({ locals }) => {
+  const statuses = await serverStatusService(
+    locals.runtime?.env?.HYTALE_QUERY_URL,
+  );
   return new Response(
     JSON.stringify(
       Object.fromEntries(
@@ -10,4 +13,4 @@ export async function GET() {
     ),
     { headers: statusHeaders },
   );
-}
+};

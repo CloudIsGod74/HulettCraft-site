@@ -17,7 +17,13 @@ import { SERVERS } from "../config/servers";
         <div class="card card-link status-card">
           <a
             class="card-overlay"
-            href={server.id === "hytale" ? "/hytale" : server.gallery}
+            href={
+              server.id === "hytale"
+                ? "/hytale"
+                : server.id === "modded"
+                  ? "/modded"
+                  : server.gallery
+            }
             aria-label={server.title}
           />
           <>
@@ -35,17 +41,13 @@ import { SERVERS } from "../config/servers";
             {server.address}
           </button>
           <ServerState id={server.id} detailed />
-          {server.id === "hytale" && (
-            <small class="muted">
-              A reliable game-server health check is not configured.
-            </small>
-          )}
         </div>
       ))
     }
   </section>
   <p class="muted center">
-    Minecraft status is provided by mcstatus.io and refreshed every minute.
-    Provider errors are shown as unavailable.
+    Server checks refresh every minute. Minecraft uses mcstatus.io; Hytale uses
+    its game-server query service. An unavailable check does not confirm that a
+    server is offline.
   </p>
 </BaseLayout>

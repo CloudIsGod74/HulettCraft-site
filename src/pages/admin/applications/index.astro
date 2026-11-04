@@ -3,18 +3,25 @@ import BaseLayout from "../../../layouts/BaseLayout.astro";
 import PageHero from "../../../components/PageHero.astro";
 import { requireAdmin } from "../../../lib/requireAdmin";
 import { listApplications } from "../../../lib/applications";
-import { APPLICATION_STATUSES } from "../../../config/applications";
+import {
+  APPLICATION_STATUSES,
+  APPLICATION_VIEWS,
+  applicationView,
+  applicationListHref,
+} from "../../../config/applications";
 Astro.response.headers.set("Cache-Control", "private, no-store");
 if (!(await requireAdmin(Astro.request, Astro.locals)))
   return Astro.redirect("/admin/login");
+const view = applicationView(Astro.url.searchParams.get("view"));
 let page: Awaited<ReturnType<typeof listApplications>> | undefined;
 try {
   page = await listApplications(
     Astro.locals,
     Astro.url.searchParams.get("cursor") || undefined,
+    view,
   );
-} catch {
-  Astro.response.status = 503;
+} catch (error) {
+  Astro.response.status = error instanceof Response ? error.status : 503;
 }
 ---
 
@@ -34,6 +41,27 @@ try {
     take about a minute to appear. Please use one reviewer per application at a
     time.
   </p>
+  <nav class="application-views" aria-label="Application views">
+    {
+      APPLICATION_VIEWS.map((option) => (
+        <a
+          href={applicationListHref(option.value)}
+          aria-current={view === option.value ? "page" : undefined}
+        >
+          {option.label}
+        </a>
+      ))
+    }
+  </nav>
+  <p class="muted">
+    {
+      view === "active"
+        ? "New and in-review applications. Accepted and declined requests are saved under Completed."
+        : view === "completed"
+          ? "Accepted and declined applications, saved for later reference. Change a review status to New or In review to return it to Active."
+          : "All applications, including accepted and declined requests."
+    }
+  </p>
   {
     !page ? (
       <p role="alert">
@@ -42,13 +70,25 @@ try {
     ) : (
       <>
         {page.applications.length === 0 && (
-          <p class="card">No applications on this page yet.</p>
+          <p class="card">
+            {page.cursor
+              ? "No matching applications in this section. Continue to check older submissions."
+              : view === "active"
+                ? "No active applications here. You’re caught up; past decisions are under Completed."
+                : view === "completed"
+                  ? "No completed applications here yet. Accepted and declined requests will appear here."
+                  : "No applications on this page yet."}
+          </p>
         )}
         <div class="application-list">
           {page.applications.map((application) => (
             <a
               class="card application-summary"
-              href={"/admin/applications/" + application.id}
+              href={
+                "/admin/applications/" +
+                application.id +
+                (view === "active" ? "" : "?view=" + view)
+              }
             >
               <div>
                 <p class="eyebrow">
@@ -79,10 +119,7 @@ try {
           <p>
             <a
               class="application-next"
-              href={
-                "/admin/applications?" +
-                new URLSearchParams({ cursor: page.cursor })
-              }
+              href={applicationListHref(view, page.cursor)}
             >
               Next page →
             </a>
@@ -90,7 +127,7 @@ try {
         )}
         {Astro.url.searchParams.has("cursor") && (
           <p>
-            <a class="application-next" href="/admin/applications">
+            <a class="application-next" href={applicationListHref(view)}>
               Back to newest applications
             </a>
           </p>

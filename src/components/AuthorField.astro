@@ -1,0 +1,32 @@
+---
+import type { CommunityMember } from "../config/community";
+interface Props {
+  members: CommunityMember[];
+  value?: string;
+  label?: string;
+}
+const { members, value = "", label = "Author" } = Astro.props;
+---
+
+<div class="author-field" data-author-field>
+  <label
+    >Choose member
+    <select data-author-picker>
+      <option value="">Custom / existing author</option>
+      {
+        members.map((member) => (
+          <option value={member.username} selected={value === member.username}>
+            {member.displayName} ({member.username})
+            {!member.active ? " — hidden member" : ""}
+          </option>
+        ))
+      }
+    </select>
+  </label>
+  <label
+    >{label}<input class="edit-author" maxlength="100" value={value} /></label
+  >
+</div>
+<script>
+  import "../scripts/authorPicker";
+</script>

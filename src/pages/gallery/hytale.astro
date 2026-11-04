@@ -2,6 +2,7 @@
 import PageHero from "../../components/PageHero.astro";
 import BaseLayout from "../../layouts/BaseLayout.astro";
 import WorldGallery from "../../components/WorldGallery.astro";
+Astro.response.headers.set("Cache-Control", "private, no-store");
 ---
 
 <BaseLayout>

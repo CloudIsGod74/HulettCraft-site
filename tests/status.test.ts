@@ -3,14 +3,17 @@ import assert from "node:assert/strict";
 import { getServerStatuses } from "../src/lib/serverStatus";
 test("Minecraft status preserves counts and versions; Hytale never uses a map", async () => {
   const urls: string[] = [];
-  const data = await getServerStatuses((async (url) => {
-    urls.push(String(url));
-    return Response.json({
-      online: true,
-      players: { online: 3, max: 20 },
-      version: { name_clean: "1.21 <img onerror=alert(1)>" },
-    });
-  }) as typeof fetch);
+  const data = await getServerStatuses(
+    (async (url) => {
+      urls.push(String(url));
+      return Response.json({
+        online: true,
+        players: { online: 3, max: 20 },
+        version: { name_clean: "1.21 <img onerror=alert(1)>" },
+      });
+    }) as typeof fetch,
+    "",
+  );
   assert.equal(urls.length, 3);
   assert.ok(
     urls.every((u) => u.startsWith("https://api.mcstatus.io/v2/status/java/")),

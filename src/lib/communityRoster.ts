@@ -30,7 +30,14 @@ export function validateMembers(value: unknown): CommunityMember[] {
       !isRecord(entry) ||
       Object.keys(entry).some(
         (key) =>
-          !["username", "displayName", "active", "bio", "links"].includes(key),
+          ![
+            "username",
+            "displayName",
+            "active",
+            "bio",
+            "links",
+            "avatar",
+          ].includes(key),
       )
     )
       return invalid(`${name} has invalid fields.`);
@@ -68,12 +75,29 @@ export function validateMembers(value: unknown): CommunityMember[] {
       }
       return { label, url };
     });
+    let avatar: CommunityMember["avatar"];
+    if (entry.avatar !== undefined) {
+      const value = entry.avatar;
+      if (!isRecord(value))
+        return invalid(`${name} has an invalid member image.`);
+      if (value.type === "minecraft" && Object.keys(value).length === 1)
+        avatar = { type: "minecraft" };
+      else if (
+        value.type === "upload" &&
+        Object.keys(value).length === 2 &&
+        typeof value.id === "string" &&
+        /^[a-f0-9]{64}$/.test(value.id)
+      )
+        avatar = { type: "upload", id: value.id };
+      else return invalid(`${name} has an invalid member image.`);
+    }
     return {
       username,
       displayName,
       active: entry.active,
       ...(bio ? { bio } : {}),
       ...(links.length ? { links } : {}),
+      ...(avatar ? { avatar } : {}),
     };
   });
   if (new TextEncoder().encode(JSON.stringify(members)).length > 60000)

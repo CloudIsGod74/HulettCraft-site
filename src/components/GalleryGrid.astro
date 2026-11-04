@@ -1,95 +1,159 @@
 ---
 import type { GalleryItem } from "../lib/gallery";
+import AuthorField from "./AuthorField.astro";
+import { readRoster } from "../lib/communityRoster";
+import type { CommunityMember } from "../config/community";
 interface Props {
   images: GalleryItem[];
   admin?: string | null;
   viewer?: boolean;
 }
 const { images, admin, viewer = true } = Astro.props;
+let members: CommunityMember[] = [],
+  rosterError = false;
+if (admin)
+  try {
+    members = (await readRoster(Astro.locals)).members;
+  } catch {
+    rosterError = true;
+  }
 ---
 
-<div class="season-grid">
+<div data-gallery-editor={admin ? true : undefined}>
   {
-    images.map((shot) => (
-      <figure data-key={shot.key}>
-        <button
-          type="button"
-          class="image-button"
-          data-gallery-open
-          aria-label={shot.metadata.description || "Open screenshot"}
-        >
-          <img
-            src={shot.url}
-            loading="lazy"
-            alt={shot.metadata.description || "Community screenshot"}
-          />
+    admin && (
+      <fieldset class="bulk-author-controls">
+        <legend>Edit selected screenshots</legend>
+        <p class="muted">
+          Assign an author to up to 50 screenshots at once. Captions and other
+          information stay as they are.
+        </p>
+        {rosterError && (
+          <p role="status">
+            Member choices could not be loaded. You can still enter an author.
+          </p>
+        )}
+        {!rosterError && !members.length && (
+          <p class="muted">
+            Add members in <a href="/admin/roster">the roster editor</a> to
+            populate the dropdown.
+          </p>
+        )}
+        <div class="gallery-selection-actions">
+          <button type="button" data-select-images>
+            Select up to 50
+          </button>
+          <button type="button" data-clear-selection>
+            Clear selection
+          </button>
+          <span data-selection-count role="status">
+            0 selected
+          </span>
+        </div>
+        <AuthorField
+          members={members}
+          label="Author for selected screenshots"
+        />
+        <label>
+          <input type="checkbox" data-clear-author /> Clear the author instead
+        </label>
+        <button type="button" data-apply-author disabled>
+          Apply author to selected
         </button>
-        {admin ? (
-          <div class="admin-fields">
-            <label>
-              Description
-              <textarea
-                class="edit-description"
-                maxlength="2000"
-                set:text={shot.metadata.description ?? ""}
-              />
-            </label>
-            <label>
-              Author
+        <p data-bulk-result role="status" aria-live="polite" />
+      </fieldset>
+    )
+  }
+  <div class="season-grid">
+    {
+      images.map((shot) => (
+        <figure data-key={shot.key}>
+          {admin && (
+            <label class="gallery-select">
               <input
-                class="edit-author"
-                maxlength="100"
+                type="checkbox"
+                data-select-image
+                aria-label={`Select ${shot.filename}`}
+              />{" "}
+              Select screenshot
+            </label>
+          )}
+          <button
+            type="button"
+            class="image-button"
+            data-gallery-open
+            aria-label={shot.metadata.description || "Open screenshot"}
+          >
+            <img
+              src={shot.url}
+              loading="lazy"
+              alt={shot.metadata.description || "Community screenshot"}
+            />
+          </button>
+          {admin ? (
+            <div class="admin-fields">
+              <label>
+                Description
+                <textarea
+                  class="edit-description"
+                  maxlength="2000"
+                  set:text={shot.metadata.description ?? ""}
+                />
+              </label>
+              <AuthorField
+                members={members}
                 value={shot.metadata.author ?? ""}
               />
-            </label>
-            <button type="button" class="save-meta">
-              Save
+              <button type="button" class="save-meta">
+                Save
+              </button>
+              <span class="save-result" role="status" />
+            </div>
+          ) : (
+            <figcaption>
+              {shot.metadata.description}
+              {shot.metadata.author && <span> — {shot.metadata.author}</span>}
+            </figcaption>
+          )}
+        </figure>
+      ))
+    }
+  </div>
+  {
+    viewer && (
+      <dialog class="gallery-dialog" aria-label="Screenshot viewer">
+        <button
+          class="gallery-close"
+          type="button"
+          aria-label="Close screenshot viewer"
+        >
+          Close ×
+        </button>
+        <div class="gallery-view">
+          <>
+            <button
+              class="gallery-prev"
+              type="button"
+              aria-label="Previous screenshot"
+            >
+              ←
             </button>
-            <span class="save-result" role="status" />
-          </div>
-        ) : (
-          <figcaption>
-            {shot.metadata.description}
-            {shot.metadata.author && <span> — {shot.metadata.author}</span>}
-          </figcaption>
-        )}
-      </figure>
-    ))
+            <img alt="" />
+            <button
+              class="gallery-next"
+              type="button"
+              aria-label="Next screenshot"
+            >
+              →
+            </button>
+          </>
+        </div>
+        <p class="gallery-caption" aria-live="polite" />
+      </dialog>
+    )
   }
 </div>
-{
-  viewer && (
-    <dialog class="gallery-dialog" aria-label="Screenshot viewer">
-      <button
-        class="gallery-close"
-        type="button"
-        aria-label="Close screenshot viewer"
-      >
-        Close ×
-      </button>
-      <div class="gallery-view">
-        <>
-          <button
-            class="gallery-prev"
-            type="button"
-            aria-label="Previous screenshot"
-          >
-            ←
-          </button>
-          <img alt="" />
-          <button
-            class="gallery-next"
-            type="button"
-            aria-label="Next screenshot"
-          >
-            →
-          </button>
-        </>
-      </div>
-      <p class="gallery-caption" aria-live="polite" />
-    </dialog>
-  )
-}
 <script>
   import "../scripts/gallery";
+  import "../scripts/bulkMetadata";
 </script>

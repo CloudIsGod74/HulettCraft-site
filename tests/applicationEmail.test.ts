@@ -4,6 +4,7 @@ import {
   notifyApplication,
   applicationEmailKey,
   readApplicationEmail,
+  readApplicationEmailDetails,
 } from "../src/lib/applicationEmail";
 import {
   applicationKey,
@@ -325,7 +326,7 @@ test("missing credentials and unsafe sender headers cannot send mail or lose app
   ]) {
     const { kv, env } = setup(overrides);
     assert.equal((await submit(context(submission(), env))).status, 201);
-    assert.equal(kv.values.size, 2);
+    assert.equal(kv.values.size, 1);
   }
   assert.equal(fetch.mock.callCount(), 0);
 });
@@ -386,4 +387,91 @@ test("failure to record provider acceptance never changes the saved application 
     true,
   );
   assert.equal(kv.values.has(applicationEmailKey(env, app.id)), false);
+});
+
+test("provider rejection codes are shown safely to administrators without storing raw provider text", async (t) => {
+  const { kv, env } = setup();
+  const app = newApplication(validateApplicant(answers));
+  await saveApplication(env, app);
+  t.mock.method(globalThis, "fetch", async () =>
+    Response.json(
+      {
+        success: false,
+        errors: [
+          {
+            code: 10105,
+            message: "PRIVATE-PROVIDER-TEXT <script> test-only-not-a-real-key",
+          },
+        ],
+      },
+      { status: 403 },
+    ),
+  );
+  const response = await retry(
+    context(await request(`/api/admin/applications/${app.id}/email`, {}), env, {
+      id: app.id,
+    }),
+  );
+  assert.equal(response.status, 503);
+  assert.match(response.headers.get("cache-control")!, /no-store/);
+  const text = await response.text();
+  assert.match(text, /HTTP 403/);
+  assert.match(text, /Cloudflare code 10105/);
+  assert.match(text, /support@hulettcraft.com/);
+  const saved = kv.values.get(applicationEmailKey(env, app.id))!;
+  assert.doesNotMatch(
+    text + saved,
+    /PRIVATE-PROVIDER-TEXT|<script>|test-only-not-a-real-key/,
+  );
+  assert.deepEqual((await readApplicationEmailDetails(env, app.id)).failure, {
+    reason: "entitlement",
+    httpStatus: 403,
+    providerCode: 10105,
+  });
+});
+
+test("authentication, permission, throttling, service and unknown errors retain useful bounded diagnostics", async (t) => {
+  const { env } = setup();
+  const cases = [
+    [401, 10101, "authentication"],
+    [403, 10102, "permission"],
+    [403, 10203, "disabled"],
+    [429, 10004, "throttled"],
+    [503, 10100, "provider"],
+    [400, 10001, "rejected"],
+  ] as const;
+  let index = 0;
+  t.mock.method(globalThis, "fetch", async () => {
+    const [status, code] = cases[index++];
+    return Response.json({ success: false, errors: [{ code }] }, { status });
+  });
+  for (const [httpStatus, providerCode, reason] of cases) {
+    const app = newApplication(validateApplicant(answers));
+    assert.equal(await notifyApplication(env, app), "failed");
+    assert.deepEqual((await readApplicationEmailDetails(env, app.id)).failure, {
+      reason,
+      httpStatus,
+      providerCode,
+    });
+  }
+});
+
+test("oversized provider responses are rejected and an unreadable saved state is never overwritten or resent", async (t) => {
+  const { kv, env } = setup();
+  const app = newApplication(validateApplicant(answers));
+  const fetch = t.mock.method(
+    globalThis,
+    "fetch",
+    async () => new Response("x".repeat(16385)),
+  );
+  assert.equal(await notifyApplication(env, app), "failed");
+  assert.equal(
+    (await readApplicationEmailDetails(env, app.id)).failure?.reason,
+    "response",
+  );
+  const key = applicationEmailKey(env, app.id);
+  kv.values.set(key, "invalid JSON");
+  assert.equal(await notifyApplication(env, app), "failed");
+  assert.equal(kv.values.get(key), "invalid JSON");
+  assert.equal(fetch.mock.callCount(), 1);
 });
